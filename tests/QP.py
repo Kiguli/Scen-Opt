@@ -1,43 +1,25 @@
-import cvxpy as cp
 import numpy as np
+import cvxpy as cp
 
-# Problem Data
-np.random.seed(42)
-n = 5  # Number of variables
-m = 3  # Number of constraints
+from src.QP import solve_qp
+from src.Miscellaneous import get_solvers,get_norm_types
 
-A = np.random.rand(m, n)  # Constraint matrix
-b = np.random.rand(m, 1)  # Constraint vector
-c = np.random.rand(n, 1)  # Cost vector
+# Example usage
+deltas = np.array([[2,1,-100],[3,2,-120],[-1,0,0],[0,-1,0]])
+def A(deltas:np.ndarray):
+    return np.array([[deltas[0],deltas[1]]])
+def b(deltas:np.ndarray):
+    return np.array([[deltas[2]]])
+c = np.array([-5,-3])
+T = 0.0
+P = 0.0
+norm_type = 2
+print(get_solvers())
+print(get_norm_types())
+solver = cp.SCS
+Q = np.array([[1,0],[0,1]])
 
-delta_A = 0.1 * np.random.rand(m, n)  # Uncertainty bound on A
-delta_b = 0.1 * np.random.rand(m, 1)  # Uncertainty bound on b
-
-lambda_reg = 0.1  # Regularization parameter
-mu_relax = 1.0    # Relaxation penalty
-
-# Variables
-x = cp.Variable((n, 1))
-s = cp.Variable((m, 1), nonneg=True)  # Slack variables
-
-# Robust Constraints (worst-case approach)
-A_robust = A + delta_A
-b_robust = b - delta_b
-
-constraints = [
-    A_robust @ x <= b_robust + s,  # Relaxed robust constraints
-    x >= 0  # Non-negativity
-]
-
-# Use constraints.append() for scenario constraints
-
-# Objective Function
-objective = cp.Minimize(c.T @ x + lambda_reg * cp.norm(x, 2) + mu_relax * cp.sum(s))
-
-# Solve the problem
-prob = cp.Problem(objective, constraints)
-prob.solve()
-
-# Print results
-print("Optimal x:\n", x.value)
-print("Optimal cost:", prob.value)
+optimal_x, optimal_s, optimal_cost = solve_qp(deltas,A, b, c, Q, T, P, norm_type, solver)
+print("Optimal x:\n", optimal_x)
+print("Optimal s:\n", optimal_s)
+print("Optimal cost:", optimal_cost)

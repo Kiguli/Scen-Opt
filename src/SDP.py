@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_lp(deltas, A, b, c, T=0, P=0, norm_type=2,solver=None):
+def solve_lp(deltas, A, b, c, T, P, norm_type=2,solver=None):
     """
         Solves a linear programming problem with optional robust and regularization constraints.
 

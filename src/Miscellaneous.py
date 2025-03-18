@@ -5,5 +5,5 @@ def get_solvers():
     return solver_list
 
 def get_norm_types():
-    norm_types = [1,2,"inf","fro","nuc", "or any positive integer"]
+    norm_types = [1,2,"inf","fro","nuc"]
     return norm_types

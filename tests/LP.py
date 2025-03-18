@@ -1,4 +1,3 @@
-import numpy
 import numpy as np
 import cvxpy as cp
 
@@ -7,9 +6,9 @@ from src.Miscellaneous import get_solvers,get_norm_types
 
 # Example usage
 deltas = np.array([[2,1,-100],[3,2,-120],[-1,0,0],[0,-1,0]])
-def A(deltas:numpy.ndarray):
+def A(deltas:np.ndarray):
     return np.array([[deltas[0],deltas[1]]])
-def b(deltas:numpy.ndarray):
+def b(deltas:np.ndarray):
     return np.array([[deltas[2]]])
 c = np.array([-5,-3])
 T = 0.0
