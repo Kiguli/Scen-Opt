@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_lp(A, b, c, T, P, norm_type=2):
+def solve_lp(A, b, c, T, P, norm_type=2,solver=None):
     """
     Solves a linear programming problem with optional robust and regularization constraints.
 
@@ -38,7 +38,7 @@ def solve_lp(A, b, c, T, P, norm_type=2):
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
-    prob.solve()
+    prob.solve(solver=solver)
 
     #Simplify results
     x = x.value
@@ -48,16 +48,3 @@ def solve_lp(A, b, c, T, P, norm_type=2):
 
     # Return results
     return x, s, cost
-
-# Example usage
-A = np.array([[2,1],[3,2],[-1,0],[0,-1]])
-b = np.array([[-100],[-120],[0],[0]])
-c = np.array([-5,-3])
-T = 0.0
-P = 0.0
-norm_type = 2
-
-optimal_x, optimal_s, optimal_cost = solve_lp(A, b, c, T, P, norm_type)
-print("Optimal x:\n", optimal_x)
-print("Optimal s:\n", optimal_s)
-print("Optimal cost:", optimal_cost)
