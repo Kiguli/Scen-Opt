@@ -1,6 +1,12 @@
+blinker==1.9.0
 clarabel==0.10.0
+click==8.1.8
 cvxpy==1.6.4
 et_xmlfile==2.0.0
+Flask==3.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.2
 Mosek==11.0.13
 numpy==2.2.4
 openpyxl==3.1.5
@@ -13,3 +19,4 @@ scipy==1.15.2
 scs==3.2.7.post2
 six==1.17.0
 tzdata==2025.1
+Werkzeug==3.1.3

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimization Interface</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="text-center">Optimization Interface</h1>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="lp-tab" data-toggle="tab" href="#lp" role="tab" aria-controls="lp"
+               aria-selected="true">LP</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="qp-tab" data-toggle="tab" href="#qp" role="tab" aria-controls="qp"
+               aria-selected="false">QP</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="sdp-tab" data-toggle="tab" href="#sdp" role="tab" aria-controls="sdp"
+               aria-selected="false">SDP</a>
+        </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="lp" role="tabpanel" aria-labelledby="lp-tab">
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">LP Options</h5>
+                    <form id="lp-form" action="/solve" method="post">
+                        <div class="form-group">
+                            <label for="lp-options">Select Option:</label>
+                            <select id="lp-options" class="form-control" name="option" onchange="updateLatexText('lp')">
+                                <option value="robust">Robust</option>
+                                <option value="robust-regularization">Robust + Regularization</option>
+                                <option value="robust-relaxation">Robust + Relaxation</option>
+                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                </option>
+                            </select>
+                        </div>
+                        <div id="lp-latex" class="form-group">
+                            <p>\(\displaystyle\min_{\theta} c^\top\theta\)</p>
+                            <p>such that</p>
+                            <p>\(A(\delta_i)+b(\delta_i) \leq 0\), forall \(\delta_i\) where \(i = 0,1, \ldots, N\)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="lp-c">\(c\):</label>
+                            <input type="text" id="lp-c" class="form-control" name="c">
+                        </div>
+                        <div class="form-group">
+                            <label for="lp-A">\(A\):</label>
+                            <input type="text" id="lp-A" class="form-control" name="A">
+                        </div>
+                        <div class="form-group">
+                            <label for="lp-b">\(b\):</label>
+                            <input type="text" id="lp-b" class="form-control" name="b">
+                        </div>
+                        <div class="form-group" id="lp-tau-group" style="display: none;">
+                            <label for="lp-tau">\(\tau\):</label>
+                            <input type="text" id="lp-tau" class="form-control" name="tau">
+                        </div>
+                        <div class="form-group" id="lp-theta-bar-group" style="display: none;">
+                            <label for="lp-theta-bar">\(\bar{\theta}\):</label>
+                            <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar">
+                        </div>
+                        <div class="form-group" id="lp-p-group" style="display: none;">
+                            <label for="lp-p">\(p\):</label>
+                            <input type="text" id="lp-p" class="form-control" name="p">
+                        </div>
+                        <div class="form-group" id="lp-rho-group" style="display: none;">
+                            <label for="lp-rho">\(\rho\):</label>
+                            <input type="text" id="lp-rho" class="form-control" name="rho">
+                        </div>
+                        <input type="hidden" name="active_tab" value="lp-tab">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="qp" role="tabpanel" aria-labelledby="qp-tab">
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">QP Options</h5>
+                    <form id="qp-form" action="/solve" method="post">
+                        <div class="form-group">
+                            <label for="qp-options">Select Option:</label>
+                            <select id="qp-options" class="form-control" name="option" onchange="updateLatexText('qp')">
+                                <option value="robust">Robust</option>
+                                <option value="robust-regularization">Robust + Regularization</option>
+                                <option value="robust-relaxation">Robust + Relaxation</option>
+                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                </option>
+                            </select>
+                        </div>
+                        <div id="qp-latex" class="form-group">
+                            <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
+                            <p>such that</p>
+                            <p>\(A(\delta_i)+b(\delta_i) \leq 0,\) where \(i = 0,1, \ldots, N\)</p>
+                            <p>\(Q\succeq 0\)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-c">\(c\):</label>
+                            <input type="text" id="qp-c" class="form-control" name="c">
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-A">\(A\):</label>
+                            <input type="text" id="qp-A" class="form-control" name="A">
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-b">\(b\):</label>
+                            <input type="text" id="qp-b" class="form-control" name="b">
+                        </div>
+                        <div class="form-group">
+                            <label for="qp-Q">\(Q\):</label>
+                            <input type="text" id="qp-Q" class="form-control" name="Q">
+                        </div>
+                        <div class="form-group" id="qp-tau-group" style="display: none;">
+                            <label for="qp-tau">\(\tau\):</label>
+                            <input type="text" id="qp-tau" class="form-control" name="tau">
+                        </div>
+                        <div class="form-group" id="qp-theta-bar-group" style="display: none;">
+                            <label for="qp-theta-bar">\(\bar{\theta}\):</label>
+                            <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar">
+                        </div>
+                        <div class="form-group" id="qp-p-group" style="display: none;">
+                            <label for="qp-p">\(p\):</label>
+                            <input type="text" id="qp-p" class="form-control" name="p">
+                        </div>
+                        <div class="form-group" id="qp-rho-group" style="display: none;">
+                            <label for="qp-rho">\(\rho\):</label>
+                            <input type="text" id="qp-rho" class="form-control" name="rho">
+                        </div>
+                        <input type="hidden" name="active_tab" value="qp-tab">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="sdp" role="tabpanel" aria-labelledby="sdp-tab">
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">SDP Options</h5>
+                    <form id="sdp-form" action="/solve" method="post">
+                        <div class="form-group">
+                            <label for="sdp-options">Select Option:</label>
+                            <select id="sdp-options" class="form-control" name="option"
+                                    onchange="updateLatexText('sdp')">
+                                <option value="robust">Robust</option>
+                                <option value="robust-regularization">Robust + Regularization</option>
+                                <option value="robust-relaxation">Robust + Relaxation</option>
+                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                </option>
+                            </select>
+                        </div>
+                        <div id="sdp-latex" class="form-group">
+                            <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
+                            <p>such that</p>
+                            <p>\(A(\delta_i)+b(\delta_i) \leq 0,\) where \(i = 0,1, \ldots, N\)</p>
+                            <p>\(Q\succeq 0\)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-c">\(c\):</label>
+                            <input type="text" id="sdp-c" class="form-control" name="c">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-A">\(A\):</label>
+                            <input type="text" id="sdp-A" class="form-control" name="A">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-b">\(b\):</label>
+                            <input type="text" id="sdp-b" class="form-control" name="b">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-Q">\(Q\):</label>
+                            <input type="text" id="sdp-Q" class="form-control" name="Q">
+                        </div>
+                        <div class="form-group" id="sdp-tau-group" style="display: none;">
+                            <label for="sdp-tau">\(\tau\):</label>
+                            <input type="text" id="sdp-tau" class="form-control" name="tau">
+                        </div>
+                        <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
+                            <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
+                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar">
+                        </div>
+                        <div class="form-group" id="sdp-p-group" style="display: none;">
+                            <label for="sdp-p">\(p\):</label>
+                            <input type="text" id="sdp-p" class="form-control" name="p">
+                        </div>
+                        <div class="form-group" id="sdp-rho-group" style="display: none;">
+                            <label for="sdp-rho">\(\rho\):</label>
+                            <input type="text" id="sdp-rho" class="form-control" name="rho">
+                        </div>
+                        <input type="hidden" name="active_tab" value="sdp-tab">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Upload File</h5>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Upload File:</label>
+                    <input type="file" name="file" id="file" class="form-control-file">
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+    <div class="text-right mt-4">
+        <button class="btn btn-success" onclick="solve()">Solve</button>
+    </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Result</h5>
+            <div id="result-box" class="border p-3">
+                {% if result %}
+                <p>Optimal x: {{ result[0] }}</p>
+                <p>Optimal s: {{ result[1] }}</p>
+                <p>Optimal cost: {{ result[2] }}</p>
+                {% else %}
+                <p>No result yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    function solve() {
+        const activeTab = document.querySelector('.nav-link.active').id;
+        let formId;
+        if (activeTab === 'lp-tab') {
+            formId = 'lp-form';
+        } else if (activeTab === 'qp-tab') {
+            formId = 'qp-form';
+        } else if (activeTab === 'sdp-tab') {
+            formId = 'sdp-form';
+        }
+        document.getElementById(formId).submit();
+    }
+
+    function updateLatexText(tab) {
+        const option = document.getElementById(`${tab}-options`).value;
+        let latexText1 = '';
+        let latexText2 = '';
+        let latexText3 = '';
+
+        // Show/Hide relevant input fields
+        document.getElementById(`${tab}-tau-group`).style.display = 'none';
+        document.getElementById(`${tab}-theta-bar-group`).style.display = 'none';
+        document.getElementById(`${tab}-rho-group`).style.display = 'none';
+        document.getElementById(`${tab}-p-group`).style.display = 'none';
+
+        if (tab === 'lp') {
+            if (option === 'robust') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+            } else if (option === 'robust-regularization') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            } else if (option === 'robust-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            } else if (option === 'robust-regularization-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            }
+        } else if (tab === 'qp' || tab === 'sdp') {
+            if (option === 'robust') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0';
+            } else if (option === 'robust-regularization') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            } else if (option === 'robust-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            } else if (option === 'robust-regularization-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
+                latexText2 = 'A(\\delta_i)+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            }
+        }
+
+        document.getElementById(`${tab}-latex`).innerHTML = `<p>\\(${latexText1}\\)</p><p>such that:</p><p>\\(${latexText2}\\)</p><p>\\(${latexText3}\\)</p>`;
+        MathJax.typeset();
+    }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        updateLatexText('lp');
+        updateLatexText('qp');
+        updateLatexText('sdp');
+
+        // Add event listeners for tab switching
+        document.getElementById('lp-tab').addEventListener('shown.bs.tab', function() {
+            updateLatexText('lp');
+        });
+        document.getElementById('qp-tab').addEventListener('shown.bs.tab', function() {
+            updateLatexText('qp');
+        });
+        document.getElementById('sdp-tab').addEventListener('shown.bs.tab', function() {
+            updateLatexText('sdp');
+        });
+    });
+</script>
+</body>
+</html>
