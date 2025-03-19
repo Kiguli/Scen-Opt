@@ -38,9 +38,9 @@ def load_file(file_path):
         elif file_path.endswith('.txt'):
             data = np.loadtxt(file_path)  # Read TXT using NumPy (default to expect floats)
         elif file_path.endswith('.xlsx'):
-            data = pd.read_excel(file_path, engine='openpyxl').values  # Read Excel file and convert to NumPy
+            data = pd.read_excel(file_path, engine='openpyxl',header=None).values  # Read Excel file and convert to NumPy
         elif file_path.endswith('.json'):
-            data = pd.read_json(file_path, orient='records').values  # Read JSON and convert to NumPy
+            data = pd.read_json(file_path, orient='record').values  # Read JSON and convert to NumPy
         else:
             raise ValueError("Unsupported file format")
 

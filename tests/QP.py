@@ -5,7 +5,7 @@ from src.QP import solve_qp
 from src.Miscellaneous import get_solvers,get_norm_types
 
 # Example usage
-deltas = np.array([[2,1,-100],[3,2,-120],[-1,0,0],[0,-1,0]])
+scenarios = np.array([[2,1,-100],[3,2,-120],[-1,0,0],[0,-1,0]])
 def A(deltas:np.ndarray):
     return np.array([[deltas[0],deltas[1]]])
 def b(deltas:np.ndarray):
@@ -19,7 +19,7 @@ print(get_norm_types())
 solver = cp.SCS
 Q = np.array([[1,0],[0,1]])
 
-optimal_x, optimal_s, optimal_cost = solve_qp(deltas,A, b, c, Q, T, P, norm_type, solver)
+optimal_x, optimal_s, optimal_cost = solve_qp(scenarios,A, b, c, Q, T, P, norm_type, solver)
 print("Optimal x:\n", optimal_x)
 print("Optimal s:\n", optimal_s)
 print("Optimal cost:", optimal_cost)

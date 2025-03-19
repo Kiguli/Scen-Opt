@@ -44,12 +44,12 @@ array = load_file("data.txt")
 print(type(array))
 print(array)
 
-#TEST JSON
-array = load_file("data.json")
+#TEST EXCEL
+array = load_file("data.xlsx")
 print(type(array))
 print(array)
 
-#TEST EXCEL
-array = load_file("data.xlsx")
+#TEST JSON
+array = load_file("data.json")
 print(type(array))
 print(array)
