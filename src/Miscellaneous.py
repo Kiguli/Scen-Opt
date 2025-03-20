@@ -8,6 +8,8 @@ def get_solvers():
 
         Returns:
         list: A list of strings representing the names of the installed solvers.
+
+        Full list of possible solvers can be found here: https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver
     """
     solver_list = cp.installed_solvers()
     return solver_list

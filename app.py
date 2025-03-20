@@ -6,8 +6,7 @@ from werkzeug.utils import secure_filename
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
-from src.Miscellaneous import load_file
-from tests.LP import norm_type
+from src.Miscellaneous import load_file,get_solvers
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -21,7 +20,8 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    solvers = get_solvers()
+    return render_template('index.html',solvers=solvers)
 
 
 @app.route('/upload', methods=['POST'])
@@ -49,7 +49,6 @@ def solve():
     if filename:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         scenarios = load_file(file_path)
-        print(scenarios)
     else:
         return redirect(url_for('index'))
 
@@ -63,46 +62,18 @@ def solve():
 
     # Get values from parameter boxes
     form_data = request.form.to_dict()
-    print(form_data)
-
-    T = 0.0
-    P = 0.0
-    Theta_Bar = 0.0
-    norm_type = 2
-
-    if option == 'robust':
-        print(T)
-        print(P)
-        print(Theta_Bar)
-        print(norm_type)
-    elif option == 'robust-regularization':
-        T = float(form_data.get('tau', 0.0))
-        print(T)
-        Theta_Bar = float(form_data.get('Theta_Bar', 0.0))
-        print(Theta_Bar)
-        norm_type = int(form_data.get('p', 2))
-        print(norm_type)
-        P = 0.0
-        print(P)
-    elif option == 'robust-relaxation':
-        T = 0.0
-        Theta_Bar = 0.0
-        norm_type = 2
-        P = float(form_data.get('rho', 0.0))
-    elif option == 'robust-regularization-relaxation':
-        P = float(form_data.get('rho', 0.0))
-        Theta_Bar = float(form_data.get('theta_bar', 0.0))
-        T = float(form_data.get('tau', 0.0))
-        norm_type = int(form_data.get('p', 2))
-
-    solver = cp.SCS
+    T = float(form_data.get('tau', 0.0))
+    P = float(form_data.get('rho', 0.0))
+    Theta_Bar = float(form_data.get('theta_bar', 0.0))
+    norm_type = int(form_data.get('p', 2))
+    solver = form_data.get('solver', 'SCS')
 
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, T, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
     elif active_tab == 'qp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, T, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
     elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, T, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
 
     return render_template('index.html', result=(optimal_x, optimal_s, optimal_cost))
 
