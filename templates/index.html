@@ -34,10 +34,18 @@
                         <div class="form-group">
                             <label for="lp-options">Select Option:</label>
                             <select id="lp-options" class="form-control" name="option" onchange="updateLatexText('lp')">
-                                <option value="robust">Robust</option>
-                                <option value="robust-regularization">Robust + Regularization</option>
-                                <option value="robust-relaxation">Robust + Relaxation</option>
-                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
+                                    Robust
+                                </option>
+                                <option value="robust-regularization" {% if request.form.option=='robust-regularization'
+                                        %}selected{% endif %}>Robust + Regularization
+                                </option>
+                                <option value="robust-relaxation" {% if request.form.option=='robust-relaxation'
+                                        %}selected{% endif %}>Robust + Relaxation
+                                </option>
+                                <option value="robust-regularization-relaxation" {% if
+                                        request.form.option=='robust-regularization-relaxation' %}selected{% endif %}>
+                                    Robust + Regularization + Relaxation
                                 </option>
                             </select>
                         </div>
@@ -52,43 +60,50 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="lp-c">\(c\):</label>
-                                    <input type="text" id="lp-c" class="form-control" name="c">
+                                    <input type="text" id="lp-c" class="form-control" name="c"
+                                           value="{{ request.form.c }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="lp-A">\(A\):</label>
-                                    <input type="text" id="lp-A" class="form-control" name="A">
+                                    <input type="text" id="lp-A" class="form-control" name="A"
+                                           value="{{ request.form.A }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="lp-b">\(b\):</label>
-                                    <input type="text" id="lp-b" class="form-control" name="b">
+                                    <input type="text" id="lp-b" class="form-control" name="b"
+                                           value="{{ request.form.b }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-tau-group" style="display: none;">
                                     <label for="lp-tau">\(\tau\):</label>
-                                    <input type="text" id="lp-tau" class="form-control" name="tau">
+                                    <input type="text" id="lp-tau" class="form-control" name="tau"
+                                           value="{{ request.form.tau }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-theta-bar-group" style="display: none;">
                                     <label for="lp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar">
+                                    <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar"
+                                           value="{{ request.form.theta_bar }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-p-group" style="display: none;">
                                     <label for="lp-p">\(p\):</label>
-                                    <input type="text" id="lp-p" class="form-control" name="p">
+                                    <input type="text" id="lp-p" class="form-control" name="p"
+                                           value="{{ request.form.p }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-rho-group" style="display: none;">
                                     <label for="lp-rho">\(\rho\):</label>
-                                    <input type="text" id="lp-rho" class="form-control" name="rho">
+                                    <input type="text" id="lp-rho" class="form-control" name="rho"
+                                           value="{{ request.form.rho }}">
                                 </div>
                             </div>
                         </div>
@@ -105,10 +120,18 @@
                         <div class="form-group">
                             <label for="qp-options">Select Option:</label>
                             <select id="qp-options" class="form-control" name="option" onchange="updateLatexText('qp')">
-                                <option value="robust">Robust</option>
-                                <option value="robust-regularization">Robust + Regularization</option>
-                                <option value="robust-relaxation">Robust + Relaxation</option>
-                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
+                                    Robust
+                                </option>
+                                <option value="robust-regularization" {% if request.form.option=='robust-regularization'
+                                        %}selected{% endif %}>Robust + Regularization
+                                </option>
+                                <option value="robust-relaxation" {% if request.form.option=='robust-relaxation'
+                                        %}selected{% endif %}>Robust + Relaxation
+                                </option>
+                                <option value="robust-regularization-relaxation" {% if
+                                        request.form.option=='robust-regularization-relaxation' %}selected{% endif %}>
+                                    Robust + Regularization + Relaxation
                                 </option>
                             </select>
                         </div>
@@ -124,49 +147,57 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="qp-c">\(c\):</label>
-                                    <input type="text" id="qp-c" class="form-control" name="c">
+                                    <input type="text" id="qp-c" class="form-control" name="c"
+                                           value="{{ request.form.c }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="qp-A">\(A\):</label>
-                                    <input type="text" id="qp-A" class="form-control" name="A">
+                                    <input type="text" id="qp-A" class="form-control" name="A"
+                                           value="{{ request.form.A }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="qp-b">\(b\):</label>
-                                    <input type="text" id="qp-b" class="form-control" name="b">
+                                    <input type="text" id="qp-b" class="form-control" name="b"
+                                           value="{{ request.form.b }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="qp-Q">\(Q\):</label>
-                                    <input type="text" id="qp-Q" class="form-control" name="Q">
+                                    <input type="text" id="qp-Q" class="form-control" name="Q"
+                                           value="{{ request.form.Q }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-tau-group" style="display: none;">
                                     <label for="qp-tau">\(\tau\):</label>
-                                    <input type="text" id="qp-tau" class="form-control" name="tau">
+                                    <input type="text" id="qp-tau" class="form-control" name="tau"
+                                           value="{{ request.form.tau }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-theta-bar-group" style="display: none;">
                                     <label for="qp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar">
+                                    <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar"
+                                           value="{{ request.form.theta_bar }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-p-group" style="display: none;">
                                     <label for="qp-p">\(p\):</label>
-                                    <input type="text" id="qp-p" class="form-control" name="p">
+                                    <input type="text" id="qp-p" class="form-control" name="p"
+                                           value="{{ request.form.p }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-rho-group" style="display: none;">
                                     <label for="qp-rho">\(\rho\):</label>
-                                    <input type="text" id="qp-rho" class="form-control" name="rho">
+                                    <input type="text" id="qp-rho" class="form-control" name="rho"
+                                           value="{{ request.form.rho }}">
                                 </div>
                             </div>
                         </div>
@@ -184,10 +215,18 @@
                             <label for="sdp-options">Select Option:</label>
                             <select id="sdp-options" class="form-control" name="option"
                                     onchange="updateLatexText('sdp')">
-                                <option value="robust">Robust</option>
-                                <option value="robust-regularization">Robust + Regularization</option>
-                                <option value="robust-relaxation">Robust + Relaxation</option>
-                                <option value="robust-regularization-relaxation">Robust + Regularization + Relaxation
+                                <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
+                                    Robust
+                                </option>
+                                <option value="robust-regularization" {% if request.form.option=='robust-regularization'
+                                        %}selected{% endif %}>Robust + Regularization
+                                </option>
+                                <option value="robust-relaxation" {% if request.form.option=='robust-relaxation'
+                                        %}selected{% endif %}>Robust + Relaxation
+                                </option>
+                                <option value="robust-regularization-relaxation" {% if
+                                        request.form.option=='robust-regularization-relaxation' %}selected{% endif %}>
+                                    Robust + Regularization + Relaxation
                                 </option>
                             </select>
                         </div>
@@ -201,35 +240,38 @@
                         </div>
                         <div class="form-group">
                             <label for="sdp-c">\(c\):</label>
-                            <input type="text" id="sdp-c" class="form-control" name="c">
+                            <input type="text" id="sdp-c" class="form-control" name="c" value="{{ request.form.c }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-A">\(A\):</label>
-                            <input type="text" id="sdp-A" class="form-control" name="A">
+                            <input type="text" id="sdp-A" class="form-control" name="A" value="{{ request.form.A }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-b">\(b\):</label>
-                            <input type="text" id="sdp-b" class="form-control" name="b">
+                            <input type="text" id="sdp-b" class="form-control" name="b" value="{{ request.form.b }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-Q">\(Q\):</label>
-                            <input type="text" id="sdp-Q" class="form-control" name="Q">
+                            <input type="text" id="sdp-Q" class="form-control" name="Q" value="{{ request.form.Q }}">
                         </div>
                         <div class="form-group" id="sdp-tau-group" style="display: none;">
                             <label for="sdp-tau">\(\tau\):</label>
-                            <input type="text" id="sdp-tau" class="form-control" name="tau">
+                            <input type="text" id="sdp-tau" class="form-control" name="tau"
+                                   value="{{ request.form.tau }}">
                         </div>
                         <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
                             <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
-                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar">
+                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar"
+                                   value="{{ request.form.theta_bar }}">
                         </div>
                         <div class="form-group" id="sdp-p-group" style="display: none;">
                             <label for="sdp-p">\(p\):</label>
-                            <input type="text" id="sdp-p" class="form-control" name="p">
+                            <input type="text" id="sdp-p" class="form-control" name="p" value="{{ request.form.p }}">
                         </div>
                         <div class="form-group" id="sdp-rho-group" style="display: none;">
                             <label for="sdp-rho">\(\rho\):</label>
-                            <input type="text" id="sdp-rho" class="form-control" name="rho">
+                            <input type="text" id="sdp-rho" class="form-control" name="rho"
+                                   value="{{ request.form.rho }}">
                         </div>
                         <input type="hidden" name="active_tab" value="sdp-tab">
                     </form>
@@ -240,12 +282,16 @@
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="form-group">
-                <label for="solver">Solver:</label>
-                <select class="form-control" id="solver" name="solver">
-                    {% for solver in solvers %}
-                    <option value="{{ solver }}">{{ solver }}</option>
-                    {% endfor %}
-                </select>
+                <form id="solver-form" action="/solve" method="post">
+                    <label for="solver">Solver:</label>
+                    <select class="form-control" id="solver" name="solver">
+                        {% for solver in solvers %}
+                        <option value="{{ solver }}" {% if solver== request.form.solver %}selected{% endif %}>{{ solver
+                            }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
             </div>
         </div>
         <div class="col-md-6">
@@ -293,7 +339,20 @@
         } else if (activeTab === 'sdp-tab') {
             formId = 'sdp-form';
         }
-        document.getElementById(formId).submit();
+
+        // Append solver-form data to the active form
+        const solverForm = document.getElementById('solver-form');
+        const activeForm = document.getElementById(formId);
+        const formData = new FormData(solverForm);
+        for (const [key, value] of formData.entries()) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            activeForm.appendChild(input);
+        }
+
+        activeForm.submit();
     }
 
     function updateLatexText(tab) {

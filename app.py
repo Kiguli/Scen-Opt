@@ -1,7 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session,jsonify
 import numpy as np
-import cvxpy as cp
 from werkzeug.utils import secure_filename
 from src.LP import solve_lp
 from src.QP import solve_qp
@@ -50,7 +49,7 @@ def solve():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         scenarios = load_file(file_path)
     else:
-        return redirect(url_for('index'))
+        return jsonify({'error': 'No file uploaded'}), 400
 
     def A(deltas: np.ndarray):
         return np.array([[deltas[0], deltas[1]]])
@@ -76,7 +75,7 @@ def solve():
     elif active_tab == 'sdp-tab':
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
 
-    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost))
+    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost), solvers = get_solvers())
 
 
 if __name__ == '__main__':
