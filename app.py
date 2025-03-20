@@ -62,20 +62,21 @@ def solve():
 
     # Get values from parameter boxes
     form_data = request.form.to_dict()
-    T = float(form_data.get('tau', 0.0))
-    P = float(form_data.get('rho', 0.0))
-    Theta_Bar = float(form_data.get('theta_bar', 0.0))
-    norm_type = int(form_data.get('p', 2))
+    print(form_data)
+    tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
+    theta_bar = float(request.form.get('theta_bar', 0)) if request.form.get('theta_bar') else 0.0
+    p = float(request.form.get('p', 0)) if request.form.get('p') else 2 # add something to check for 'fro' or 'inf'
+    rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
 
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, T, Theta_Bar, P, norm_type, solver)
+        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
 
-    return render_template('index.html', result=(optimal_x, optimal_s, optimal_cost))
+    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost))
 
 
 if __name__ == '__main__':

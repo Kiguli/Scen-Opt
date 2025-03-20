@@ -268,9 +268,10 @@
             <h5 class="card-title">Result</h5>
             <div id="result-box" class="border p-3">
                 {% if result %}
-                <p>Optimal x: {{ result[0] }} </p>
-                <p>Optimal s: {{ result[1] }} </p>
-                <p>Optimal cost: {{ result[2] }} </p>
+                <p>Form Data: {{ result[0] }} </p>
+                <p>Optimal x: {{ result[1] }} </p>
+                <p>Optimal s: {{ result[2] }} </p>
+                <p>Optimal cost: {{ result[3] }} </p>
                 {% else %}
                 <p>No result yet.</p>
                 {% endif %}
