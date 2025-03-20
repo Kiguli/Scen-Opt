@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_lp(deltas, A, b, c, T=0, P=0, norm_type=2,solver=None):
+def solve_lp(deltas, A, b, c, T=0.0, x_ref=0.0, P=0.0, norm_type=2,solver=None):
     """
         Solves a linear programming problem with optional robust and regularization constraints.
 
@@ -11,6 +11,7 @@ def solve_lp(deltas, A, b, c, T=0, P=0, norm_type=2,solver=None):
         b (function): Function that returns the right-hand side vector for the constraints given a delta.
         c (numpy.ndarray): Coefficient vector for the objective function.
         T (float): Regularization parameter for the norm term in the objective function.
+        x_ref (float): Regularization parameter for the regularization term in the objective to stay near some point.
         P (float): Penalty parameter for the slack variables in the objective function.
         norm_type (int, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
         solver (str, optional): The solver to use for the optimization problem. Default is None.
@@ -38,7 +39,7 @@ def solve_lp(deltas, A, b, c, T=0, P=0, norm_type=2,solver=None):
         constraints.append(A(deltas[i]) @ x + b(deltas[i]) <= s)  # Relaxed robust constraints
 
     # Objective Function
-    objective = cp.Minimize(c.T @ x + T * cp.norm(x, norm_type) + P * cp.sum(s))
+    objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)

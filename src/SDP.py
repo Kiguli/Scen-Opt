@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_sdp(deltas, A, b, c, T, P, norm_type=2,solver=None):
+def solve_sdp(deltas, A, b, c, T=0.0, x_ref=0.0, P=0.0, norm_type=2,solver=None):
     """
         Solves a linear programming problem with optional robust and regularization constraints.
 
@@ -38,7 +38,7 @@ def solve_sdp(deltas, A, b, c, T, P, norm_type=2,solver=None):
         constraints.append(A(deltas[i]) @ x + b(deltas[i]) <= s)  # Relaxed robust constraints
 
     # Objective Function
-    objective = cp.Minimize(c.T @ x + T * cp.norm(x, norm_type) + P * cp.sum(s))
+    objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
