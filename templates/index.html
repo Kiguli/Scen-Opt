@@ -297,9 +297,11 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <form action="/upload" method="post" enctype="multipart/form-data">
+                    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
                         <h5 class="card-title">Upload File</h5>
-                        <button type="submit" class="btn btn-primary">Upload</button>
+                        <button type="button" id="upload-button" class="btn btn-primary" onclick="handleUpload()">
+                            Upload
+                        </button>
                         <input type="file" name="file" id="file" class="form-control-file">
                     </form>
                 </div>
@@ -424,22 +426,89 @@
     }
 </script>
 <script>
+    function saveFormValues(tab) {
+        const formElements = document.querySelectorAll(`#${tab}-form input, #${tab}-form select`);
+        formElements.forEach(element => {
+            localStorage.setItem(`${element.id}`, element.value);
+        });
+    }
+
+    function loadFormValues() {
+        const formElements = document.querySelectorAll('input, select');
+        formElements.forEach(element => {
+            const value = localStorage.getItem(element.id);
+            if (value !== null) {
+                element.value = value;
+            }
+        });
+    }
+
+    function synchronizeFormValues() {
+        const formElements = document.querySelectorAll('input, select');
+        formElements.forEach(element => {
+            element.addEventListener('change', () => {
+                const value = element.value;
+                const elementsToUpdate = document.querySelectorAll(`#${element.id}`);
+                elementsToUpdate.forEach(el => {
+                    el.value = value;
+                    localStorage.setItem(el.id, value);
+                });
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         updateLatexText('lp');
         updateLatexText('qp');
         updateLatexText('sdp');
 
+        // Load form values for all tabs
+        loadFormValues();
+
         // Add event listeners for tab switching
         document.getElementById('lp-tab').addEventListener('shown.bs.tab', function () {
+            saveFormValues('qp');
+            saveFormValues('sdp');
+            loadFormValues();
             updateLatexText('lp');
         });
         document.getElementById('qp-tab').addEventListener('shown.bs.tab', function () {
+            saveFormValues('lp');
+            saveFormValues('sdp');
+            loadFormValues();
             updateLatexText('qp');
         });
         document.getElementById('sdp-tab').addEventListener('shown.bs.tab', function () {
+            saveFormValues('lp');
+            saveFormValues('qp');
+            loadFormValues();
             updateLatexText('sdp');
         });
+
+        // Synchronize form values across all tabs
+        synchronizeFormValues();
     });
+</script>
+<script>
+    function handleUpload() {
+        const form = document.getElementById('upload-form');
+        const button = document.getElementById('upload-button');
+        const formData = new FormData(form);
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                button.textContent = 'Done!';
+            } else {
+                alert('Upload failed.');
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            alert('Upload failed.');
+        });
+    }
 </script>
 </body>
 </html>
