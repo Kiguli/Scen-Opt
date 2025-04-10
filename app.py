@@ -1,11 +1,12 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session,jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import numpy as np
 from werkzeug.utils import secure_filename
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
-from src.Miscellaneous import load_file,get_solvers
+from src.Miscellaneous import load_file, get_solvers
+import ast
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -20,7 +21,7 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     solvers = get_solvers()
-    return render_template('index.html',solvers=solvers)
+    return render_template('index.html', solvers=solvers)
 
 
 @app.route('/upload', methods=['POST'])
@@ -32,7 +33,7 @@ def upload_file():
         return redirect(request.url)
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename)) #TODO: don't save locally
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # TODO: don't save locally
         session['uploaded_file'] = filename
         return redirect(url_for('index'))
     return redirect(request.url)
@@ -51,31 +52,53 @@ def solve():
     else:
         return jsonify({'error': 'No file uploaded'}), 400
 
-    def A(deltas: np.ndarray):
-        return np.array([[deltas[0], deltas[1]]])
+    def create_A(array_str: str):
+        # Convert the string into a Python object
+        array_literal = ast.literal_eval(array_str)  # safer than eval
 
-    def b(deltas: np.ndarray):
-        return np.array([[deltas[2]]])
+        # Define the function dynamically
+        def A(deltas: np.ndarray):
+            return np.array(array_literal)
 
-    c = np.array([-5, -3])
+        return A
+
+    def create_b(array_str: str):
+        # Convert the string into a Python object
+        array_literal = ast.literal_eval(array_str)  # safer than eval
+
+        # Define the function dynamically
+        def b(deltas: np.ndarray):
+            return np.array(array_literal)
+
+        return b
+
+    # def A(deltas: np.ndarray):
+    # return np.array([[deltas[0], deltas[1]]])
+
+    # def b(deltas: np.ndarray):
+    # return np.array([[deltas[2]]])
+
+    # c = np.array([-5, -3])
 
     # Get values from parameter boxes
     form_data = request.form.to_dict()
     print(form_data)
+
+    c = np.array([float(x) for x in request.form.get('c', '').split(',')])
     tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
     theta_bar = float(request.form.get('theta_bar', 0)) if request.form.get('theta_bar') else 0.0
-    p = float(request.form.get('p', 0)) if request.form.get('p') else 2 # add something to check for 'fro' or 'inf'
+    p = float(request.form.get('p', 0)) if request.form.get('p') else 2  # add something to check for 'fro' or 'inf'
     rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
 
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, create_A(request.form.get('A')), create_b(request.form.get('b')), c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
         optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
 
-    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost), solvers = get_solvers())
+    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost), solvers=get_solvers())
 
 
 if __name__ == '__main__':
