@@ -1,0 +1,51 @@
+.matrix-row {
+    margin-bottom: 10px; /* Add spacing between rows */
+}
+
+#matrixGrid {
+    display: flex;
+    flex-direction: column; /* Ensure rows are stacked vertically */
+    gap: 10px; /* Space between rows */
+}
+
+.result-container {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.result-container h3 {
+    text-align: center;
+    color: #333;
+}
+
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.result-table th, .result-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.result-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.result-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.result-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.result-table td strong {
+    color: #007bff;
+}

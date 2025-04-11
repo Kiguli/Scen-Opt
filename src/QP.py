@@ -24,7 +24,7 @@ def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=
             - cost (float): Optimal value of the objective function.
         """
     # Check Q is positive semi-definite and symmetric
-    print(np.linalg.eigvals(Q))
+    #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q==Q.T).all(), "Q needs to be symmetric"
 

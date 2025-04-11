@@ -21,7 +21,8 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     solvers = get_solvers()
-    return render_template('index.html', solvers=solvers)
+    active_tab = request.args.get('active_tab', 'lp-tab')  # Default to 'lp-tab' if not provided
+    return render_template('index.html', solvers=solvers, active_tab=active_tab)
 
 
 @app.route('/upload', methods=['POST'])
@@ -47,12 +48,12 @@ def solve():
     # Load scenarios from the uploaded file
     filename = session.get('uploaded_file')
     if filename:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) #TODO: save these in cache rather than in folder
         scenarios = load_file(file_path)
     else:
         return jsonify({'error': 'No file uploaded'}), 400
 
-    #TODO: read text in and save as a function
+    # creates a matrix function for A(delta) and b(delta)
     def generate_matrix_function(expr_matrix_str):
         # Convert string to list of lists
         expr_matrix = ast.literal_eval(expr_matrix_str)
@@ -65,6 +66,17 @@ def solve():
             ])
 
         return matrix_function
+
+    # creates a matrix from the values of Q
+    def generate_matrix(expr_matrix_str):
+        # Convert string to list of lists
+        expr_matrix = ast.literal_eval(expr_matrix_str)
+
+        # Evaluate each expression in the matrix and return as a numpy array
+        return np.array([
+            [eval(expr, {"math": __import__('math')}) for expr in row]
+            for row in expr_matrix
+        ])
 
     A = generate_matrix_function(request.form.get('A'))
     b = generate_matrix_function(request.form.get('b'))
@@ -83,15 +95,21 @@ def solve():
     if active_tab == 'lp-tab':
         optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
-        pass
-        #TODO: need to store Q matrix from webpage
-        #Q = generate_matrix_function(request.form.get('Q'))
-        #optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, Q, tau, theta_bar, rho, p, solver)
+        Q = generate_matrix(request.form.get('Q'))
+        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, Q, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
-    return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost), solvers=get_solvers())
+    #TODO: deal with errors like NoneType optimal_x
 
+    result = {
+        "form_data": form_data,
+        "optimal_x": optimal_x.tolist(),  # Example result
+        "optimal_s": optimal_s.tolist(),
+        "optimal_cost": optimal_cost,
+    }
+
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,6 +1,5 @@
 import ast  # Safer than eval for parsing
 
-
 def generate_matrix_function(expr_matrix_str):
     # Convert string to list of lists
     expr_matrix = ast.literal_eval(expr_matrix_str)
@@ -13,7 +12,6 @@ def generate_matrix_function(expr_matrix_str):
         ]
 
     return A
-
 
 # Your example string:
 s = '[["delta[0]", "delta[1]"], ["0", "0"]]'
