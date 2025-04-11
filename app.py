@@ -52,33 +52,22 @@ def solve():
     else:
         return jsonify({'error': 'No file uploaded'}), 400
 
-    def create_A(array_str: str):
-        # Convert the string into a Python object
-        array_literal = ast.literal_eval(array_str)  # safer than eval
+    #TODO: read text in and save as a function
+    def generate_matrix_function(expr_matrix_str):
+        # Convert string to list of lists
+        expr_matrix = ast.literal_eval(expr_matrix_str)
 
-        # Define the function dynamically
-        def A(deltas: np.ndarray):
-            return np.array(array_literal)
+        def matrix_function(delta):
+            # Evaluate each expression in the matrix
+            return np.array([
+                [eval(expr, {"delta": delta, "math": __import__('math')}) for expr in row]
+                for row in expr_matrix
+            ])
 
-        return A
+        return matrix_function
 
-    def create_b(array_str: str):
-        # Convert the string into a Python object
-        array_literal = ast.literal_eval(array_str)  # safer than eval
-
-        # Define the function dynamically
-        def b(deltas: np.ndarray):
-            return np.array(array_literal)
-
-        return b
-
-    # def A(deltas: np.ndarray):
-    # return np.array([[deltas[0], deltas[1]]])
-
-    # def b(deltas: np.ndarray):
-    # return np.array([[deltas[2]]])
-
-    # c = np.array([-5, -3])
+    A = generate_matrix_function(request.form.get('A'))
+    b = generate_matrix_function(request.form.get('b'))
 
     # Get values from parameter boxes
     form_data = request.form.to_dict()
@@ -86,17 +75,20 @@ def solve():
 
     c = np.array([float(x) for x in request.form.get('c', '').split(',')])
     tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
-    theta_bar = float(request.form.get('theta_bar', 0)) if request.form.get('theta_bar') else 0.0
-    p = float(request.form.get('p', 0)) if request.form.get('p') else 2  # add something to check for 'fro' or 'inf'
+    theta_bar = float(request.form.get('theta_bar', 0)) if request.form.get('theta_bar') else 0.0 #TODO: theta_bar is vector?
+    p = float(request.form.get('p', 0)) if request.form.get('p') else 2  #TODO: add something to check for 'fro' or 'inf', and any number
     rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
 
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, create_A(request.form.get('A')), create_b(request.form.get('b')), c, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
+        pass
+        #TODO: need to store Q matrix from webpage
+        #Q = generate_matrix_function(request.form.get('Q'))
+        #optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, Q, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
     return render_template('index.html', result=(form_data, optimal_x, optimal_s, optimal_cost), solvers=get_solvers())
 
