@@ -75,7 +75,7 @@ def solve():
 
     c = np.array([float(x) for x in request.form.get('c', '').split(',')])
     tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
-    theta_bar = float(request.form.get('theta_bar', 0)) if request.form.get('theta_bar') else 0.0 #TODO: theta_bar is vector?
+    theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get('theta_bar') else 0.0
     p = float(request.form.get('p', 0)) if request.form.get('p') else 2  #TODO: add something to check for 'fro' or 'inf', and any number
     rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
