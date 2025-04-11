@@ -49,3 +49,7 @@
 .result-table td strong {
     color: #007bff;
 }
+
+.result-table td i {
+    color: #ff4466;
+}

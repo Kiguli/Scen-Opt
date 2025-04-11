@@ -101,12 +101,14 @@ def solve():
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
     #TODO: deal with errors like NoneType optimal_x
+    e = "None"
 
     result = {
         "form_data": form_data,
-        "optimal_x": optimal_x.tolist(),  # Example result
+        "optimal_x": optimal_x.tolist(),
         "optimal_s": optimal_s.tolist(),
         "optimal_cost": optimal_cost,
+        "errorcode": e, #TODO make options for this
     }
 
     return jsonify(result)

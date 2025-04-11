@@ -63,7 +63,7 @@
                                 <div class="form-group">
                                     <label for="lp-c">\(c\):</label>
                                     <input type="text" id="lp-c" class="form-control" name="c"
-                                          data-shared="true" value="{{ request.form.c }}">
+                                           data-shared="true" value="{{ request.form.c }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -72,7 +72,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('lp','A')">Edit \(A\)
                                     </button>
-                                    <input type="hidden" id="lp-A" name="A" data-shared="true" value="{{ request.form.A }}">
+                                    <input type="hidden" id="lp-A" name="A" data-shared="true"
+                                           value="{{ request.form.A }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -81,7 +82,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('lp','b')">Edit \(b\)
                                     </button>
-                                    <input type="hidden" id="lp-b" name="b"  data-shared="true" value="{{ request.form.b }}">
+                                    <input type="hidden" id="lp-b" name="b" data-shared="true"
+                                           value="{{ request.form.b }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -94,7 +96,8 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-theta-bar-group" style="display: none;">
                                     <label for="lp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar" data-shared="true"
+                                    <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar"
+                                           data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
                             </div>
@@ -163,7 +166,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp', 'A')">Edit \(A\)
                                     </button>
-                                    <input type="hidden" id="qp-A" name="A" data-shared="true" value="{{ request.form.A }}">
+                                    <input type="hidden" id="qp-A" name="A" data-shared="true"
+                                           value="{{ request.form.A }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -172,7 +176,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp', 'b')">Edit \(b\)
                                     </button>
-                                    <input type="hidden" id="qp-b" name="b" data-shared="true" value="{{ request.form.b }}">
+                                    <input type="hidden" id="qp-b" name="b" data-shared="true"
+                                           value="{{ request.form.b }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -181,7 +186,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp', 'Q')">Edit \(Q\)
                                     </button>
-                                    <input type="hidden" id="qp-Q" name="Q" data-shared="true" value="{{ request.form.Q }}">
+                                    <input type="hidden" id="qp-Q" name="Q" data-shared="true"
+                                           value="{{ request.form.Q }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -194,7 +200,8 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-theta-bar-group" style="display: none;">
                                     <label for="qp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar" data-shared="true"
+                                    <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar"
+                                           data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
                             </div>
@@ -252,19 +259,23 @@
                         </div>
                         <div class="form-group">
                             <label for="sdp-c">\(c\):</label>
-                            <input type="text" id="sdp-c" class="form-control" name="c" data-shared="true" value="{{ request.form.c }}">
+                            <input type="text" id="sdp-c" class="form-control" name="c" data-shared="true"
+                                   value="{{ request.form.c }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-A">\(A\):</label>
-                            <input type="text" id="sdp-A" class="form-control" name="A" data-shared="true" value="{{ request.form.A }}">
+                            <input type="text" id="sdp-A" class="form-control" name="A" data-shared="true"
+                                   value="{{ request.form.A }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-b">\(b\):</label>
-                            <input type="text" id="sdp-b" class="form-control" name="b" data-shared="true" value="{{ request.form.b }}">
+                            <input type="text" id="sdp-b" class="form-control" name="b" data-shared="true"
+                                   value="{{ request.form.b }}">
                         </div>
                         <div class="form-group">
                             <label for="sdp-Q">\(Q\):</label>
-                            <input type="text" id="sdp-Q" class="form-control" name="Q" data-shared="true" value="{{ request.form.Q }}">
+                            <input type="text" id="sdp-Q" class="form-control" name="Q" data-shared="true"
+                                   value="{{ request.form.Q }}">
                         </div>
                         <div class="form-group" id="sdp-tau-group" style="display: none;">
                             <label for="sdp-tau">\(\tau\):</label>
@@ -273,12 +284,14 @@
                         </div>
                         <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
                             <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
-                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar" data-shared="true"
+                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar"
+                                   data-shared="true"
                                    value="{{ request.form.theta_bar }}">
                         </div>
                         <div class="form-group" id="sdp-p-group" style="display: none;">
                             <label for="sdp-p">\(p\):</label>
-                            <input type="text" id="sdp-p" class="form-control" name="p" data-shared="true" value="{{ request.form.p }}">
+                            <input type="text" id="sdp-p" class="form-control" name="p" data-shared="true"
+                                   value="{{ request.form.p }}">
                         </div>
                         <div class="form-group" id="sdp-rho-group" style="display: none;">
                             <label for="sdp-rho">\(\rho\):</label>
@@ -497,24 +510,30 @@
                             <th>Value</th>
                         </tr>
                         <tr>
-                            <td>Form Data</td>
-                            <td>${JSON.stringify(data.form_data)}</td>
+                            <td><strong>Optimal \\( \\theta \\)</strong></td>
+                            <td><strong>${data.optimal_x.join(', ')}</strong></td>
                         </tr>
                         <tr>
-                            <td>Optimal x</td>
-                            <td>${data.optimal_x.join(', ')}</td>
-                        </tr>
-                        <tr>
-                            <td>Optimal s</td>
-                            <td>${data.optimal_s.join(', ')}</td>
+                            <td><strong>Optimal  \\( \\zeta \\)</strong></td>
+                            <td><strong>${data.optimal_s.join(', ')}</strong></td>
                         </tr>
                         <tr>
                             <td><strong>Optimal Cost</strong></td>
                             <td><strong>${data.optimal_cost}</strong></td>
                         </tr>
+                        <tr>
+                            <td><i>Error</i></td>
+                            <td><i>${data.errorcode}</i></td>
+                        </tr>
+                        <tr>
+                            <td>Form Data</td>
+                            <td>${JSON.stringify(data.form_data)}</td>
+                        </tr>
                     </table>
                 </div>
             `;
+                // Trigger MathJax to render
+                MathJax.typesetPromise();
             })
             .catch(error => console.error('Error:', error));
     }
