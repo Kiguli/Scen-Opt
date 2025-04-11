@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=0.0, P=0.0, norm_type=2,solver=None):
+def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
     """
         Solves a quadratic programming problem with optional robust and regularization constraints.
 
@@ -12,7 +12,7 @@ def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=0.0, P=0.0, norm_type=2,solver=Non
         c (numpy.ndarray): Coefficient vector for the objective function.
         Q (numpy.ndarray): Quadratic cost matrix for the objective function.
         T (float): Regularization parameter for the norm term in the objective function.
-        x_ref (float): Reference point for the norm term in the objective function.
+        x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
         P (float): Penalty parameter for the slack variables in the objective function.
         norm_type (int or str, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
         solver (str, optional): The solver to use for the optimization problem. Default is None.
