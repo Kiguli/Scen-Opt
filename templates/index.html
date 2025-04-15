@@ -562,12 +562,12 @@
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
@@ -588,12 +588,12 @@
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
                 latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
                 latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
