@@ -68,9 +68,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="lp-A">\(A\):</label>
+                                    <label for="lp-A">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('lp','A')">Edit \(A\)
+                                            onclick="openMatrixModal('lp','A')">Edit \(A(\delta)\)
                                     </button>
                                     <input type="hidden" id="lp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
@@ -78,9 +78,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="lp-b">\(b\):</label>
+                                    <label for="lp-b">\(b(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('lp','b')">Edit \(b\)
+                                            onclick="openMatrixModal('lp','b')">Edit \(b(\delta)\)
                                     </button>
                                     <input type="hidden" id="lp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
@@ -162,9 +162,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="qp-A">\(A\):</label>
+                                    <label for="qp-A">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp', 'A')">Edit \(A\)
+                                            onclick="openMatrixModal('qp', 'A')">Edit \(A(\delta)\)
                                     </button>
                                     <input type="hidden" id="qp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
@@ -172,9 +172,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="qp-b">\(b\):</label>
+                                    <label for="qp-b">\(b(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp', 'b')">Edit \(b\)
+                                            onclick="openMatrixModal('qp', 'b')">Edit \(b(\delta)\)
                                     </button>
                                     <input type="hidden" id="qp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
@@ -263,12 +263,12 @@
                                    value="{{ request.form.c }}">
                         </div>
                         <div class="form-group">
-                            <label for="sdp-A">\(A\):</label>
+                            <label for="sdp-A">\(A(\delta)\):</label>
                             <input type="text" id="sdp-A" class="form-control" name="A" data-shared="true"
                                    value="{{ request.form.A }}">
                         </div>
                         <div class="form-group">
-                            <label for="sdp-b">\(b\):</label>
+                            <label for="sdp-b">\(b(\delta)\):</label>
                             <input type="text" id="sdp-b" class="form-control" name="b" data-shared="true"
                                    value="{{ request.form.b }}">
                         </div>
