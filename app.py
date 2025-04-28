@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
+from src.Risk import quantify_risk
 from src.Miscellaneous import load_file, get_solvers
 import ast
 
@@ -100,6 +101,7 @@ def solve():
     elif active_tab == 'sdp-tab':
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
+    risk = quantify_risk() #TODO: write risk function
     #TODO: deal with errors like NoneType optimal_x
     e = "None"
 
@@ -108,6 +110,7 @@ def solve():
         "optimal_x": optimal_x.tolist(),
         "optimal_s": optimal_s.tolist(),
         "optimal_cost": optimal_cost,
+        "risk": risk,
         "errorcode": e, #TODO make options for this
     }
 
