@@ -62,8 +62,11 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="lp-c">\(c\):</label>
-                                    <input type="text" id="lp-c" class="form-control" name="c"
-                                           data-shared="true" value="{{ request.form.c }}">
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('lp','c')">Edit c
+                                    </button>
+                                    <input type="hidden" id="lp-c" name="c" data-shared="true"
+                                           value="{{ request.form.c }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -157,7 +160,10 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="qp-c">\(c\):</label>
-                                    <input type="text" id="qp-c" class="form-control" name="c" data-shared="true"
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('qp','c')">Edit c
+                                    </button>
+                                    <input type="hidden" id="qp-c" name="c" data-shared="true"
                                            value="{{ request.form.c }}">
                                 </div>
                             </div>
@@ -375,7 +381,6 @@
                            min="1" value="2">
                     <button class="btn btn-primary ml-3" onclick="updateMatrixGrid()">Update Grid</button>
                     <p></p>
-                    <p><b>Top tip:</b> <i>use delta[0] for \(\delta_1\) as Python uses 0-based indexing. The matrix can accept any SymPy expressions, e.g. with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.</i> </p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -403,19 +408,57 @@
         // Set default dimensions based on the matrix
         if (matrix === 'A') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
         } else if (matrix === 'b') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
+        } else if (matrix === 'c') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
         } else if (matrix === 'Q') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
+
         }
+    }
 
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta_i)\\) (${tab.toUpperCase()})`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
+    function getDynamicTip(matrix) {
+        if (matrix === 'A') {
+            return "Use delta[0] for \\(\\delta_1\\). The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'b') {
+            return "Use delta[0] for \\(\\delta_1\\). The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'Q') {
+            return "<u>Ensure Q is a symmetric and positive semi-definite matrix.</u> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'c') {
+            return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        }
+        return "Provide valid input for the selected matrix.";
     }
 
     function updateMatrixGrid(values = null) {
