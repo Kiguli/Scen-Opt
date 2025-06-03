@@ -53,10 +53,10 @@
                         <div id="lp-latex" class="form-group">
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{\theta} c^\top\theta\)</p>
-                                <p>such that</p>
-                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0\), forall \(\delta_i\) where \(i = 0,1,
-                                    \ldots,
-                                    N\)</p></div>
+                                <p>subject to</p>
+                                <p>\(A\theta+b \leq 0\)</p>
+                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-2">
@@ -147,8 +147,9 @@
                         <div id="qp-latex" class="form-group">
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
-                                <p>such that</p>
-                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0,\) where \(i = 0,1, \ldots, N\)</p>
+                                <p>subject to</p>
+                                <p>\(A\theta+b \leq 0\)</p>
+                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
                                 <p>\(Q\succeq 0\)</p>
                             </div>
                         </div>
@@ -252,8 +253,9 @@
                         <div id="sdp-latex" class="form-group">
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
-                                <p>such that</p>
-                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0,\) where \(i = 0,1, \ldots, N\)</p>
+                                <p>subject to</p>
+                                <p>\(A\theta+b \leq 0\)</p>
+                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
                                 <p>\(Q\succeq 0\)</p>
                             </div>
                         </div>
@@ -372,7 +374,8 @@
                     <input type="number" id="matrixColumns" class="form-control d-inline-block" style="width: 80px;"
                            min="1" value="2">
                     <button class="btn btn-primary ml-3" onclick="updateMatrixGrid()">Update Grid</button>
-
+                    <p></p>
+                    <p><b>Top tip:</b> <i>use delta[0] for \(\delta_1\) as Python uses 0-based indexing. The matrix can accept any SymPy expressions, e.g. with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.</i> </p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -410,7 +413,8 @@
         document.getElementById('matrixColumns').value = matrixValues[0].length;
 
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta_i)\\) (${tab.toUpperCase()})`;
+        MathJax.typesetPromise();
         $('#matrixModal').modal('show');
     }
 
@@ -601,6 +605,7 @@
         let latexText1 = '';
         let latexText2 = '';
         let latexText3 = '';
+        let latexText4 = '';
 
         // Show/Hide relevant input fields
         document.getElementById(`${tab}-tau-group`).style.display = 'none';
@@ -611,22 +616,26 @@
         if (tab === 'lp') {
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText4 = 'A\\theta+b \\leq 0';
             } else if (option === 'robust-regularization') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
-                latexText3 = '\\zeta_i \\geq 0';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
-                latexText3 = '\\zeta_i \\geq 0';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
@@ -635,24 +644,28 @@
         } else if (tab === 'qp' || tab === 'sdp') {
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = 'Q\\succeq  0';
+                latexText4 = 'A\\theta+b \\leq 0';
             } else if (option === 'robust-regularization') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0,\\) where \\(i = 0,1, \\ldots, N';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = 'Q\\succeq  0';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0,~\\zeta_i \\geq 0,';
+                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=0}^{N} \\zeta_i';
-                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i,\\) where \\(i = 0,1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0, \\zeta_i \\geq 0';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = 'Q\\succeq  0,~\\zeta_i \\geq 0';
+                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
@@ -660,7 +673,7 @@
             }
         }
 
-        document.getElementById(`${tab}-latex`).innerHTML = `<div class="text-center"><p>\\(${latexText1}\\)</p><p>such that:</p><p>\\(${latexText2}\\)</p><p>\\(${latexText3}\\)</p></div>`;
+        document.getElementById(`${tab}-latex`).innerHTML = `<div class="text-center"><p>\\(${latexText1}\\)</p><p>subject to \\(${latexText3}\\)</p><p>\\(${latexText4}\\)</p><p>\\(${latexText2}\\)</p></div>`;
         MathJax.typeset();
     }
 
