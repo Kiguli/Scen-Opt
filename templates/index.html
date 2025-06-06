@@ -63,7 +63,7 @@
                                 <div class="form-group">
                                     <label for="lp-c">\(c\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('lp','c')">Edit c
+                                            onclick="openMatrixModal('lp','c')">Edit \(c\)
                                     </button>
                                     <input type="hidden" id="lp-c" name="c" data-shared="true"
                                            value="{{ request.form.c }}">
@@ -71,9 +71,29 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="lp-A">\(A(\delta)\):</label>
+                                    <label for="lp-A_d">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('lp','A')">Edit \(A(\delta)\)
+                                            onclick="openMatrixModal('lp','A_d')">Edit \(A(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="lp-A_d" name="A_d" data-shared="true"
+                                           value="{{ request.form.A_d }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="lp-b_d">\(b(\delta)\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('lp','b_d')">Edit \(b(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="lp-b_d" name="b_d" data-shared="true"
+                                           value="{{ request.form.b_d }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="lp-A">\(A\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('lp','A')">Edit \(A\)
                                     </button>
                                     <input type="hidden" id="lp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
@@ -81,9 +101,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="lp-b">\(b(\delta)\):</label>
+                                    <label for="lp-b">\(b\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('lp','b')">Edit \(b(\delta)\)
+                                            onclick="openMatrixModal('lp','b')">Edit \(b\)
                                     </button>
                                     <input type="hidden" id="lp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
@@ -161,7 +181,7 @@
                                 <div class="form-group">
                                     <label for="qp-c">\(c\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp','c')">Edit c
+                                            onclick="openMatrixModal('qp','c')">Edit \(c\)
                                     </button>
                                     <input type="hidden" id="qp-c" name="c" data-shared="true"
                                            value="{{ request.form.c }}">
@@ -169,9 +189,29 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="qp-A">\(A(\delta)\):</label>
+                                    <label for="qp-A_d">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp', 'A')">Edit \(A(\delta)\)
+                                            onclick="openMatrixModal('qp', 'A_d')">Edit \(A(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="qp-A_d" name="A_d" data-shared="true"
+                                           value="{{ request.form.A_d }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="qp-b_d">\(b(\delta)\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('qp', 'b_d')">Edit \(b(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="qp-b_d" name="b_d" data-shared="true"
+                                           value="{{ request.form.b_d }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="qp-A">\(A\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('qp', 'A')">Edit \(A\)
                                     </button>
                                     <input type="hidden" id="qp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
@@ -179,9 +219,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="qp-b">\(b(\delta)\):</label>
+                                    <label for="qp-b">\(b\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp', 'b')">Edit \(b(\delta)\)
+                                            onclick="openMatrixModal('qp', 'b')">Edit \(b\)
                                     </button>
                                     <input type="hidden" id="qp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
@@ -406,7 +446,7 @@
         let matrixValues;
 
         // Set default dimensions based on the matrix
-        if (matrix === 'A') {
+        if (matrix === 'A_d') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
@@ -415,7 +455,7 @@
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
-        } else if (matrix === 'b') {
+        } else if (matrix === 'b_d') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
@@ -446,16 +486,39 @@
             $('#matrixModal').modal('show');
 
         }
+        else if (matrix === 'A') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            $('#matrixModal').modal('show');
+        }
+        else if (matrix === 'b') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            $('#matrixModal').modal('show');
+        }
     }
 
     function getDynamicTip(matrix) {
-        if (matrix === 'A') {
+        if (matrix === 'A_d') {
             return "Use delta[0] for \\(\\delta_1\\). The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-        } else if (matrix === 'b') {
+        } else if (matrix === 'b_d') {
             return "Use delta[0] for \\(\\delta_1\\). The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'Q') {
             return "<u>Ensure Q is a symmetric and positive semi-definite matrix.</u> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'c') {
+            return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        }else if (matrix === 'A') {
+            return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        }else if (matrix === 'b') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";

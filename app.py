@@ -79,27 +79,32 @@ def solve():
             for row in expr_matrix
         ])
 
+    A_d = generate_matrix_function(request.form.get('A_d'))
+    b_d = generate_matrix_function(request.form.get('b_d'))
     A = generate_matrix_function(request.form.get('A'))
     b = generate_matrix_function(request.form.get('b'))
+    c = generate_matrix_function(request.form.get('c'))
+
 
     # Get values from parameter boxes
     form_data = request.form.to_dict()
     print(form_data)
 
-    c = np.array([float(x) for x in request.form.get('c', '').split(',')])
+
     tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
     theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get('theta_bar') else 0.0
     p = float(request.form.get('p', 0)) if request.form.get('p') else 2  #TODO: add something to check for 'fro' or 'inf', and any number
     rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
 
+    #TODO: add A and b separately so they dont get pushed through the for loop
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A, b, c, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A_d, b_d, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
         Q = generate_matrix(request.form.get('Q'))
-        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A, b, c, Q, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A_d, b_d, c, Q, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
+        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
     risk = quantify_risk() #TODO: write risk function
     conf = quantify_conf() #TODO: write risk function
