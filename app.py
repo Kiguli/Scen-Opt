@@ -98,12 +98,12 @@ def solve():
 
     #TODO: add A and b separately so they dont get pushed through the for loop
     if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_lp(scenarios, A_d, b_d, c, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_sh, optimal_cost = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
     elif active_tab == 'qp-tab':
         Q = generate_matrix(request.form.get('Q'))
-        optimal_x, optimal_s, optimal_cost = solve_qp(scenarios, A_d, b_d, c, Q, tau, theta_bar, rho, p, solver)
+        optimal_x, optimal_s, optimal_sh, optimal_cost = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
     elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
+        optimal_x, optimal_s, optimal_sh, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
     risk = quantify_risk() #TODO: write risk function
     #conf = quantify_conf() #TODO: write risk function
@@ -114,6 +114,7 @@ def solve():
         "form_data": form_data,
         "optimal_x": optimal_x.tolist(),
         "optimal_s": optimal_s.tolist(),
+        "optimal_sh": optimal_sh.tolist(),
         "optimal_cost": optimal_cost,
         "risk": risk,
         "conf": conf,

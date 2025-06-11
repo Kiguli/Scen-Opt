@@ -1,14 +1,16 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
+def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
     """
         Solves a quadratic programming problem with optional robust and regularization constraints.
 
         Parameters:
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
-        A (function): Function that returns the coefficient matrix for the constraints given a delta.
-        b (function): Function that returns the right-hand side vector for the constraints given a delta.
+        A_d (function): Function that returns the coefficient matrix for the constraints given a delta.
+        b_d (function): Function that returns the right-hand side vector for the constraints given a delta.
+        A (numpy.ndarray): coefficient matrix for the hard constraints.
+        b (numpy.ndarray): right-hand side vector for the hard constraints.
         c (numpy.ndarray): Coefficient vector for the objective function.
         Q (numpy.ndarray): Quadratic cost matrix for the objective function.
         T (float): Regularization parameter for the norm term in the objective function.
@@ -21,6 +23,7 @@ def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=
         tuple: A tuple containing:
             - x (numpy.ndarray): Optimal solution vector.
             - s (numpy.ndarray): Optimal slack variables vector.
+            - s_h (numpy.ndarray): Optimal slack variables vector for hard constraints.
             - cost (float): Optimal value of the objective function.
         """
     # Check Q is positive semi-definite and symmetric
@@ -42,10 +45,17 @@ def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=
 
     constraints = []
     for i in range(size_of_deltas):
-        constraints.append(A(deltas[i]) @ x + b(deltas[i]) <= s)  # Relaxed robust constraints
+        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Relaxed robust constraints
+
+    m = A.shape[0]  # Number of constraints
+    if P != 0:
+        s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
+    else:
+        s_h = np.zeros((m, 1))
+    constraints.append(A @ x + b <= s_h)  # hard constraints
 
     # Objective Function
-    objective = cp.Minimize(cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
+    objective = cp.Minimize(cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P * cp.sum(s_h))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -55,7 +65,8 @@ def solve_qp(deltas, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=
     x = x.value
     if P != 0:
         s = s.value
+        s_h = s_h.value
     cost = prob.value
 
     # Return results
-    return x, s, cost
+    return x, s, s_h, cost
