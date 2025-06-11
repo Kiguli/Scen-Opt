@@ -48,8 +48,6 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         s_h = np.zeros((m,1))
     constraints.append(A @ x + b <= s_h) # hard constraints
 
-
-
     # Objective Function
     objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P*cp.sum(s_h))
 
