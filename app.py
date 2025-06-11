@@ -81,11 +81,10 @@ def solve():
 
     A_d = generate_matrix_function(request.form.get('A_d'))
     b_d = generate_matrix_function(request.form.get('b_d'))
-    A = generate_matrix_function(request.form.get('A'))
-    b = generate_matrix_function(request.form.get('b'))
-    c = generate_matrix_function(request.form.get('c'))
-
-
+    A = generate_matrix(request.form.get('A'))
+    b = generate_matrix(request.form.get('b'))
+    c = generate_matrix(request.form.get('c'))
+    conf = float(request.form.get('confidence'))
     # Get values from parameter boxes
     form_data = request.form.to_dict()
     print(form_data)
@@ -107,7 +106,7 @@ def solve():
         optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
 
     risk = quantify_risk() #TODO: write risk function
-    conf = quantify_conf() #TODO: write risk function
+    #conf = quantify_conf() #TODO: write risk function
     #TODO: deal with errors like NoneType optimal_x
     e = "None"
 

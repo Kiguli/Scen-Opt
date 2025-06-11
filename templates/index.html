@@ -173,7 +173,6 @@
                                 <p>subject to</p>
                                 <p>\(A\theta+b \leq 0\)</p>
                                 <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
-                                <p>\(Q\succeq 0\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -356,6 +355,9 @@
         <div class="col-md-6">
             <div class="form-group">
                 <form id="solver-form" action="/solve" method="post">
+                    <label for="confidence">Confidence \(\beta\):</label>
+                    <input type="text" id="confidence" class="form-control" name="confidence" data-shared="true"
+                           value="{{ request.form.confidence }}">
                     <label for="solver">Solver:</label>
                     <select class="form-control" id="solver" name="solver">
                         {% for solver in solvers %}
@@ -424,7 +426,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button  class="btn btn-primary ml-3">Upload from File</button>
+                <button class="btn btn-primary ml-3">Upload from File</button>
                 <button type="button" class="btn btn-success" onclick="saveMatrix()">Save</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
@@ -466,7 +468,7 @@
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
         } else if (matrix === 'c') {
-            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0], [0]]; // 1 row, 1 column
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
@@ -485,17 +487,15 @@
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
 
-        }
-        else if (matrix === 'A') {
-            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
+        } else if (matrix === 'A') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 2x2 by default
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             updateMatrixGrid(matrixValues);
             document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
             $('#matrixModal').modal('show');
-        }
-        else if (matrix === 'b') {
+        } else if (matrix === 'b') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
@@ -509,16 +509,16 @@
 
     function getDynamicTip(matrix) {
         if (matrix === 'A_d') {
-            return "Use delta[0] for \\(\\delta_1\\). The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<u>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</u> The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'b_d') {
-            return "Use delta[0] for \\(\\delta_1\\). The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<u>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</u> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'Q') {
             return "<u>Ensure Q is a symmetric and positive semi-definite matrix.</u> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'c') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-        }else if (matrix === 'A') {
+        } else if (matrix === 'A') {
             return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-        }else if (matrix === 'b') {
+        } else if (matrix === 'b') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
@@ -537,7 +537,7 @@
 
             for (let j = 0; j < columns; j++) {
                 const input = document.createElement('input');
-                input.type = 'text';
+                input.type='text';
                 input.className = 'form-control d-inline-block';
                 input.style.width = '120px';
                 input.value = values && values[i] && values[i][j] !== undefined ? values[i][j] : 0;
@@ -751,12 +751,12 @@
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0';
+                latexText3 = '';
                 latexText4 = 'A\\theta+b \\leq 0';
             } else if (option === 'robust-regularization') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0';
+                latexText3 = '';
                 latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
@@ -764,13 +764,13 @@
             } else if (option === 'robust-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0,~\\zeta_i \\geq 0,';
+                latexText3 = '\\zeta_i \\geq 0,';
                 latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
-                latexText3 = 'Q\\succeq  0,~\\zeta_i \\geq 0';
+                latexText3 = '\\zeta_i \\geq 0';
                 latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
