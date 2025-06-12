@@ -46,6 +46,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s_h = np.zeros((m,1))
+
     constraints.append(A @ x + b <= s_h) # hard constraints
 
     # Objective Function
@@ -55,13 +56,46 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     prob = cp.Problem(objective, constraints)
     prob.solve(solver=solver)
 
+    active = []
+    for constraint in constraints:
+        if constraint.dual_value > 0: #TODO: add a tolerance for different solvers
+            print(constraint.dual_value)
+            active.append(constraint)
+
+    prob2 = cp.Problem(objective, active)
+    prob2.solve(solver=solver)
+    for a in active:
+        print(a.dual_value)
+
+    # Assert that the objective values are the same
+    assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
+    print("check objective values are the same:")
+    print(prob.value)
+    print(prob2.value)
+
+    # Assert that the solutions are the same
+    assert np.allclose(prob.variables()[0].value,
+                       prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
+
+    print("check solutions are the same:")
+    print(prob.variables()[0].value)
+    print(prob2.variables()[0].value)
+
+    if P != 0:
+        assert np.allclose(prob.variables()[1].value, prob2.variables()[
+            1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+        print("check solutions are the same:")
+        print(prob.variables()[1].value)
+        print(prob2.variables()[1].value)
+
+
     #Simplify results
     x = x.value
     if P != 0:
         s = s.value
     if P != 0:
-        s_h = s_h.value #TODO: check how this should work...
+        s = s_h.value #TODO: check how this should work...
     cost = prob.value
 
     # Return results
-    return x, s, s_h, cost
+    return x, s, s, cost, active, constraints
