@@ -98,4 +98,4 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     cost = prob.value
 
     # Return results
-    return x, s, s, cost, active, constraints
+    return x, s, s, cost, size_of_deltas, active, constraints
