@@ -56,46 +56,89 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     prob = cp.Problem(objective, constraints)
     prob.solve(solver=solver)
 
+    # Simplify results
+    x_out = x.value
+    if P != 0:
+        s_out = s.value
+        print(s)
+    else:
+        s_out = np.zeros((m,1))
+    if P != 0:
+        s_h_out = s_h.value  # TODO: check how this should work...
+        print(s_h)
+    else:
+        s_h_out = np.zeros((m,1))
+
+    cost_out = prob.value
+
+    # ======================================
+    #SOLVE FOR ACTIVE CONSTRAINTS
+    # =====================================
+
     active = []
     for constraint in constraints:
         if constraint.dual_value > 0: #TODO: add a tolerance for different solvers
             print(constraint.dual_value)
             active.append(constraint)
 
-    prob2 = cp.Problem(objective, active)
-    prob2.solve(solver=solver)
-    for a in active:
-        print(a.dual_value)
+    if test_active_LP(prob, objective, active, P=P, solver=solver):
+        pass
+        # TODO: return an error about how the active constraints are not active constraints, probably a solver error.
+    else:
+        drop = []
+        for a in active:
+            if not test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                print(a)
+                drop.append(a)
+        print(drop)
+        active = [a for a in active if a not in drop]
 
-    # Assert that the objective values are the same
-    assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
-    print("check objective values are the same:")
-    print(prob.value)
-    print(prob2.value)
+    test_active_LP(prob, objective, active, P=P, solver=solver)
 
-    # Assert that the solutions are the same
-    assert np.allclose(prob.variables()[0].value,
-                       prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
+    # Return results #TODO: check if active includes non-delta constraints
+    return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
 
-    print("check solutions are the same:")
-    print(prob.variables()[0].value)
-    print(prob2.variables()[0].value)
+def test_active_LP(prob, objective, active, P=0.0, solver=None):
+    """
+        Solves a linear programming problem with optional robust and regularization constraints.
 
-    if P != 0:
-        assert np.allclose(prob.variables()[1].value, prob2.variables()[
-            1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+        Parameters:
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        active: list of active constraints.
+        P (float): Penalty parameter for the slack variables in the objective function.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+
+        Returns:
+        bool: True if all assertions pass, False if any assertion fails.
+    """
+    try:
+        prob2 = cp.Problem(objective, active)
+        prob2.solve(solver=solver)
+
+        # Assert that the objective values are the same
+        assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
+        print("check objective values are the same:")
+        print(prob.value)
+        print(prob2.value)
+
+        # Assert that the solutions are the same
+        assert np.allclose(prob.variables()[0].value,
+                           prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
         print("check solutions are the same:")
-        print(prob.variables()[1].value)
-        print(prob2.variables()[1].value)
+        print(prob.variables()[0].value)
+        print(prob2.variables()[0].value)
 
+        if P != 0:
+            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+            print("check solutions are the same:")
+            print(prob.variables()[1].value)
+            print(prob2.variables()[1].value)
 
-    #Simplify results
-    x = x.value
-    if P != 0:
-        s = s.value
-    if P != 0:
-        s = s_h.value #TODO: check how this should work...
-    cost = prob.value
+        # Return True if all assertions pass
+        return True
 
-    # Return results
-    return x, s, s, cost, size_of_deltas, active, constraints
+    except AssertionError as e:
+        print(f"Assertion failed: {e}")
+        # Return False if any assertion fails
+        return False

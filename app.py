@@ -107,7 +107,7 @@ def solve():
 
     #TODO: work out support list
     risk = quantify_risk(len(active),N,conf) #TODO: make sure active has a value, seems to give 0,1 only...
-    #conf = quantify_conf() #TODO: write risk function
+    #conf = quantify_conf() #TODO: write confidence function?
     #TODO: deal with errors like NoneType optimal_x
     e = "None"
 
