@@ -1,4 +1,4 @@
-from scipy.special import betainc
+from jax.scipy.special import betainc
 
 def quantify_risk(k,N,beta):
     """
@@ -14,15 +14,22 @@ def quantify_risk(k,N,beta):
     """
     t1 = 0.0
     t2 = k/N
-    #print(t2)
+    threshold = 1e-10
 
-    while (t2 > t1) > 1e-10:
+    #add in a function to check for t2 = 0 or 1.0, to avoid nan values?
+    # if t2 == 0:
+    #     return
+    # elif t2 == 1:
+    #     return
+
+
+    while (t2 - t1) > threshold:
         t = (t1+t2)/2
         left = beta/3*betainc(k+1,N-k,t)+beta/6*betainc(k+1,4*N+1-k,t)
-        #print(left)
+        print("left = ",left)
         right = (1+beta/6/N)*t*N*(betainc(k,N-k+1,t)-betainc(k+1,N-k,t))
-        #print(right)
-        if left > right:
+        print("right= ", right)
+        if left > right: #added threshold
             t1 = t
         else:
             t2 = t
@@ -34,7 +41,7 @@ def quantify_risk(k,N,beta):
     else:
         t1 = k/N
         t2 = 1
-        while (t2 - t1) > 1e-10:
+        while (t2 - t1) > threshold:
             t = (t1 + t2) / 2
             left = (beta / 2 - beta / 6) * betainc(k + 1, N - k,t) + beta / 6 * betainc(k + 1, 4 * N + 1 - k,t)
             #print(left)
@@ -45,7 +52,7 @@ def quantify_risk(k,N,beta):
             else:
                 t1 = t
         epsU = t2 #set upper bound
-
+    print("epsU = ", epsU)
     # Return results
     return epsL, epsU
 
