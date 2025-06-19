@@ -84,14 +84,11 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     active = []
     for constraint in constraints:
-        #print(constraint)
-        #print(constraint.dual_value)
         if constraint.dual_value > 0:  # Check if any dual value is positive
             active.append(constraint)
 
     if test_active_LP(prob, objective, active, P=P, solver=solver):
-        pass
-        # TODO: return an error about how the active constraints are not active constraints, probably a solver error.
+        raise ValueError("Active constraints are not valid. This might be a solver error.")
     else:
         drop = []
         for a in active:
@@ -127,21 +124,21 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
         # Assert that the objective values are the same
         assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
         print("check objective values are the same:")
-        print(prob.value)
-        print(prob2.value)
+        #print(prob.value)
+        #print(prob2.value)
 
         # Assert that the solutions are the same
         assert np.allclose(prob.variables()[0].value,
                            prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
         print("check solutions are the same:")
-        print(prob.variables()[0].value)
-        print(prob2.variables()[0].value)
+        #print(prob.variables()[0].value)
+        #print(prob2.variables()[0].value)
 
         if P != 0:
             assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
             print("check solutions are the same:")
-            print(prob.variables()[1].value)
-            print(prob2.variables()[1].value)
+            #print(prob.variables()[1].value)
+            #print(prob2.variables()[1].value)
 
         # Return True if all assertions pass
         return True

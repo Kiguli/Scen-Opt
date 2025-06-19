@@ -123,6 +123,7 @@ def solve():
 
     except Exception as error:
         e = str(error)  # Save the error message
+        print(e)
 
     # Prepare the result dictionary
     result = {
