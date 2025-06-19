@@ -87,18 +87,26 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         if constraint.dual_value > 0:  # Check if any dual value is positive
             active.append(constraint)
 
-    if test_active_LP(prob, objective, active, P=P, solver=solver):
-        raise ValueError("Active constraints are not valid. This might be a solver error.")
+    num_active = len(active)
+
+    #If solution changes then likely to have degeneracy
+    if not test_active_LP(prob, objective, active, P=P, solver=solver):
+        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+        #raise ValueError("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+        #TODO: go through constraints one by one to create support list
     else:
         drop = []
+        #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
         for a in active:
-            if not test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
-                print(a)
-                drop.append(a)
-        print(drop)
-        active = [a for a in active if a not in drop]
+            if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                active.remove(a)
+        if not test_active_LP(prob, objective, active, P=P, solver=solver):
+            raise ValueError("Error calculating support list.")
 
-    test_active_LP(prob, objective, active, P=P, solver=solver)
+
+    #TODO: do something about active constraints that can be dropped, e.g. throw error about solution at end?
+
+    #test_active_LP(prob, objective, active, P=P, solver=solver)
 
     # Return results #TODO: check if active includes non-delta constraints
     return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
@@ -123,20 +131,20 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
 
         # Assert that the objective values are the same
         assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
-        print("check objective values are the same:")
+        #print("check objective values are the same:")
         #print(prob.value)
         #print(prob2.value)
 
         # Assert that the solutions are the same
         assert np.allclose(prob.variables()[0].value,
                            prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
-        print("check solutions are the same:")
+        #print("check solutions are the same:")
         #print(prob.variables()[0].value)
         #print(prob2.variables()[0].value)
 
         if P != 0:
             assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
-            print("check solutions are the same:")
+            #print("check solutions are the same:")
             #print(prob.variables()[1].value)
             #print(prob2.variables()[1].value)
 

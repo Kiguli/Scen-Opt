@@ -105,7 +105,6 @@ def solve():
     active = []
     constraints = []
     risk = 0.0
-    conf = 0.0
     e = "None"
 
     try:
