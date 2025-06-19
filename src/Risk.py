@@ -26,9 +26,9 @@ def quantify_risk(k,N,beta):
     while (t2 - t1) > threshold:
         t = (t1+t2)/2
         left = beta/3*betainc(k+1,N-k,t)+beta/6*betainc(k+1,4*N+1-k,t)
-        print("left = ",left)
+        #print("left = ",left)
         right = (1+beta/6/N)*t*N*(betainc(k,N-k+1,t)-betainc(k+1,N-k,t))
-        print("right= ", right)
+        #print("right= ", right)
         if left > right: #added threshold
             t1 = t
         else:

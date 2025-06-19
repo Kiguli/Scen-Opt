@@ -26,20 +26,32 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         """
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m = A_d(deltas[0]).shape[0]  # Number of constraints
-    num_of_deltas = deltas.shape[1] # Number of deltas per row
-    size_of_deltas = deltas.shape[0] # Number of rows
+    try:
+        num_of_deltas = deltas.shape[1]  # Number of deltas per row
+    except IndexError:
+        num_of_deltas = 1
+    try:
+        size_of_deltas = deltas.shape[0]  # Number of row
+    except IndexError:
+        raise ValueError("The input `deltas` must have at least one row.")
 
     # Variables
     x = cp.Variable((n, 1))
 
     if P != 0:
-        s = cp.Variable((m, 1), nonneg=True)  # Slack variables
+        s = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
     else:
-        s = np.zeros((m,1))
+        s = np.zeros((m, 1))
 
     constraints = []
     for i in range(size_of_deltas):
-        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Relaxed robust constraints
+        for row in range(A_d(deltas[i]).shape[0]):  # Iterate over rows
+            #print(A_d(deltas[i])[row, :])
+            #print(b_d(deltas[i])[0][row])
+            #print(s[row])
+            constraints.append(A_d(deltas[i])[row, :] @ x + b_d(deltas[i])[row] <= s[row])  # Add each row separately
+
+    print("complete")
 
     m = A.shape[0]  # Number of constraints
     if P != 0:
@@ -58,12 +70,12 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     # Simplify results
     x_out = x.value
-    if P != 0:
+    if P != 0.0:
         s_out = s.value
         print(s)
     else:
         s_out = np.zeros((m,1))
-    if P != 0:
+    if P != 0.0:
         s_h_out = s_h.value  # TODO: check how this should work...
         print(s_h)
     else:
@@ -77,8 +89,9 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     active = []
     for constraint in constraints:
-        if constraint.dual_value > 0: #TODO: add a tolerance for different solvers
-            print(constraint.dual_value)
+        #print(constraint)
+        #print(constraint.dual_value)
+        if constraint.dual_value > 0:  # Check if any dual value is positive
             active.append(constraint)
 
     if test_active_LP(prob, objective, active, P=P, solver=solver):

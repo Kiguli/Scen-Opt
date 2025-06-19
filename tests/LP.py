@@ -23,7 +23,32 @@ print(get_solvers())
 print(get_norm_types())
 solver = cp.SCS
 
-optimal_x, optimal_s, optimal_sh, optimal_cost, active = solve_lp(scenarios,A_d, b_d, c, T, Theta_Bar, P, norm_type, solver)
+optimal_x, optimal_s, optimal_sh, optimal_cost, size_of_deltas, active, constraints = solve_lp(scenarios,A_d, b_d, A, b, c, T, Theta_Bar, P, norm_type, solver)
+print("Optimal x:\n", optimal_x)
+print("Optimal s:\n", optimal_s)
+print("Optimal cost:", optimal_cost)
+
+print("============================:\n")
+# Example usage
+scenarios = np.loadtxt('smallest_interval_1d.csv', delimiter=',')
+def A_d(deltas:np.ndarray):
+    return np.array([[-1,-1],[1,-1]])
+def b_d(deltas:np.ndarray):
+    return np.array([[deltas],[-deltas]])
+
+A = np.array([[0,0]])
+b= np.array([[0]])
+
+c = np.array([[0],[1]])
+T = 0.0
+Theta_Bar = np.array([0,0])
+P = 0.0
+norm_type = 2
+print(get_solvers())
+print(get_norm_types())
+solver = cp.MOSEK
+
+optimal_x, optimal_s, optimal_sh, optimal_cost, size_of_deltas, active, constraints = solve_lp(scenarios,A_d, b_d, A, b, c, T, Theta_Bar, P, norm_type, solver)
 print("Optimal x:\n", optimal_x)
 print("Optimal s:\n", optimal_s)
 print("Optimal cost:", optimal_cost)
