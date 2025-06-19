@@ -96,33 +96,47 @@ def solve():
     rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
     solver = form_data.get('solver', 'SCS')
 
-    #TODO: add A and b separately so they dont get pushed through the for loop
-    if active_tab == 'lp-tab':
-        optimal_x, optimal_s, optimal_sh, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
-    elif active_tab == 'qp-tab':
-        Q = generate_matrix(request.form.get('Q'))
-        optimal_x, optimal_s, optimal_sh, optimal_cost = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
-    elif active_tab == 'sdp-tab':
-        optimal_x, optimal_s, optimal_sh, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver) #TODO: work out this function...
-
-    #TODO: work out support list
-    risk = quantify_risk(len(active),N,conf) #TODO: make sure active has a value, seems to give 0,1 only...
-    #conf = quantify_conf() #TODO: write confidence function?
-    #TODO: deal with errors like NoneType optimal_x
+    # Initialize uninitialized values
+    optimal_x = np.array([])
+    optimal_s = np.array([])
+    optimal_sh = np.array([])
+    optimal_cost = 0.0
+    N = 0
+    active = []
+    constraints = []
+    risk = 0.0
+    conf = 0.0
     e = "None"
 
+    try:
+        # Solve based on the active tab
+        if active_tab == 'lp-tab':
+            optimal_x, optimal_s, optimal_sh, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+        elif active_tab == 'qp-tab':
+            Q = generate_matrix(request.form.get('Q'))
+            optimal_x, optimal_s, optimal_sh, optimal_cost = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+        elif active_tab == 'sdp-tab':
+            optimal_x, optimal_s, optimal_sh, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+
+        # Calculate risk
+        risk = quantify_risk(len(active), N, conf)
+
+    except Exception as error:
+        e = str(error)  # Save the error message
+
+    # Prepare the result dictionary
     result = {
         "form_data": form_data,
-        "optimal_x": optimal_x.tolist(),
-        "optimal_s": optimal_s.tolist(),
-        "optimal_sh": optimal_sh.tolist(),
+        "optimal_x": optimal_x.tolist() if optimal_x.size > 0 else [],
+        "optimal_s": optimal_s.tolist() if optimal_s.size > 0 else [],
+        "optimal_sh": optimal_sh.tolist() if optimal_sh.size > 0 else [],
         "optimal_cost": optimal_cost,
         "num_deltas": N,
         "tot_con": len(constraints),
         "active_con": len(active),
         "risk": risk,
         "conf": conf,
-        "errorcode": e, #TODO make options for this
+        "errorcode": e,  # Include the error message
     }
 
     return jsonify(result)

@@ -34,7 +34,7 @@ def quantify_risk(k,N,beta):
         else:
             t2 = t
     epsL = t1 #set lower bound
-    print("epsL = ", epsL)
+    #print("epsL = ", epsL)
 
     if (k==N):
         epsU = 1 #set upper bound
@@ -52,7 +52,7 @@ def quantify_risk(k,N,beta):
             else:
                 t1 = t
         epsU = t2 #set upper bound
-    print("epsU = ", epsU)
+    #print("epsU = ", epsU)
     # Return results
     return epsL, epsU
 

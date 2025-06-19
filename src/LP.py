@@ -46,12 +46,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     constraints = []
     for i in range(size_of_deltas):
         for row in range(A_d(deltas[i]).shape[0]):  # Iterate over rows
-            #print(A_d(deltas[i])[row, :])
-            #print(b_d(deltas[i])[0][row])
-            #print(s[row])
             constraints.append(A_d(deltas[i])[row, :] @ x + b_d(deltas[i])[row] <= s[row])  # Add each row separately
-
-    print("complete")
 
     m = A.shape[0]  # Number of constraints
     if P != 0:
