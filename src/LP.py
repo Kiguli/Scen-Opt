@@ -45,8 +45,8 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     constraints = []
     for i in range(size_of_deltas):
-        for row in range(A_d(deltas[i]).shape[0]):  # Iterate over rows
-            constraints.append(A_d(deltas[i])[row, :] @ x + b_d(deltas[i])[row] <= s[row])  # Add each row separately
+        #for row in range(A_d(deltas[i]).shape[0]):  # Iterate over rows
+        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Add each row separately
 
     m = A.shape[0]  # Number of constraints
     if P != 0:
@@ -54,7 +54,11 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     else:
         s_h = np.zeros((m,1))
 
-    constraints.append(A @ x + b <= s_h) # hard constraints
+    print(len(constraints))
+
+    non_risk_constraints = A@x+b <= s_h
+
+    constraints.append(non_risk_constraints) # hard constraints
 
     # Objective Function
     objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P*cp.sum(s_h))
@@ -82,9 +86,11 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     #SOLVE FOR ACTIVE CONSTRAINTS
     # =====================================
 
+    threshold = 1e-8 #TODO: make this a global parameter?
+
     active = []
     for constraint in constraints:
-        if constraint.dual_value > 0:  # Check if any dual value is positive
+        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
             active.append(constraint)
 
     num_active = len(active)
@@ -103,6 +109,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         if not test_active_LP(prob, objective, active, P=P, solver=solver):
             raise ValueError("Error calculating support list.")
 
+    active.remove(non_risk_constraints)
 
     #TODO: do something about active constraints that can be dropped, e.g. throw error about solution at end?
 
