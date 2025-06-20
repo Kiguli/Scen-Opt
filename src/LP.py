@@ -109,7 +109,8 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         if not test_active_LP(prob, objective, active, P=P, solver=solver):
             raise ValueError("Error calculating support list.")
 
-    active.remove(non_risk_constraints)
+    if non_risk_constraints in active:
+        active.remove(non_risk_constraints)
 
     #TODO: do something about active constraints that can be dropped, e.g. throw error about solution at end?
 
