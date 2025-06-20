@@ -24,12 +24,14 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
             - s (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
+    # TODO: what about when no A_d or b_d matrices?
+    # TODO: add checks like in QP version
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m = A_d(deltas[0]).shape[0]  # Number of constraints
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
     except IndexError:
-        num_of_deltas = 1
+        num_of_deltas = 1 #TODO: check A_d and b_d don't include delta[i] where i>num_deltas
     try:
         size_of_deltas = deltas.shape[0]  # Number of row
     except IndexError:
@@ -37,7 +39,6 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     # Variables
     x = cp.Variable((n, 1))
-
     if P != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
     else:
@@ -45,19 +46,16 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     constraints = []
     for i in range(size_of_deltas):
-        #for row in range(A_d(deltas[i]).shape[0]):  # Iterate over rows
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Add each row separately
 
+    #TODO: what about when no A or b matrices?
     m = A.shape[0]  # Number of constraints
     if P != 0:
         s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s_h = np.zeros((m,1))
 
-    print(len(constraints))
-
     non_risk_constraints = A@x+b <= s_h
-
     constraints.append(non_risk_constraints) # hard constraints
 
     # Objective Function
@@ -71,52 +69,25 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     x_out = x.value
     if P != 0.0:
         s_out = s.value
-        print(s)
+        #print(s)
     else:
         s_out = np.zeros((m,1))
     if P != 0.0:
         s_h_out = s_h.value  # TODO: check how this should work...
-        print(s_h)
+        #print(s_h)
     else:
         s_h_out = np.zeros((m,1))
 
     cost_out = prob.value
 
-    # ======================================
+    # =====================================
     #SOLVE FOR ACTIVE CONSTRAINTS
     # =====================================
 
-    threshold = 1e-8 #TODO: make this a global parameter?
+    # Find the active constraints
+    active = get_active_LP(constraints, non_risk_constraints, prob, objective, P, solver)
 
-    active = []
-    for constraint in constraints:
-        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
-            active.append(constraint)
-
-    num_active = len(active)
-
-    #If solution changes then likely to have degeneracy
-    if not test_active_LP(prob, objective, active, P=P, solver=solver):
-        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
-        #raise ValueError("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
-        #TODO: go through constraints one by one to create support list
-    else:
-        drop = []
-        #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
-        for a in active:
-            if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
-                active.remove(a)
-        if not test_active_LP(prob, objective, active, P=P, solver=solver):
-            raise ValueError("Error calculating support list.")
-
-    if non_risk_constraints in active:
-        active.remove(non_risk_constraints)
-
-    #TODO: do something about active constraints that can be dropped, e.g. throw error about solution at end?
-
-    #test_active_LP(prob, objective, active, P=P, solver=solver)
-
-    # Return results #TODO: check if active includes non-delta constraints
+    # Return results
     return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
 
 def test_active_LP(prob, objective, active, P=0.0, solver=None):
@@ -139,22 +110,13 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
 
         # Assert that the objective values are the same
         assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
-        #print("check objective values are the same:")
-        #print(prob.value)
-        #print(prob2.value)
 
         # Assert that the solutions are the same
         assert np.allclose(prob.variables()[0].value,
                            prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
-        #print("check solutions are the same:")
-        #print(prob.variables()[0].value)
-        #print(prob2.variables()[0].value)
 
         if P != 0:
             assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
-            #print("check solutions are the same:")
-            #print(prob.variables()[1].value)
-            #print(prob2.variables()[1].value)
 
         # Return True if all assertions pass
         return True
@@ -163,3 +125,49 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
         print(f"Assertion failed: {e}")
         # Return False if any assertion fails
         return False
+
+def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, solver=None, threshold=1e-8):
+    """
+        Finds the active constraints of the LP.
+
+        Parameters:
+        constraints (list): list of constraints.
+        non_risk_constraints (list): list of constraints that should not be included in the error calculation.
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        P (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+        threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
+        Returns:
+        active (list): list of active constraints.
+    """
+
+    #TODO: make threshold a global parameter?
+    active = []
+    for constraint in constraints:
+        #print(max(constraint.dual_value))
+        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
+            active.append(constraint)
+
+    #If solution changes then likely to have degeneracy
+    if not test_active_LP(prob, objective, active, P=P, solver=solver):
+        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+        # loop through all constraints and make a support list from them
+        active = constraints
+        for a in active:
+            if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                active.remove(a)
+        if not test_active_LP(prob, objective, active, P=P, solver=solver):
+            raise ValueError("Error calculating support list after finding degeneracy.")
+    else:
+        #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+        for a in active:
+            if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                active.remove(a)
+        if not test_active_LP(prob, objective, active, P=P, solver=solver):
+            raise ValueError("Error calculating support list.")
+
+    if non_risk_constraints in active:
+        active.remove(non_risk_constraints)
+
+    return active

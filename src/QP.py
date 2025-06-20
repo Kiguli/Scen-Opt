@@ -33,8 +33,14 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
 
     n = A(deltas[0]).shape[1]  # Number of variables
     m = A(deltas[0]).shape[0]  # Number of constraints
-    num_of_deltas = deltas.shape[1] # Number of deltas per row
-    size_of_deltas = deltas.shape[0] # Number of rows
+    try:
+        num_of_deltas = deltas.shape[1]  # Number of deltas per row
+    except IndexError:
+        num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
+    try:
+        size_of_deltas = deltas.shape[0]  # Number of row
+    except IndexError:
+        raise ValueError("The input `deltas` must have at least one row.")
 
     # Variables
     x = cp.Variable((n, 1))
@@ -52,7 +58,9 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
         s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s_h = np.zeros((m, 1))
-    constraints.append(A @ x + b <= s_h)  # hard constraints
+
+    non_risk_constraints = A @ x + b <= s_h
+    constraints.append(non_risk_constraints)  # hard constraints
 
     # Objective Function
     objective = cp.Minimize(cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P * cp.sum(s_h))
@@ -62,11 +70,106 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     prob.solve(solver=solver)
 
     #Simplify results
-    x = x.value
-    if P != 0:
-        s = s.value
-        s_h = s_h.value
-    cost = prob.value
+    x_out = x.value
+    if P != 0.0:
+        s_out = s.value
+        # print(s)
+    else:
+        s_out = np.zeros((m, 1))
+    if P != 0.0:
+        s_h_out = s_h.value  # TODO: check how this should work...
+        # print(s_h)
+    else:
+        s_h_out = np.zeros((m, 1))
+
+    cost_out = prob.value
+
+    # Find the active constraints
+    active = get_active_QP(constraints, non_risk_constraints, prob, objective, P, solver)
 
     # Return results
-    return x, s, s_h, cost
+    return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
+
+def test_active_QP(prob, objective, active, P=0.0, solver=None):
+    """
+        Solves a linear programming problem with optional robust and regularization constraints.
+
+        Parameters:
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        active: list of active constraints.
+        P (float): Penalty parameter for the slack variables in the objective function.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+
+        Returns:
+        bool: True if all assertions pass, False if any assertion fails.
+    """
+    try:
+        prob2 = cp.Problem(objective, active)
+        prob2.solve(solver=solver)
+
+        # Assert that the objective values are the same
+        assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
+
+        # Assert that the solutions are the same
+        assert np.allclose(prob.variables()[0].value,
+                           prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
+
+        if P != 0:
+            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+
+        # Return True if all assertions pass
+        return True
+
+    except AssertionError as e:
+        print(f"Assertion failed: {e}")
+        # Return False if any assertion fails
+        return False
+
+def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, solver=None, threshold=1e-8):
+    """
+        Finds the active constraints of the QP.
+
+        Parameters:
+        constraints (list): list of constraints.
+        non_risk_constraints (list): list of constraints that should not be included in the error calculation.
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        P (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+        threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
+
+        Returns:
+        active (list): list of active constraints.
+    """
+
+    #TODO: make threshold a global parameter?
+
+    active = []
+    for constraint in constraints:
+        print(max(constraint.dual_value))
+        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
+            active.append(constraint)
+
+    #If solution changes then likely to have degeneracy
+    if not test_active_QP(prob, objective, active, P=P, solver=solver):
+        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+        # loop through all constraints and make a support list from them
+        active = constraints
+        for a in active:
+            if test_active_QP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                active.remove(a)
+        if not test_active_QP(prob, objective, active, P=P, solver=solver):
+            raise ValueError("Error calculating support list after finding degeneracy.")
+    else:
+        #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+        for a in active:
+            if test_active_QP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+                active.remove(a)
+        if not test_active_QP(prob, objective, active, P=P, solver=solver):
+            raise ValueError("Error calculating support list.")
+
+    if non_risk_constraints in active:
+        active.remove(non_risk_constraints)
+
+    return active
