@@ -63,7 +63,7 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     constraints.append(non_risk_constraints)  # hard constraints
 
     # Objective Function
-    objective = cp.Minimize(cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P * cp.sum(s_h))
+    objective = cp.Minimize((1/2)*cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P * cp.sum(s_h))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)

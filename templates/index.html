@@ -169,7 +169,7 @@
                         </div>
                         <div id="qp-latex" class="form-group">
                             <div class="text-center">
-                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
+                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
                                 <p>subject to</p>
                                 <p>\(A\theta+b \leq 0\)</p>
                                 <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
@@ -297,7 +297,7 @@
                         </div>
                         <div id="sdp-latex" class="form-group">
                             <div class="text-center">
-                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \theta^\top Q\theta\)</p>
+                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
                                 <p>subject to</p>
                                 <p>\(A\theta+b \leq 0\)</p>
                                 <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
@@ -452,6 +452,7 @@
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
             document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
@@ -461,7 +462,7 @@
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
-            document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
+            document.getElementById('matrixColumns').disabled = true; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
             document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
@@ -481,6 +482,7 @@
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
             document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
@@ -491,6 +493,7 @@
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 2x2 by default
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
             document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
@@ -765,12 +768,12 @@
             }
         } else if (tab === 'qp' || tab === 'sdp') {
             if (option === 'robust') {
-                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta';
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = '';
                 latexText4 = 'A\\theta+b \\leq 0';
             } else if (option === 'robust-regularization') {
-                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = '';
                 latexText4 = 'A\\theta+b \\leq 0';
@@ -778,13 +781,13 @@
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
                 latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0';
                 latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
