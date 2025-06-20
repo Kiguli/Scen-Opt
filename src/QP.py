@@ -30,9 +30,8 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q==Q.T).all(), "Q needs to be symmetric"
-
-    n = A(deltas[0]).shape[1]  # Number of variables
-    m = A(deltas[0]).shape[0]  # Number of constraints
+    n = A_d(deltas[0]).shape[1]  # Number of variables
+    m = A_d(deltas[0]).shape[0]  # Number of constraints
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
     except IndexError:
@@ -48,7 +47,6 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s = np.zeros((m,1))
-
     constraints = []
     for i in range(size_of_deltas):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Relaxed robust constraints
@@ -147,7 +145,6 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
 
     active = []
     for constraint in constraints:
-        print(max(constraint.dual_value))
         if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
             active.append(constraint)
 
