@@ -29,8 +29,6 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     # Check Q is positive semi-definite and symmetric
     #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
-    assert A_d.size != 0, "A(delta) cannot be empty."
-    assert b_d.size != 0, "b(delta) cannot be empty."
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q==Q.T).all(), "Q needs to be symmetric"
     n = A_d(deltas[0]).shape[1]  # Number of variables

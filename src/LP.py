@@ -24,9 +24,6 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
             - s (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
-    assert A_d.size != 0, "A(delta) cannot be empty."
-    assert b_d.size != 0, "b(delta) cannot be empty."
-
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m = A_d(deltas[0]).shape[0]  # Number of constraints
     try:

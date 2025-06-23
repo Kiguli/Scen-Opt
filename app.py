@@ -1,4 +1,6 @@
 import os
+from logging import raiseExceptions
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import numpy as np
 from werkzeug.utils import secure_filename
@@ -79,8 +81,14 @@ def solve():
             for row in expr_matrix
         ])
 
-    A_d = generate_matrix_function(request.form.get('A_d')) if request.form.get('A_d') else np.array([])
-    b_d = generate_matrix_function(request.form.get('b_d')) if request.form.get('b_d') else np.array([])
+    if request.form.get('A_d'):
+        A_d = generate_matrix_function(request.form.get('A_d'))
+    else:
+        raise ValueError("A(delta) is ill-defined")
+    if request.form.get('b_d'):
+        b_d = generate_matrix_function(request.form.get('b_d'))
+    else:
+        raise ValueError("b(delta) is ill-defined")
     A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
     b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
     c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
