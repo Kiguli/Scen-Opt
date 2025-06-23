@@ -413,6 +413,8 @@
                 </button>
             </div>
             <div class="modal-body">
+                <p></p>
+                <h6><b>Enter Manually:</b></h6>
                 <div id="matrixGrid" class="d-flex flex-wrap"></div>
                 <div class="mt-3">
                     <label for="matrixRows">Rows:</label>
@@ -423,10 +425,11 @@
                            min="1" value="2">
                     <button class="btn btn-primary ml-3" onclick="updateMatrixGrid()">Resize</button>
                     <p></p>
+                    <h6><b>OR:</b></h6>
+                    <input type="file" name="modal-file" id="modal-file" class="form-control-file">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary ml-3">Upload from File</button>
                 <button type="button" class="btn btn-success" onclick="saveMatrix()">Save</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
@@ -454,8 +457,8 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit A(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
         } else if (matrix === 'b_d') {
@@ -464,8 +467,8 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = true; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()}(\\(\\delta)\\) (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit b(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
         } else if (matrix === 'c') {
@@ -474,8 +477,8 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit c (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
         } else if (matrix === 'Q') {
@@ -484,8 +487,8 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit Q (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
 
@@ -495,8 +498,8 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit A (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             $('#matrixModal').modal('show');
         } else if (matrix === 'b') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
@@ -504,19 +507,19 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit ${matrix.toUpperCase()} (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<b>Top tip:</b> <i>${getDynamicTip(matrix)}</i>`;
+            document.getElementById('matrixModalTitle').textContent = `Edit b (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             $('#matrixModal').modal('show');
         }
     }
 
     function getDynamicTip(matrix) {
         if (matrix === 'A_d') {
-            return "<u>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</u> The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'b_d') {
-            return "<u>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</u> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'Q') {
-            return "<u>Ensure Q is a symmetric and positive semi-definite matrix.</u> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<i>Ensure Q is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'c') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'A') {
@@ -554,11 +557,30 @@
     }
 
     function saveMatrix() {
-        const rows = parseInt(document.getElementById('matrixRows').value);
-        const columns = parseInt(document.getElementById('matrixColumns').value);
-        const grid = document.getElementById('matrixGrid');
-        const values = Array.from({length: rows}, () => Array(columns).fill(0));
+    const rows = parseInt(document.getElementById('matrixRows').value);
+    const columns = parseInt(document.getElementById('matrixColumns').value);
+    const grid = document.getElementById('matrixGrid');
+    const fileInput = document.getElementById('modal-file');
+    const values = Array.from({ length: rows }, () => Array(columns).fill(0));
 
+    // Check if a file is uploaded
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            try {
+                const fileValues = JSON.parse(event.target.result); // Parse file content as JSON
+                document.getElementById(currentMatrix).value = JSON.stringify(fileValues); // Save parsed values
+                $('#matrixModal').modal('hide');
+            } catch (error) {
+                alert('Invalid file format. Please upload a valid JSON file.');
+            }
+        };
+
+        reader.readAsText(file); // Read the file content
+    } else {
+        // Save manually entered values
         Array.from(grid.querySelectorAll('input')).forEach(input => {
             const row = parseInt(input.dataset.row);
             const column = parseInt(input.dataset.column);
@@ -568,6 +590,23 @@
         document.getElementById(currentMatrix).value = JSON.stringify(values);
         $('#matrixModal').modal('hide');
     }
+}
+
+    // function saveMatrix() {
+    //     const rows = parseInt(document.getElementById('matrixRows').value);
+    //     const columns = parseInt(document.getElementById('matrixColumns').value);
+    //     const grid = document.getElementById('matrixGrid');
+    //     const values = Array.from({length: rows}, () => Array(columns).fill(0));
+    //
+    //     Array.from(grid.querySelectorAll('input')).forEach(input => {
+    //         const row = parseInt(input.dataset.row);
+    //         const column = parseInt(input.dataset.column);
+    //         values[row][column] = input.value; // Save text value
+    //     });
+    //
+    //     document.getElementById(currentMatrix).value = JSON.stringify(values);
+    //     $('#matrixModal').modal('hide');
+    // }
 
     function handleUpload() {
         const form = document.getElementById('upload-form');
