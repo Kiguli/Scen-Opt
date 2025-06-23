@@ -151,9 +151,11 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
             raise ValueError("Error calculating support list after finding degeneracy.")
     else:
         #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+        drop = []
         for a in active:
             if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
-                active.remove(a)
+                drop.append(a)
+        active = [constraint for constraint in active if constraint not in drop]
         if not test_active_LP(prob, objective, active, P=P, solver=solver):
             raise ValueError("Error calculating support list.")
 

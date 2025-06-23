@@ -119,7 +119,7 @@ def solve():
         if active_tab == 'lp-tab':
             optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
         elif active_tab == 'qp-tab':
-            Q = generate_matrix(request.form.get('Q')) if request.form.get('A_d') else np.array([])
+            Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
             optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
         elif active_tab == 'sdp-tab':
             optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
