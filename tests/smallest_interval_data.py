@@ -14,3 +14,10 @@ with open(csv_filename, mode='w', newline='') as file:
         writer.writerow([point])
 
 print(f"Random points saved to {csv_filename}")
+
+# CONSTRAINTS FOR TOOL: LP ROBUST
+# c = [0,1]^T
+#A(d) = [[-1 -1],[1,-1]]
+#B(d) = [delta[0],-delta[0]]^T
+# A = 0
+# B = 0

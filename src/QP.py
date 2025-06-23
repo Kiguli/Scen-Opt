@@ -28,6 +28,9 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
         """
     # Check Q is positive semi-definite and symmetric
     #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
+
+    assert A_d.size != 0, "A(delta) cannot be empty."
+    assert b_d.size != 0, "b(delta) cannot be empty."
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q==Q.T).all(), "Q needs to be symmetric"
     n = A_d(deltas[0]).shape[1]  # Number of variables
@@ -51,17 +54,15 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     for i in range(size_of_deltas):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Relaxed robust constraints
 
-    m = A.shape[0]  # Number of constraints
-    if P != 0:
-        s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
+    if not (A.size == 0 or b.size == 0):
+        m = A.shape[0]  # Number of constraints
+        non_risk_constraints = A @ x + b <= 0
+        constraints.append(non_risk_constraints)  # hard constraints
     else:
-        s_h = np.zeros((m, 1))
-
-    non_risk_constraints = A @ x + b <= s_h
-    constraints.append(non_risk_constraints)  # hard constraints
+        non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize((1/2)*cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P * cp.sum(s_h))
+    objective = cp.Minimize((1/2)*cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -74,11 +75,6 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
         # print(s)
     else:
         s_out = np.zeros((m, 1))
-    if P != 0.0:
-        s_h_out = s_h.value  # TODO: check how this should work...
-        # print(s_h)
-    else:
-        s_h_out = np.zeros((m, 1))
 
     cost_out = prob.value
 
@@ -86,7 +82,7 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     active = get_active_QP(constraints, non_risk_constraints, prob, objective, P, solver)
 
     # Return results
-    return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
+    return x_out, s_out, cost_out, size_of_deltas, active, constraints
 
 def test_active_QP(prob, objective, active, P=0.0, solver=None):
     """

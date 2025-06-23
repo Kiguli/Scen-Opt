@@ -79,11 +79,11 @@ def solve():
             for row in expr_matrix
         ])
 
-    A_d = generate_matrix_function(request.form.get('A_d'))
-    b_d = generate_matrix_function(request.form.get('b_d'))
-    A = generate_matrix(request.form.get('A'))
-    b = generate_matrix(request.form.get('b'))
-    c = generate_matrix(request.form.get('c'))
+    A_d = generate_matrix_function(request.form.get('A_d')) if request.form.get('A_d') else np.array([])
+    b_d = generate_matrix_function(request.form.get('b_d')) if request.form.get('b_d') else np.array([])
+    A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
+    b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
+    c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
     conf = float(request.form.get('confidence'))
     # Get values from parameter boxes
     form_data = request.form.to_dict()
@@ -99,7 +99,6 @@ def solve():
     # Initialize uninitialized values
     optimal_x = np.array([])
     optimal_s = np.array([])
-    optimal_sh = np.array([])
     optimal_cost = 0.0
     N = 0
     active = []
@@ -110,12 +109,12 @@ def solve():
     try:
         # Solve based on the active tab
         if active_tab == 'lp-tab':
-            optimal_x, optimal_s, optimal_sh, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+            optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
         elif active_tab == 'qp-tab':
-            Q = generate_matrix(request.form.get('Q'))
-            x_out, s_out, s_h_out, cost_out, N, active, constraints = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+            Q = generate_matrix(request.form.get('Q')) if request.form.get('A_d') else np.array([])
+            optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
         elif active_tab == 'sdp-tab':
-            optimal_x, optimal_s, optimal_sh, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+            optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
 
         # Calculate risk
         risk = quantify_risk(len(active), N, conf)
@@ -129,7 +128,6 @@ def solve():
         "form_data": form_data,
         "optimal_x": optimal_x.tolist() if optimal_x.size > 0 else [],
         "optimal_s": optimal_s.tolist() if optimal_s.size > 0 else [],
-        "optimal_sh": optimal_sh.tolist() if optimal_sh.size > 0 else [],
         "optimal_cost": optimal_cost,
         "num_deltas": N,
         "tot_con": len(constraints),

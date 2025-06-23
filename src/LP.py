@@ -24,8 +24,9 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
             - s (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
-    # TODO: what about when no A_d or b_d matrices?
-    # TODO: add checks like in QP version
+    assert A_d.size != 0, "A(delta) cannot be empty."
+    assert b_d.size != 0, "b(delta) cannot be empty."
+
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m = A_d(deltas[0]).shape[0]  # Number of constraints
     try:
@@ -48,18 +49,15 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     for i in range(size_of_deltas):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Add each row separately
 
-    #TODO: what about when no A or b matrices?
-    m = A.shape[0]  # Number of constraints
-    if P != 0:
-        s_h = cp.Variable((m, 1), nonneg=True)  # Slack variables
+    if not (A.size == 0 or b.size == 0):
+        m = A.shape[0]  # Number of constraints
+        non_risk_constraints = A @ x + b <= 0
+        constraints.append(non_risk_constraints)  # hard constraints
     else:
-        s_h = np.zeros((m,1))
-
-    non_risk_constraints = A@x+b <= s_h
-    constraints.append(non_risk_constraints) # hard constraints
+        non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s) + P*cp.sum(s_h))
+    objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -72,11 +70,6 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         #print(s)
     else:
         s_out = np.zeros((m,1))
-    if P != 0.0:
-        s_h_out = s_h.value  # TODO: check how this should work...
-        #print(s_h)
-    else:
-        s_h_out = np.zeros((m,1))
 
     cost_out = prob.value
 
@@ -88,7 +81,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     active = get_active_LP(constraints, non_risk_constraints, prob, objective, P, solver)
 
     # Return results
-    return x_out, s_out, s_h_out, cost_out, size_of_deltas, active, constraints
+    return x_out, s_out, cost_out, size_of_deltas, active, constraints
 
 def test_active_LP(prob, objective, active, P=0.0, solver=None):
     """

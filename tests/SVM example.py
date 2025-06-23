@@ -15,8 +15,16 @@ classifications = np.where(points[:, 0] < 0, -1, 1)
 csv_filename = 'SVM_example.csv'
 with open(csv_filename, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['x1', 'x2', 'classification'])  # Header
+    #writer.writerow(['x1', 'x2', 'classification'])  # Header
     for point, classification in zip(points, classifications):
         writer.writerow([point[0], point[1], classification])
 
 print(f"Data saved to {csv_filename}")
+
+#CONSTRAINTS FOR TOOL: QP
+# c= [0,0,0]^T
+# A(d) = [-delta[0]*delta[2] -delta[1]*delta[2] -delta[2]]
+# b(d) = [1]
+# A = []
+# b = []
+# Q = diag(1,1,0)

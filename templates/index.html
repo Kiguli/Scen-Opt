@@ -639,12 +639,8 @@
                         <td><strong>${data.optimal_x.join(', ')}</strong></td>
                     </tr>
                     <tr>
-                        <td><strong>Optimal  \\( \\zeta \\) for \\(\\delta_i\\)</strong></td>
-                        <td><strong>${data.optimal_s.join(', ')}</strong></td>
-                    </tr>
-                    <tr>
                         <td><strong>Optimal  \\( \\zeta \\)</strong></td>
-                        <td><strong>${data.optimal_sh.join(', ')}</strong></td>
+                        <td><strong>${data.optimal_s.join(', ')}</strong></td>
                     </tr>
                     <tr>
                         <td><strong>Optimal Cost</strong></td>
@@ -751,16 +747,16 @@
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
@@ -781,16 +777,16 @@
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N+1} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0';
-                latexText4 = 'A\\theta+b \\leq \\zeta_{N+1}';
+                latexText4 = 'A\\theta+b \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
