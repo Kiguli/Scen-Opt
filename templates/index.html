@@ -450,6 +450,7 @@
         const matrixInput = document.getElementById(currentMatrix);
         let matrixValues;
 
+        document.getElementById('modal-file').value = '';
         // Set default dimensions based on the matrix
         if (matrix === 'A_d') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
@@ -543,7 +544,7 @@
 
             for (let j = 0; j < columns; j++) {
                 const input = document.createElement('input');
-                input.type='text';
+                input.type = 'text';
                 input.className = 'form-control d-inline-block';
                 input.style.width = '120px';
                 input.value = values && values[i] && values[i][j] !== undefined ? values[i][j] : 0;
@@ -557,40 +558,52 @@
     }
 
     function saveMatrix() {
-    const rows = parseInt(document.getElementById('matrixRows').value);
-    const columns = parseInt(document.getElementById('matrixColumns').value);
-    const grid = document.getElementById('matrixGrid');
-    const fileInput = document.getElementById('modal-file');
-    const values = Array.from({ length: rows }, () => Array(columns).fill(0));
+        const rows = parseInt(document.getElementById('matrixRows').value);
+        const columns = parseInt(document.getElementById('matrixColumns').value);
+        const grid = document.getElementById('matrixGrid');
+        const fileInput = document.getElementById('modal-file');
+        const values = Array.from({length: rows}, () => Array(columns).fill(0));
 
-    // Check if a file is uploaded
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
+        // Check if a file is uploaded
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
 
-        reader.onload = function (event) {
-            try {
-                const fileValues = JSON.parse(event.target.result); // Parse file content as JSON
-                document.getElementById(currentMatrix).value = JSON.stringify(fileValues); // Save parsed values
-                $('#matrixModal').modal('hide');
-            } catch (error) {
-                alert('Invalid file format. Please upload a valid JSON file.');
-            }
-        };
+            reader.onload = function (event) {
+                try {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    let fileValues;
 
-        reader.readAsText(file); // Read the file content
-    } else {
-        // Save manually entered values
-        Array.from(grid.querySelectorAll('input')).forEach(input => {
-            const row = parseInt(input.dataset.row);
-            const column = parseInt(input.dataset.column);
-            values[row][column] = input.value; // Save text value
-        });
+                    if (fileExtension === 'json') {
+                        fileValues = JSON.parse(event.target.result);
+                    } else if (fileExtension === 'csv' || fileExtension === 'txt') {
+                        const text = event.target.result;
+                        const rows = text.trim().split('\n');
+                        fileValues = rows.map(row => row.split(','));
+                    } else {
+                        throw new Error('Unsupported file type');
+                    }
 
-        document.getElementById(currentMatrix).value = JSON.stringify(values);
-        $('#matrixModal').modal('hide');
+                    document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
+                    $('#matrixModal').modal('hide');
+                } catch (error) {
+                    alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
+                }
+            };
+
+            reader.readAsText(file); // Read the file content
+        } else {
+            // Save manually entered values
+            Array.from(grid.querySelectorAll('input')).forEach(input => {
+                const row = parseInt(input.dataset.row);
+                const column = parseInt(input.dataset.column);
+                values[row][column] = input.value; // Save text value
+            });
+
+            document.getElementById(currentMatrix).value = JSON.stringify(values);
+            $('#matrixModal').modal('hide');
+        }
     }
-}
 
     // function saveMatrix() {
     //     const rows = parseInt(document.getElementById('matrixRows').value);
