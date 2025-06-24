@@ -126,6 +126,8 @@ def solve():
         "active_con": len(active),
         "risk": risk,
         "conf": conf,
+        "tau_":tau,
+        "rho_":rho,
         "errorcode": e,  # Include the error message
     }
 

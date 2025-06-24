@@ -654,16 +654,16 @@
                         <th>Value</th>
                     </tr>
                     <tr>
-                        <td><strong>Optimal \\( \\theta \\)</strong></td>
+                        <td><strong>Optimal Cost</strong></td>
+                        <td><strong>${data.optimal_cost}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Optimal &theta; </strong></td>
                         <td><strong>${data.optimal_x.join(', ')}</strong></td>
                     </tr>
                     <tr>
-                        <td><strong>Optimal  \\( \\zeta \\)</strong></td>
+                        <td><strong>Optimal  &zeta; </strong></td>
                         <td><strong>${data.optimal_s.join(', ')}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Optimal Cost</strong></td>
-                        <td><strong>${data.optimal_cost}</strong></td>
                     </tr>
                     <tr>
                         <td><strong>Risk</strong></td>
@@ -674,16 +674,24 @@
                         <td><strong>${data.conf}</strong></td>
                     </tr>
                     <tr>
-                        <td><strong>Total Constraints</strong></td>
-                        <td><strong>${data.tot_con}</strong></td>
-                    </tr>
-                    <tr>
                         <td><strong>Support Set Size</strong></td>
                         <td><strong>${data.active_con}</strong></td>
                     </tr>
                     <tr>
                         <td><strong>Number of data samples</strong></td>
                         <td><strong>${data.num_deltas}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Constraints</strong></td>
+                        <td><strong>${data.tot_con}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Relaxation Parameters &rho;</strong></td>
+                        <td><strong>${data.rho_}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Regularization Parameters &tau;</strong></td>
+                        <td><strong>${data.tau_}</strong></td>
                     </tr>
                     <tr>
                         <td><i>Error</i></td>
