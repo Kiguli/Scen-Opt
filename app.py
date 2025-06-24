@@ -28,33 +28,25 @@ def index():
     return render_template('index.html', solvers=solvers, active_tab=active_tab)
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return redirect(request.url)
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(request.url)
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # TODO: don't save locally
-        session['uploaded_file'] = filename
-        return redirect(url_for('index'))
-    return redirect(request.url)
-
-
 @app.route('/solve', methods=['POST'])
 def solve():
     option = request.form.get('option')
     active_tab = request.form.get('active_tab')
 
-    # Load scenarios from the uploaded file
-    filename = session.get('uploaded_file')
-    if filename:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) #TODO: save these in cache rather than in folder
-        scenarios = load_file(file_path)
-    else:
-        return jsonify({'error': 'No file uploaded'}), 400
+    # Handle scenarios file if present
+    scenarios = None
+    if 'file' in request.files and request.files['file'].filename != '':
+        file = request.files['file']
+        # Example: read CSV or TXT as text, JSON as dict/list
+        filename = file.filename.lower()
+        if filename.endswith('.json'):
+            import json
+            scenarios = json.load(file)
+        elif filename.endswith('.csv') or filename.endswith('.txt'):
+            content = file.read().decode('utf-8')
+            scenarios =  np.array([[float(cell) for cell in row.split(',')] for row in content.strip().split('\n')])
+        else:
+            raise TypeError("Unsupported file format. Please upload a JSON, CSV, or TXT file.")
 
     # creates a matrix function for A(delta) and b(delta)
     def generate_matrix_function(expr_matrix_str):
@@ -92,7 +84,7 @@ def solve():
     A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
     b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
     c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
-    conf = float(request.form.get('confidence'))
+    conf = float(request.form.get('confidence')) if request.form.get('confidence') else 0.0
     # Get values from parameter boxes
     form_data = request.form.to_dict()
     print(form_data)

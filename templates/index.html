@@ -374,9 +374,6 @@
                 <div class="card-body">
                     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
                         <h5 class="card-title">Scenarios \((\delta_1, \delta_2, \ldots)\)</h5>
-                        <button type="button" id="upload-button" class="btn btn-primary" onclick="handleUpload()">
-                            Upload
-                        </button>
                         <input type="file" name="file" id="file" class="form-control-file">
                     </form>
                 </div>
@@ -605,26 +602,6 @@
         }
     }
 
-    function handleUpload() {
-        const form = document.getElementById('upload-form');
-        const button = document.getElementById('upload-button');
-        const formData = new FormData(form);
-
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        }).then(response => {
-            if (response.ok) {
-                button.textContent = 'Done!';
-            } else {
-                alert('Upload failed.');
-            }
-        }).catch(error => {
-            console.error('Error:', error);
-            alert('Upload failed.');
-        });
-    }
-
     function solve() {
         const activeTab = document.querySelector('.nav-link.active').id;
         let formId;
@@ -639,10 +616,16 @@
         const activeForm = document.getElementById(formId);
         const formData = new FormData(activeForm);
 
+        //Add solver form data
         const solverForm = document.getElementById('solver-form');
         const solverData = new FormData(solverForm);
         for (const [key, value] of solverData.entries()) {
             formData.append(key, value);
+        }
+
+        const fileInput = document.getElementById('file');
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
         }
 
         fetch(activeForm.action, {
