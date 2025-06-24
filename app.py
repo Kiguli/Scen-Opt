@@ -12,14 +12,6 @@ from src.Miscellaneous import load_file, get_solvers
 import ast
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads/'
-app.config['ALLOWED_EXTENSIONS'] = {'txt', 'csv', 'xlsx', 'json'}
-app.secret_key = os.urandom(24)  # Set the secret key to a random 24-byte string
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
 
 @app.route('/')
 def index():

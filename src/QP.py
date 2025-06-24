@@ -163,7 +163,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
                 drop.append(a)
         active = [constraint for constraint in active if constraint not in drop]
         if not test_active_QP(prob, objective, active, P=P, solver=solver):
-            raise ValueError("Error calculating support list.")
+            raise ValueError("Error calculating support list.") #TODO: in theory can have degeneracy here too!
 
     if non_risk_constraints in active:
         active.remove(non_risk_constraints)
