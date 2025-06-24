@@ -30,7 +30,7 @@ print("Optimal cost:", optimal_cost)
 
 print("============================:\n")
 # Example usage
-scenarios = np.loadtxt('smallest_interval_1d.csv', delimiter=',')
+scenarios = np.loadtxt('upload_csvs_1d_smallest_interval/smallest_interval_1d.csv', delimiter=',')
 def A_d(deltas:np.ndarray):
     return np.array([[-1,-1],[1,-1]])
 def b_d(deltas:np.ndarray):
