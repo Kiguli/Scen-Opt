@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimization Interface</title>
+    <title>Name of Our Tool </title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
@@ -11,7 +11,7 @@
 </head>
 <body>
 <div class="container mt-5">
-    <h1 class="text-center">Optimization Interface</h1>
+    <h1 class="text-center">Name of Our Tool (also in title)</h1>
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="lp-tab" data-toggle="tab" href="#lp" role="tab" aria-controls="lp"
@@ -30,7 +30,7 @@
         <div class="tab-pane fade show active" id="lp" role="tabpanel" aria-labelledby="lp-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">LP Options</h5>
+                    <h5 class="card-title">Linear Program</h5>
                     <form id="lp-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="lp-options">Select Option:</label>
@@ -147,7 +147,7 @@
         <div class="tab-pane fade" id="qp" role="tabpanel" aria-labelledby="qp-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">QP Options</h5>
+                    <h5 class="card-title">Quadratic Program</h5>
                     <form id="qp-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="qp-options">Select Option:</label>
@@ -274,7 +274,7 @@
         <div class="tab-pane fade" id="sdp" role="tabpanel" aria-labelledby="sdp-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">SDP Options</h5>
+                    <h5 class="card-title">Semidefinite Program</h5>
                     <form id="sdp-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="sdp-options">Select Option:</label>
@@ -373,7 +373,7 @@
             <div class="card">
                 <div class="card-body">
                     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-                        <h5 class="card-title">Upload File</h5>
+                        <h5 class="card-title">Scenarios \((\delta_1, \delta_2, \ldots)\)</h5>
                         <button type="button" id="upload-button" class="btn btn-primary" onclick="handleUpload()">
                             Upload
                         </button>
@@ -604,22 +604,6 @@
             $('#matrixModal').modal('hide');
         }
     }
-
-    // function saveMatrix() {
-    //     const rows = parseInt(document.getElementById('matrixRows').value);
-    //     const columns = parseInt(document.getElementById('matrixColumns').value);
-    //     const grid = document.getElementById('matrixGrid');
-    //     const values = Array.from({length: rows}, () => Array(columns).fill(0));
-    //
-    //     Array.from(grid.querySelectorAll('input')).forEach(input => {
-    //         const row = parseInt(input.dataset.row);
-    //         const column = parseInt(input.dataset.column);
-    //         values[row][column] = input.value; // Save text value
-    //     });
-    //
-    //     document.getElementById(currentMatrix).value = JSON.stringify(values);
-    //     $('#matrixModal').modal('hide');
-    // }
 
     function handleUpload() {
         const form = document.getElementById('upload-form');
