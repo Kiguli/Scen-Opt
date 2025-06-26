@@ -150,8 +150,6 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
                 changed = False
                 for constraint in active[:]:
                     temp_active = [c for c in active if c != constraint]
-                    if len(active) - len(temp_active) > 1:
-                        print("more than 1!")
                     if test_active_LP(prob, objective, temp_active, P=P, solver=solver):
                         active.remove(constraint)
                         changed = True
@@ -177,8 +175,6 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
                     changed = False
                     for constraint in active[:]:
                         temp_active = [c for c in active if c != constraint]
-                        if len(active) - len(temp_active) > 1:
-                            print("more than 1!")
                         if test_active_LP(prob, objective, temp_active, P=P, solver=solver):
                             active.remove(constraint)
                             changed = True
