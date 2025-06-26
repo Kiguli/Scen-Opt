@@ -93,23 +93,29 @@ def solve():
     constraints = []
     risk = 0.0
     e = "None"
+    degeneracy = False
 
     try:
         # Solve based on the active tab
         if active_tab == 'lp-tab':
-            optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+            optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
         elif active_tab == 'qp-tab':
             Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-            optimal_x, optimal_s, optimal_cost, N, active, constraints = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+            optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
         elif active_tab == 'sdp-tab':
             optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
 
         # Calculate risk
-        risk = quantify_risk(len(active), N, conf)
+        risk = np.array(quantify_risk(len(active), N, conf))
 
     except Exception as error:
         e = str(error)  # Save the error message
         print(e)
+
+    if degeneracy:
+        degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
+    else:
+        degeneracy = "false"
 
     # Prepare the result dictionary
     result = {
@@ -120,11 +126,12 @@ def solve():
         "num_deltas": N,
         "tot_con": len(constraints),
         "active_con": len(active),
-        "risk": risk,
+        "risk": risk.tolist() if risk.size > 0 else [],
         "conf": conf,
         "tau_":tau,
         "rho_":rho,
-        "errorcode": e,  # Include the error message
+        "errorcode": e,
+        "degeneracy":degeneracy # Include the error message
     }
 
     return jsonify(result)

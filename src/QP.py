@@ -79,10 +79,10 @@ def solve_qp(deltas, A_d, b_d, A, b, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, 
     cost_out = prob.value
 
     # Find the active constraints
-    active = get_active_QP(constraints, non_risk_constraints, prob, objective, P, solver)
+    active,degeneracy = get_active_QP(constraints, non_risk_constraints, prob, objective, P, solver)
 
     # Return results
-    return x_out, s_out, cost_out, size_of_deltas, active, constraints
+    return x_out, s_out, cost_out, size_of_deltas, active, constraints,degeneracy
 
 def test_active_QP(prob, objective, active, P=0.0, solver=None):
     """
@@ -138,7 +138,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
     """
 
     #TODO: make threshold a global parameter?
-
+    degeneracy = False
     active = []
     for constraint in constraints:
         if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
@@ -147,6 +147,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
 
     #If solution changes then likely to have degeneracy
     if not test_active_QP(prob, objective, active, P=P, solver=solver):
+        degeneracy = True
         print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
         # loop through all constraints and make a support list from them
         active = constraints
@@ -170,6 +171,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
             if test_active_QP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
                 drop.append(a)
         if not test_active_QP(prob, objective, [constraint for constraint in active if constraint not in drop], P=P, solver=solver):
+            degeneracy = True
             print("Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")
             # Iteratively remove constraints from active if test_active_QP returns True when they are removed
             changed = True
@@ -190,4 +192,4 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
     if non_risk_constraints in active:
         active.remove(non_risk_constraints)
 
-    return active
+    return active,degeneracy
