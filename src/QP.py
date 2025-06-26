@@ -161,9 +161,10 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
         for a in active:
             if test_active_QP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
                 drop.append(a)
-        active = [constraint for constraint in active if constraint not in drop]
-        if not test_active_QP(prob, objective, active, P=P, solver=solver):
-            raise ValueError("Error calculating support list.") #TODO: in theory can have degeneracy here too!
+        if not test_active_QP(prob, objective, [constraint for constraint in active if constraint not in drop], P=P, solver=solver):
+            raise ValueError("Error calculating support list.") #TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
+        else:
+            active = [constraint for constraint in active if constraint not in drop]
 
     if non_risk_constraints in active:
         active.remove(non_risk_constraints)
