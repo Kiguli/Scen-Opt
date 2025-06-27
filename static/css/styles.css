@@ -53,3 +53,29 @@
 .result-table td i {
     color: #ff4466;
 }
+
+.result-table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.result-table {
+    border-collapse: separate;
+    min-width: 600px;
+}
+
+/*.result-table th,*/
+/*.result-table td {*/
+/*    white-space: nowrap;*/
+/*    padding: 8px 12px;*/
+/*    border: 1px solid #dee2e6;*/
+/*    background: #fff;*/
+/*}*/
+
+.result-table th:first-child,
+.result-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: #f8f9fa;
+    z-index: 2;
+}

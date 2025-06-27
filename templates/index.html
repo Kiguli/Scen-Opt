@@ -637,7 +637,7 @@
             .then(data => {
                 const resultBox = document.getElementById('result-box');
                 resultBox.innerHTML = `
-<div class="result-container">
+    <div class="result-container">
     <ul class="nav nav-tabs" id="resultTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="result-table-tab" data-toggle="tab" href="#result-table" role="tab" aria-controls="result-table" aria-selected="true">Results Table</a>
@@ -645,15 +645,24 @@
         <li class="nav-item">
             <a class="nav-link" id="result-graph-tab" data-toggle="tab" href="#result-graph" role="tab" aria-controls="result-graph" aria-selected="false">Graph</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" id="result-formdata-tab" data-toggle="tab" href="#result-formdata" role="tab" aria-controls="result-formdata" aria-selected="false">Form Data</a>
+        </li>
     </ul>
     <div class="tab-content" id="resultTabContent">
         <div class="tab-pane fade show active" id="result-table" role="tabpanel" aria-labelledby="result-table-tab">
             <h3>Optimization Results</h3>
+            <div class="result-table-container">
             ${generateResultTable(data)}
+            </div>
         </div>
         <div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
             <h3>Graph</h3>
             <canvas id="resultGraph" width="400" height="300"></canvas>
+        </div>
+        <div class="tab-pane fade" id="result-formdata" role="tabpanel" aria-labelledby="result-formdata-tab">
+            <h3>Form Data</h3>
+            <pre style="white-space: pre-wrap; word-break: break-all;">${JSON.stringify(data.form_data, null, 2)}</pre>
         </div>
     </div>
 </div>
@@ -720,26 +729,59 @@
             { label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_] },
             { label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_] },
             { label: 'Confidence &beta;', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
-            { label: 'Risk bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
+            { label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
             { label: 'Degeneracy Detected?', values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy] },
             { label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con] },
             { label: 'Number of data samples', values: Array.isArray(data.num_deltas) ? data.num_deltas : [data.num_deltas] },
             { label: 'Total Constraints', values: Array.isArray(data.tot_con) ? data.tot_con : [data.tot_con] },
-            { label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode] },
-            { label: 'Form Data', values: [JSON.stringify(data.form_data)] }
+            { label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode] }//,
+            // { label: 'Form Data', values: [JSON.stringify(data.form_data)] }
         ];
 
         let table = `<table class="result-table">
-        <tr>
-            <th>Parameter</th>
-            ${valueHeaders}
-        </tr>`;
+            <tr>
+                <th>Parameter</th>
+                ${valueHeaders}
+            </tr>`;
         rows.forEach(row => {
+            if (row.values.length===1 && count > 1){
+                row.values = Array(count).fill(row.values[0]);
+            }
             table += `
-        <tr>
-            <td>${row.label}</td>
-            ${Array.from({ length: count }, (_, i) => `<td>${row.values[i] !== undefined ? row.values[i] : ''}</td>`).join('')}
-        </tr>`;
+            <tr>
+                <td>${row.label}</td>
+                ${row.values.map((val, i) => {
+                // Risk column: show as [a, b]
+                if (row.label.includes('Risk Bounds')) {
+                    if (Array.isArray(val) && val.length === 2) {
+                        return `<td><strong>[${val[0]}, ${val[1]}]</strong></td>`;
+                    }
+                    return `<td>${val}</td>`;
+                }
+                if (row.label.includes('Optimal Cost')) {
+                    return `<td><strong>${val}</strong></td>`;
+                }
+                // Error column: all inside <i>
+                if (row.label.includes('Error')) {
+                    if (Array.isArray(val)) {
+                        return `<td><i>${val.join('<br>')}</i></td>`;
+                    }
+                    return `<td><i>${val}</i></td>`;
+                }
+                if (row.label.includes('Degeneracy Detected?')) {
+                    if (Array.isArray(val) && val.value==true) {
+                        return `<td><i>${val}</i></td>`;
+                    }
+                    return `<td>${val}</td>`;
+                }
+
+                // All other columns: newline separated if multiple
+                if (Array.isArray(val)) {
+                    return `<td><strong>${val.join('<br>')}<strong></td>`;
+                }
+                return `<td>${val !== undefined ? val : ''}</td>`;
+            }).join('')}
+            </tr>`;
         });
         table += `</table>`;
         return table;

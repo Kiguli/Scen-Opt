@@ -85,61 +85,70 @@ def solve():
 
     rhos = np.array([float(x) for x in request.form.get('rho', 0).split(',')]) if request.form.get('rho') else np.array([0.0])
 
-    # Initialize uninitialized values
-    optimal_x = np.array([])
-    optimal_s = np.array([])
-    optimal_cost = 0.0
-    N = 0
-    active = []
-    constraints = []
-    risk = 0.0
-    e = "None"
-    degeneracy = False
+    # Initialize lists to collect results for each run
+    optimal_x_list = []
+    optimal_s_list = []
+    optimal_cost_list = []
+    N_list = []
+    active_list = []
+    constraints_list = []
+    risk_list = []
+    e_list = []
+    degeneracy_list = []
+    rho_list = []
 
-    count = 0
     for i in range(len(rhos)):
-        count += 1
         rho = rhos[i]
         solver = form_data.get('solver', 'SCS')
 
         try:
-            # Solve based on the active tab
             if active_tab == 'lp-tab':
-                optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
+                    scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
             elif active_tab == 'qp-tab':
                 Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-                optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
+                    scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
             elif active_tab == 'sdp-tab':
-                optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                optimal_x, optimal_s, optimal_cost = solve_sdp(
+                    scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
 
-            # Calculate risk
             risk = np.array(quantify_risk(len(active), N, conf))
-
+            e = "None"
         except Exception as error:
-            e = str(error)  # Save the error message
-            print(e)
+            e = str(error)
+            risk = np.array([])
+            N, active, constraints, degeneracy = 0, [], [], False
 
-        # if degeneracy: #TODO: decide if needs more text
-        #     degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
-        # else:
-        #     degeneracy = "false"
+        # Append results for this run
+        optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
+        optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
+        optimal_cost_list.append(optimal_cost)
+        N_list.append(N)
+        active_list.append(len(active))
+        constraints_list.append(len(constraints))
+        risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
+        e_list.append(e)
+        degeneracy_list.append(degeneracy)
+        rho_list.append(rho)
 
-    # Prepare the result dictionary
+    # Prepare the result dictionary with lists for each parameter
     result = {
-        "count": count,
+        "count": len(rhos),
         "form_data": form_data,
-        "optimal_x": optimal_x.tolist() if optimal_x.size > 0 else [],
-        "optimal_s": optimal_s.tolist() if optimal_s.size > 0 else [],
-        "optimal_cost": optimal_cost,
-        "num_deltas": N,
-        "tot_con": len(constraints),
-        "active_con": len(active),
-        "risk": risk.tolist() if risk.size > 0 else [],
+        "optimal_x": optimal_x_list,
+        "optimal_s": optimal_s_list,
+        "optimal_cost": optimal_cost_list,
+        "num_deltas": N_list,
+        "tot_con": constraints_list,
+        "active_con": active_list,
+        "risk": risk_list,
         "conf": conf,
-        "tau_":tau,
-        "rho_":rho,
-        "errorcode": e,
-        "degeneracy":degeneracy # Include the error message
+        "tau_": tau,
+        "rho_": rho_list,
+        "errorcode": e_list,
+        "degeneracy": degeneracy_list
     }
 
     return jsonify(result)
