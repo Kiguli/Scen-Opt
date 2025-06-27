@@ -79,7 +79,7 @@ def solve():
     print(form_data)
 
 
-    tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
+    taus = np.array([float(x) for x in request.form.get('tau', 0).split(',')]) if request.form.get('tau') else np.array([0.0])
     theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get('theta_bar') else 0.0
     p = float(request.form.get('p', 0)) if request.form.get('p') else 2  #TODO: add something to check for 'fro' or 'inf', and any number
 
@@ -96,46 +96,50 @@ def solve():
     e_list = []
     degeneracy_list = []
     rho_list = []
+    tau_list = []
 
-    for i in range(len(rhos)):
-        rho = rhos[i]
-        solver = form_data.get('solver', 'SCS')
+    for j in range(len(taus)):
+        tau = taus[j]
+        for i in range(len(rhos)):
+            rho = rhos[i]
+            solver = form_data.get('solver', 'SCS')
 
-        try:
-            if active_tab == 'lp-tab':
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
-                    scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
-            elif active_tab == 'qp-tab':
-                Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
-                    scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
-            elif active_tab == 'sdp-tab':
-                optimal_x, optimal_s, optimal_cost = solve_sdp(
-                    scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
-                N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
+            try:
+                if active_tab == 'lp-tab':
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
+                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                elif active_tab == 'qp-tab':
+                    Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
+                        scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+                elif active_tab == 'sdp-tab':
+                    optimal_x, optimal_s, optimal_cost = solve_sdp(
+                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                    N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
 
-            risk = np.array(quantify_risk(len(active), N, conf))
-            e = "None"
-        except Exception as error:
-            e = str(error)
-            risk = np.array([])
-            N, active, constraints, degeneracy = 0, [], [], False
+                risk = np.array(quantify_risk(len(active), N, conf))
+                e = "None"
+            except Exception as error:
+                e = str(error)
+                risk = np.array([])
+                N, active, constraints, degeneracy = 0, [], [], False
 
-        # Append results for this run
-        optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
-        optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
-        optimal_cost_list.append(optimal_cost)
-        N_list.append(N)
-        active_list.append(len(active))
-        constraints_list.append(len(constraints))
-        risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
-        e_list.append(e)
-        degeneracy_list.append(degeneracy)
-        rho_list.append(rho)
+            # Append results for this run
+            optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
+            optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
+            optimal_cost_list.append(optimal_cost)
+            N_list.append(N)
+            active_list.append(len(active))
+            constraints_list.append(len(constraints))
+            risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
+            e_list.append(e)
+            degeneracy_list.append(degeneracy)
+            rho_list.append(rho)
+            tau_list.append(tau)
 
     # Prepare the result dictionary with lists for each parameter
     result = {
-        "count": len(rhos),
+        "count": len(rhos)*len(taus),
         "form_data": form_data,
         "optimal_x": optimal_x_list,
         "optimal_s": optimal_s_list,
@@ -145,7 +149,7 @@ def solve():
         "active_con": active_list,
         "risk": risk_list,
         "conf": conf,
-        "tau_": tau,
+        "tau_": tau_list,
         "rho_": rho_list,
         "errorcode": e_list,
         "degeneracy": degeneracy_list

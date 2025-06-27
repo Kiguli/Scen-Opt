@@ -769,8 +769,8 @@
                     return `<td><i>${val}</i></td>`;
                 }
                 if (row.label.includes('Degeneracy Detected?')) {
-                    if (Array.isArray(val) && val.value==true) {
-                        return `<td><i>${val}</i></td>`;
+                    if (Array.isArray(val) && val.includes("true")) {
+                        return `<td><i>${val}</i></td>`; // TODO: make true appear in a different color!
                     }
                     return `<td>${val}</td>`;
                 }
