@@ -62,6 +62,7 @@ def solve():
         ])
 
     if request.form.get('A_d'):
+
         A_d = generate_matrix_function(request.form.get('A_d'))
     else:
         raise ValueError("A(delta) is ill-defined")
@@ -81,8 +82,8 @@ def solve():
     tau = float(request.form.get('tau', 0)) if request.form.get('tau') else 0.0
     theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get('theta_bar') else 0.0
     p = float(request.form.get('p', 0)) if request.form.get('p') else 2  #TODO: add something to check for 'fro' or 'inf', and any number
-    rho = float(request.form.get('rho', 0)) if request.form.get('rho') else 0.0
-    solver = form_data.get('solver', 'SCS')
+
+    rhos = np.array([float(x) for x in request.form.get('rho', 0).split(',')]) if request.form.get('rho') else np.array([0.0])
 
     # Initialize uninitialized values
     optimal_x = np.array([])
@@ -94,31 +95,37 @@ def solve():
     risk = 0.0
     e = "None"
     degeneracy = False
+    dim = 0
 
-    try:
-        # Solve based on the active tab
-        if active_tab == 'lp-tab':
-            optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
-        elif active_tab == 'qp-tab':
-            Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-            optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
-        elif active_tab == 'sdp-tab':
-            optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+    for i in range(len(rhos)):
+        rho = rhos[i]
+        solver = form_data.get('solver', 'SCS')
 
-        # Calculate risk
-        risk = np.array(quantify_risk(len(active), N, conf))
+        try:
+            # Solve based on the active tab
+            if active_tab == 'lp-tab':
+                optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_lp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+            elif active_tab == 'qp-tab':
+                Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
+                optimal_x, optimal_s, optimal_cost, N, active, constraints,degeneracy = solve_qp(scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+            elif active_tab == 'sdp-tab':
+                optimal_x, optimal_s, optimal_cost = solve_sdp(scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
 
-    except Exception as error:
-        e = str(error)  # Save the error message
-        print(e)
+            # Calculate risk
+            risk = np.array(quantify_risk(len(active), N, conf))
 
-    if degeneracy:
-        degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
-    else:
-        degeneracy = "false"
+        except Exception as error:
+            e = str(error)  # Save the error message
+            print(e)
+
+        if degeneracy:
+            degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
+        else:
+            degeneracy = "false"
 
     # Prepare the result dictionary
     result = {
+        "dim": dim,
         "form_data": form_data,
         "optimal_x": optimal_x.tolist() if optimal_x.size > 0 else [],
         "optimal_s": optimal_s.tolist() if optimal_s.size > 0 else [],
