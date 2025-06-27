@@ -604,39 +604,39 @@
     }
 
     function solve() {
-    const activeTab = document.querySelector('.nav-link.active').id;
-    let formId;
-    if (activeTab === 'lp-tab') {
-        formId = 'lp-form';
-    } else if (activeTab === 'qp-tab') {
-        formId = 'qp-form';
-    } else if (activeTab === 'sdp-tab') {
-        formId = 'sdp-form';
-    }
+        const activeTab = document.querySelector('.nav-link.active').id;
+        let formId;
+        if (activeTab === 'lp-tab') {
+            formId = 'lp-form';
+        } else if (activeTab === 'qp-tab') {
+            formId = 'qp-form';
+        } else if (activeTab === 'sdp-tab') {
+            formId = 'sdp-form';
+        }
 
-    const activeForm = document.getElementById(formId);
-    const formData = new FormData(activeForm);
+        const activeForm = document.getElementById(formId);
+        const formData = new FormData(activeForm);
 
-    // Add solver form data
-    const solverForm = document.getElementById('solver-form');
-    const solverData = new FormData(solverForm);
-    for (const [key, value] of solverData.entries()) {
-        formData.append(key, value);
-    }
+        // Add solver form data
+        const solverForm = document.getElementById('solver-form');
+        const solverData = new FormData(solverForm);
+        for (const [key, value] of solverData.entries()) {
+            formData.append(key, value);
+        }
 
-    const fileInput = document.getElementById('file');
-    if (fileInput && fileInput.files.length > 0) {
-        formData.append('file', fileInput.files[0]);
-    }
+        const fileInput = document.getElementById('file');
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
 
-    fetch(activeForm.action, {
-        method: activeForm.method,
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            const resultBox = document.getElementById('result-box');
-            resultBox.innerHTML = `
+        fetch(activeForm.action, {
+            method: activeForm.method,
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                const resultBox = document.getElementById('result-box');
+                resultBox.innerHTML = `
 <div class="result-container">
     <ul class="nav nav-tabs" id="resultTab" role="tablist">
         <li class="nav-item">
@@ -659,86 +659,91 @@
 </div>
 `;
 
-            // Use the canvas for Chart.js
-            const ctx = document.getElementById('resultGraph').getContext('2d');
-            new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    labels: data.optimal_x.map((_, index) => `&rho; = ${data.rho_}`),
-                    datasets: [{
-                        label: 'Lower bound &epsilon;',
-                        data: [{ x: data.optimal_cost, y: data.risk[0] }],
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 2,
-                        fill: false,
-                        showLine: false
-                    }, {
-                        label: 'Upper bound &epsilon;',
-                        data: [{ x: data.optimal_cost, y: data.risk[1] }],
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 2,
-                        fill: false,
-                        showLine: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Optimal Cost'
+                // Use the canvas for Chart.js
+                const ctx = document.getElementById('resultGraph').getContext('2d');
+                new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        labels: data.optimal_x.map((_, index) => `&rho; = ${data.rho_}`),
+                        datasets: [{
+                            label: 'Lower bound &epsilon;',
+                            data: [{ x: data.optimal_cost, y: data.risk[0] }],
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            showLine: false
+                        }, {
+                            label: 'Upper bound &epsilon;',
+                            data: [{ x: data.optimal_cost, y: data.risk[1] }],
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            showLine: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Optimal Cost'
+                                },
+                                type: 'linear',
+                                position: 'bottom'
                             },
-                            type: 'linear',
-                            position: 'bottom'
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Risk'
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Risk'
+                                }
                             }
                         }
                     }
-                }
-            });
-            // Trigger MathJax to render
-            MathJax.typesetPromise();
-        })
-        .catch(error => console.error('Error:', error));
-}
+                });
+                // Trigger MathJax to render
+                MathJax.typesetPromise();
+            })
+            .catch(error => console.error('Error:', error));
+    }
 
     function generateResultTable(data) {
-    const rows = [
-        { label: 'Optimal Cost', value: `<strong>${data.optimal_cost}</strong>` },
-        { label: 'Optimal &theta;', value: `<strong>${data.optimal_x.join('<br>')}</strong>` },
-        { label: 'Optimal &zeta;', value: `<strong>${data.optimal_s.join('<br>')}</strong>` },
-        { label: 'Relaxation Parameters &rho;', value: `<strong>${data.rho_}</strong>` },
-        { label: 'Regularization Parameters &tau;', value: `<strong>${data.tau_}</strong>` },
-        { label: 'Confidence &beta;', value: `<strong>${data.conf}</strong>` },
-        { label: 'Risk bounds &epsilon;', value: `<strong>[${data.risk.join(', ')}]</strong>` },
-        { label: 'Degeneracy Detected?', value: `<strong>${data.degeneracy}</strong>` },
-        { label: 'Support Set Size', value: `<strong>${data.active_con}</strong>` },
-        { label: 'Number of data samples', value: `<strong>${data.num_deltas}</strong>` },
-        { label: 'Total Constraints', value: `<strong>${data.tot_con}</strong>` },
-        { label: '<i>Error</i>', value: `<i>${data.errorcode}</i>` },
-        { label: 'Form Data', value: `${JSON.stringify(data.form_data)}` }
-    ];
+        // Determine the number of value columns
+        const count = data.count || 1;
+        const valueHeaders = Array.from({ length: count }, (_, i) => `<th>Value${i + 1}</th>`).join('');
 
-    let table = `<table class="result-table">
+        // Prepare rows with values as arrays (or wrap single values)
+        const rows = [
+            { label: 'Optimal Cost', values: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost] },
+            { label: 'Optimal &theta;', values: Array.isArray(data.optimal_x) ? data.optimal_x : [data.optimal_x] },
+            { label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s] },
+            { label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_] },
+            { label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_] },
+            { label: 'Confidence &beta;', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
+            { label: 'Risk bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
+            { label: 'Degeneracy Detected?', values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy] },
+            { label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con] },
+            { label: 'Number of data samples', values: Array.isArray(data.num_deltas) ? data.num_deltas : [data.num_deltas] },
+            { label: 'Total Constraints', values: Array.isArray(data.tot_con) ? data.tot_con : [data.tot_con] },
+            { label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode] },
+            { label: 'Form Data', values: [JSON.stringify(data.form_data)] }
+        ];
+
+        let table = `<table class="result-table">
         <tr>
             <th>Parameter</th>
-            <th>Value</th>
+            ${valueHeaders}
         </tr>`;
-    rows.forEach(row => {
-        table += `
+        rows.forEach(row => {
+            table += `
         <tr>
             <td>${row.label}</td>
-            <td>${row.value}</td>
+            ${Array.from({ length: count }, (_, i) => `<td>${row.values[i] !== undefined ? row.values[i] : ''}</td>`).join('')}
         </tr>`;
-    });
-    table += `</table>`;
-    return table;
-}
+        });
+        table += `</table>`;
+        return table;
+    }
 
     function updateLatexText(tab) {
         const option = document.getElementById(`${tab}-options`).value;
