@@ -673,17 +673,17 @@
                 new Chart(ctx, {
                     type: 'scatter',
                     data: {
-                        labels: data.optimal_x.map((_, index) => `&rho; = ${data.rho_}`),
+                        labels: data.optimal_x.map((_, index) => `&rho; = ${Array.isArray(data.rho_) ? data.rho_[index] : data.rho_}, &tau; = ${Array.isArray(data.tau_) ? data.tau_[index] : data.tau_}, degeneracy = ${Array.isArray(data.degeneracy) ? data.degeneracy[index] : data.degeneracy}`),
                         datasets: [{
                             label: 'Lower bound &epsilon;',
-                            data: [{ x: data.optimal_cost, y: data.risk[0] }],
+                            data: data.optimal_cost.map((cost, i) => ({ x: cost, y: Array.isArray(data.risk[i]) ? data.risk[i][0] : undefined })),
                             borderColor: 'rgba(75, 192, 192, 1)',
                             borderWidth: 2,
                             fill: false,
                             showLine: false
                         }, {
                             label: 'Upper bound &epsilon;',
-                            data: [{ x: data.optimal_cost, y: data.risk[1] }],
+                            data: data.optimal_cost.map((cost, i) => ({ x: cost, y: Array.isArray(data.risk[i]) ? data.risk[i][1] : undefined })),
                             borderColor: 'rgba(255, 99, 132, 1)',
                             borderWidth: 2,
                             fill: false,
