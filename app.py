@@ -95,9 +95,10 @@ def solve():
     risk = 0.0
     e = "None"
     degeneracy = False
-    dim = 0
 
+    count = 0
     for i in range(len(rhos)):
+        count += 1
         rho = rhos[i]
         solver = form_data.get('solver', 'SCS')
 
@@ -118,14 +119,14 @@ def solve():
             e = str(error)  # Save the error message
             print(e)
 
-        if degeneracy:
-            degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
-        else:
-            degeneracy = "false"
+        # if degeneracy: #TODO: decide if needs more text
+        #     degeneracy = "true - degeneracy is likely so the theory for the lower bound may not hold!"
+        # else:
+        #     degeneracy = "false"
 
     # Prepare the result dictionary
     result = {
-        "dim": dim,
+        "count": count,
         "form_data": form_data,
         "optimal_x": optimal_x.tolist() if optimal_x.size > 0 else [],
         "optimal_s": optimal_s.tolist() if optimal_s.size > 0 else [],

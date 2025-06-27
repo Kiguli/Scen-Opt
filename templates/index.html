@@ -649,64 +649,7 @@
     <div class="tab-content" id="resultTabContent">
         <div class="tab-pane fade show active" id="result-table" role="tabpanel" aria-labelledby="result-table-tab">
             <h3>Optimization Results</h3>
-            <table class="result-table">
-                <tr>
-                        <th>Parameter</th>
-                        <th>Value</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Optimal Cost</strong></td>
-                        <td><strong>${data.optimal_cost}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Optimal &theta; </strong></td>
-                        <td><strong>${data.optimal_x.join('<br>')}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Optimal  &zeta; </strong></td>
-                        <td><strong>${data.optimal_s.join('<br>')}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Confidence</strong></td>
-                        <td><strong>${data.conf}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Risk bounds</strong></td>
-                        <td><strong>[${data.risk.join(', ')}]</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Degeneracy Detected?</strong></td>
-                        <td><strong>${data.degeneracy}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Support Set Size</strong></td>
-                        <td><strong>${data.active_con}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Number of data samples</strong></td>
-                        <td><strong>${data.num_deltas}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total Constraints</strong></td>
-                        <td><strong>${data.tot_con}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Relaxation Parameters &rho;</strong></td>
-                        <td><strong>${data.rho_}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Regularization Parameters &tau;</strong></td>
-                        <td><strong>${data.tau_}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><i>Error</i></td>
-                        <td><i>${data.errorcode}</i></td>
-                    </tr>
-                <tr>
-                    <td>Form Data</td>
-                    <td>${JSON.stringify(data.form_data)}</td>
-                </tr>
-            </table>
+            ${generateResultTable(data)}
         </div>
         <div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
             <h3>Graph</h3>
@@ -724,14 +667,14 @@
                     labels: data.optimal_x.map((_, index) => `&rho; = ${data.rho_}`),
                     datasets: [{
                         label: 'Lower bound &epsilon;',
-                        data: [{ x: data.rho_, y: data.risk[0] }],
+                        data: [{ x: data.optimal_cost, y: data.risk[0] }],
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 2,
                         fill: false,
                         showLine: false
                     }, {
                         label: 'Upper bound &epsilon;',
-                        data: [{ x: data.rho_, y: data.risk[1] }],
+                        data: [{ x: data.optimal_cost, y: data.risk[1] }],
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 2,
                         fill: false,
@@ -744,7 +687,7 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'rho &rho;'
+                                text: 'Optimal Cost'
                             },
                             type: 'linear',
                             position: 'bottom'
@@ -752,7 +695,7 @@
                         y: {
                             title: {
                                 display: true,
-                                text: 'risk &epsilon;'
+                                text: 'Risk'
                             }
                         }
                     }
@@ -762,6 +705,39 @@
             MathJax.typesetPromise();
         })
         .catch(error => console.error('Error:', error));
+}
+
+    function generateResultTable(data) {
+    const rows = [
+        { label: 'Optimal Cost', value: `<strong>${data.optimal_cost}</strong>` },
+        { label: 'Optimal &theta;', value: `<strong>${data.optimal_x.join('<br>')}</strong>` },
+        { label: 'Optimal &zeta;', value: `<strong>${data.optimal_s.join('<br>')}</strong>` },
+        { label: 'Relaxation Parameters &rho;', value: `<strong>${data.rho_}</strong>` },
+        { label: 'Regularization Parameters &tau;', value: `<strong>${data.tau_}</strong>` },
+        { label: 'Confidence &beta;', value: `<strong>${data.conf}</strong>` },
+        { label: 'Risk bounds &epsilon;', value: `<strong>[${data.risk.join(', ')}]</strong>` },
+        { label: 'Degeneracy Detected?', value: `<strong>${data.degeneracy}</strong>` },
+        { label: 'Support Set Size', value: `<strong>${data.active_con}</strong>` },
+        { label: 'Number of data samples', value: `<strong>${data.num_deltas}</strong>` },
+        { label: 'Total Constraints', value: `<strong>${data.tot_con}</strong>` },
+        { label: '<i>Error</i>', value: `<i>${data.errorcode}</i>` },
+        { label: 'Form Data', value: `${JSON.stringify(data.form_data)}` }
+    ];
+
+    let table = `<table class="result-table">
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+        </tr>`;
+    rows.forEach(row => {
+        table += `
+        <tr>
+            <td>${row.label}</td>
+            <td>${row.value}</td>
+        </tr>`;
+    });
+    table += `</table>`;
+    return table;
 }
 
     function updateLatexText(tab) {
