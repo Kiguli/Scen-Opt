@@ -356,7 +356,7 @@
         <div class="col-md-6">
             <div class="form-group">
                 <form id="solver-form" action="/solve" method="post">
-                    <label for="confidence">Confidence \(\beta\):</label>
+                    <label for="confidence">Confidence (1-\(\beta\)) where \(\beta\):</label>
                     <input type="text" id="confidence" class="form-control" name="confidence" data-shared="true"
                            value="{{ request.form.confidence }}">
                     <label for="solver">Solver:</label>
@@ -728,7 +728,7 @@
             { label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s] },
             { label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_] },
             { label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_] },
-            { label: 'Confidence &beta;', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
+            { label: 'Confidence (1-&beta;)', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
             { label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
             { label: 'Degeneracy Detected?', values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy] },
             { label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con] },
