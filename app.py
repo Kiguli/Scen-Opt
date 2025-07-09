@@ -118,7 +118,7 @@ def solve():
                     N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
 
                 #update confidence based on number of tau and rho
-                conf = conf*len(taus)*len(rhos)
+                conf = conf/(len(taus)*len(rhos))
 
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"
