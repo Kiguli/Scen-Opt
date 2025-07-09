@@ -629,6 +629,8 @@
             formData.append('file', fileInput.files[0]);
         }
 
+        document.getElementById('result-box').innerHTML = '<p>Solve button pressed, processing results...</p>';
+
         fetch(activeForm.action, {
             method: activeForm.method,
             body: formData
