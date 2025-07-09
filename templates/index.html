@@ -643,7 +643,10 @@
             <a class="nav-link active" id="result-table-tab" data-toggle="tab" href="#result-table" role="tab" aria-controls="result-table" aria-selected="true">Results Table</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="result-graph-tab" data-toggle="tab" href="#result-graph" role="tab" aria-controls="result-graph" aria-selected="false">Graph</a>
+            <a class="nav-link" id="result-graph-tab" data-toggle="tab" href="#result-graph" role="tab" aria-controls="result-graph" aria-selected="false">ρ Graph</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="result-graph2-tab" data-toggle="tab" href="#result-graph2" role="tab" aria-controls="result-graph2" aria-selected="false">𝜏 Graph</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="result-formdata-tab" data-toggle="tab" href="#result-formdata" role="tab" aria-controls="result-formdata" aria-selected="false">Form Data</a>
@@ -657,8 +660,12 @@
             </div>
         </div>
         <div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
-            <h3>Graph</h3>
+            <h3>ρ Graph</h3>
             <canvas id="resultGraph" width="400" height="300"></canvas>
+        </div>
+        <div class="tab-pane fade" id="result-graph2" role="tabpanel" aria-labelledby="result-graph2-tab">
+            <h3>𝜏 Graph</h3>
+            <canvas id="resultGraph2" width="400" height="300"></canvas>
         </div>
         <div class="tab-pane fade" id="result-formdata" role="tabpanel" aria-labelledby="result-formdata-tab">
             <h3>Form Data</h3>
@@ -668,49 +675,152 @@
 </div>
 `;
 
-                // Use the canvas for Chart.js
+                // Prepare risk lower and upper arrays
+                const riskLower = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[0] : r) : [data.risk];
+                const riskUpper = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[1] : r) : [data.risk];
+
                 const ctx = document.getElementById('resultGraph').getContext('2d');
                 new Chart(ctx, {
-                    type: 'scatter',
-                    data: { //TODO: discuss exactly what the graphs should look like
-                        labels: data.optimal_x.map((_, index) => `&rho; = ${Array.isArray(data.rho_) ? data.rho_[index] : data.rho_}, &tau; = ${Array.isArray(data.tau_) ? data.tau_[index] : data.tau_}, degeneracy = ${Array.isArray(data.degeneracy) ? data.degeneracy[index] : data.degeneracy}`),
-                        datasets: [{
-                            label: 'Lower bound &epsilon;',
-                            data: data.optimal_cost.map((cost, i) => ({ x: Array.isArray(data.rho_) ? data.rho_[i] : data.rho_, y: Array.isArray(data.risk[i]) ? data.risk[i][0] : undefined })),
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 2,
-                            fill: false,
-                            showLine: false
-                        }, {
-                            label: 'Upper bound &epsilon;',
-                            data: data.optimal_cost.map((cost, i) => ({ x: Array.isArray(data.rho_) ? data.rho_[i] : data.rho_, y: Array.isArray(data.risk[i]) ? data.risk[i][1] : undefined })),
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 2,
-                            fill: false,
-                            showLine: false
-                        }]
+                    type: 'line',
+                    data: {
+                        labels: Array.isArray(data.rho_) ? data.rho_ : [data.rho_],
+                        datasets: [
+                            {
+                                label: 'Risk Lower Bound (εₗ)',
+                                data: riskLower,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                yAxisID: 'y-risk',
+                                fill: false,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Risk Upper Bound (εᵤ)',
+                                data: riskUpper,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                yAxisID: 'y-risk',
+                                fill: '-1', // fill between lower and upper
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Cost',
+                                data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
+                                borderColor: 'rgba(36, 32, 34, 0.8)',
+                                yAxisID: 'y-cost',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
                         scales: {
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'rho'
+                                    text: 'Relaxation Term (ρ)'
                                 },
                                 type: 'linear',
                                 position: 'bottom'
                             },
-                            y: {
+                            'y-risk': {
+                                type: 'linear',
+                                position: 'left',
                                 title: {
                                     display: true,
-                                    text: 'Risk'
+                                    text: 'Risk (ε)'
+                                }
+                            },
+                            'y-cost': {
+                                type: 'linear',
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Cost'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
                                 }
                             }
                         }
                     }
                 });
-                // Trigger MathJax to render
+                const ctx2 = document.getElementById('resultGraph2').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: Array.isArray(data.tau_) ? data.tau_ : [data.tau_],
+                        datasets: [
+                            {
+                                label: 'Risk Lower Bound (εₗ)',
+                                data: riskLower,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                yAxisID: 'y-risk',
+                                fill: false,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Risk Upper Bound (εᵤ)',
+                                data: riskUpper,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                yAxisID: 'y-risk',
+                                fill: '-1', // fill between lower and upper
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Cost',
+                                data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
+                                borderColor: 'rgba(36, 32, 34, 0.8)',
+                                yAxisID: 'y-cost',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Regularization Term (τ)'
+                                },
+                                type: 'linear',
+                                position: 'bottom'
+                            },
+                            'y-risk': {
+                                type: 'linear',
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Risk (ε)'
+                                }
+                            },
+                            'y-cost': {
+                                type: 'linear',
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Cost'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        }
+                    }
+                });
                 MathJax.typesetPromise();
             })
             .catch(error => console.error('Error:', error));
