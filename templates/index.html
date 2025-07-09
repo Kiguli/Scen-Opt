@@ -26,6 +26,10 @@
             <a class="nav-link" id="sdp-tab" data-toggle="tab" href="#sdp" role="tab" aria-controls="sdp"
                aria-selected="false">SDP (inequality form)</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" id="sdp2-tab" data-toggle="tab" href="#sdp2" role="tab" aria-controls="sdp2"
+               aria-selected="false">SDP (standard form)</a>
+        </li>
     </ul>
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="lp" role="tabpanel" aria-labelledby="lp-tab">
@@ -351,6 +355,85 @@
                 </div>
             </div>
         </div>
+        <div class="tab-pane fade" id="sdp2" role="tabpanel" aria-labelledby="sdp2-tab">
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Semidefinite Program (Inequality Form)</h5>
+                    <form id="sdp2-form" action="/solve" method="post">
+                        <div class="form-group">
+                            <label for="sdp2-options">Select Option:</label>
+                            <select id="sdp2-options" class="form-control" name="option"
+                                    onchange="updateLatexText('sdp2')">
+                                <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
+                                    Robust
+                                </option>
+                                <option value="robust-regularization" {% if request.form.option=='robust-regularization'
+                                        %}selected{% endif %}>Robust + Regularization
+                                </option>
+                                <option value="robust-relaxation" {% if request.form.option=='robust-relaxation'
+                                        %}selected{% endif %}>Robust + Relaxation
+                                </option>
+                                <option value="robust-regularization-relaxation" {% if
+                                        request.form.option=='robust-regularization-relaxation' %}selected{% endif %}>
+                                    Robust + Regularization + Relaxation
+                                </option>
+                            </select>
+                        </div>
+                        <div id="sdp2-latex" class="form-group">
+                            <div class="text-center">
+                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
+                                <p>subject to</p>
+                                <p>\(F_0 + F_1\theta_1 +F_2\theta_2 + \ldots + F_n\theta_n \leq 0\)</p>
+                                <p>\(F_0 + F_1(\delta_i)\theta_1 +F_2(\delta_i)\theta_2 + \ldots + F_n(\delta_i)\theta_n
+                                    \leq 0, \quad i = 1, \ldots, N\)</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp2-c">\(c\):</label>
+                            <input type="text" id="sdp2-c" class="form-control" name="c" data-shared="true"
+                                   value="{{ request.form.c }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp2-Q">\(Q\):</label>
+                            <input type="text" id="sdp2-Q" class="form-control" name="Q" data-shared="true"
+                                   value="{{ request.form.Q }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp2-F">\(F_j, j=1,\ldots,n\):</label>
+                            <input type="text" id="sdp2-F" class="form-control" name="F" data-shared="true"
+                                   value="{{ request.form.F }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp2-Fd">\(F_j(\delta),j=1,\ldots,n\):</label>
+                            <input type="text" id="sdp2-Fd" class="form-control" name="Fd" data-shared="true"
+                                   value="{{ request.form.Fd }}">
+                        </div>
+                        <div class="form-group" id="sdp2-tau-group" style="display: none;">
+                            <label for="sdp2-tau">\(\tau\):</label>
+                            <input type="text" id="sdp2-tau" class="form-control" name="tau" data-shared="true"
+                                   value="{{ request.form.tau }}">
+                        </div>
+                        <div class="form-group" id="sdp2-theta-bar-group" style="display: none;">
+                            <label for="sdp2-theta-bar">\(\bar{\theta}\):</label>
+                            <input type="text" id="sdp2-theta-bar" class="form-control" name="theta_bar"
+                                   data-shared="true"
+                                   value="{{ request.form.theta_bar }}">
+                        </div>
+                        <div class="form-group" id="sdp2-p-group" style="display: none;">
+                            <label for="sdp2-p">\(p\):</label>
+                            <input type="text" id="sdp2-p" class="form-control" name="p" data-shared="true"
+                                   value="{{ request.form.p }}">
+                        </div>
+                        <div class="form-group" id="sdp2-rho-group" style="display: none;">
+                            <label for="sdp2-rho">\(\rho\):</label>
+                            <input type="text" id="sdp2-rho" class="form-control" name="rho" data-shared="true"
+                                   value="{{ request.form.rho }}">
+                        </div>
+                        <input type="hidden" name="active_tab" value="sdp2-tab">
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="row mt-4">
         <div class="col-md-6">
@@ -612,6 +695,8 @@
             formId = 'qp-form';
         } else if (activeTab === 'sdp-tab') {
             formId = 'sdp-form';
+        } else if (activeTab === 'sdp2-tab') {
+            formId = 'sdp2-form';
         }
 
         const activeForm = document.getElementById(formId);
@@ -1021,6 +1106,36 @@
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             }
         } else if (tab === 'sdp') {
+            if (option === 'robust') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText3 = '';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+            } else if (option === 'robust-regularization') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText3 = '';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            } else if (option === 'robust-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            } else if (option === 'robust-regularization-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            }
+        } else if (tab === 'sdp2') {
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
                 latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
