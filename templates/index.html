@@ -304,8 +304,8 @@
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
                                 <p>subject to</p>
-                                <p>\(F_0 + F_1\theta_1 +F_2\theta_2 + \ldots + F_n\theta_n \leq 0\)</p>
-                                <p>\(F_0 + F_1(\delta_i)\theta_1 +F_2(\delta_i)\theta_2 + \ldots + F_n(\delta_i)\theta_n
+                                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_j\theta_j \leq 0\)</p>
+                                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_j(\delta_i)\theta_j
                                     \leq 0, \quad i = 1, \ldots, N\)</p>
                             </div>
                         </div>
@@ -332,9 +332,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp-F_d">\(F_{1,\ldots,n}(\delta)\):</label>
+                                    <label for="sdp-F_d">\(F_{0,\ldots,n}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp', 'F_d')">Edit \(F_{1,\ldots,n}(\delta)\)
+                                            onclick="openSDPModal('sdp', 'F_d')">Edit \(F_{0,\ldots,n}(\delta)\)
                                     </button>
                                     <input type="hidden" id="sdp-F_d" name="F_d" data-shared="true"
                                            value="{{ request.form.F_d }}">
@@ -342,9 +342,9 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp-F">\(F_{1,\ldots,n}\):</label>
+                                    <label for="sdp-F">\(F_{0,\ldots,n}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp', 'F')">Edit \(F_{1,\ldots,n}\)
+                                            onclick="openSDPModal('sdp', 'F')">Edit \(F_{0,\ldots,n}\)
                                     </button>
                                     <input type="hidden" id="sdp-F" name="F" data-shared="true"
                                            value="{{ request.form.F }}">
@@ -388,7 +388,7 @@
         <div class="tab-pane fade" id="sdp2" role="tabpanel" aria-labelledby="sdp2-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">Semidefinite Program (Inequality Form)</h5>
+                    <h5 class="card-title">Semidefinite Program (Standard Form)</h5>
                     <form id="sdp2-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="sdp2-options">Select Option:</label>
@@ -411,11 +411,10 @@
                         </div>
                         <div id="sdp2-latex" class="form-group">
                             <div class="text-center">
-                                <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
+                                <p>\(\displaystyle\min_{\Theta} \textbf{tr}(C\Theta)\)</p>
                                 <p>subject to</p>
-                                <p>\(F_0 + F_1\theta_1 +F_2\theta_2 + \ldots + F_n\theta_n \leq 0\)</p>
-                                <p>\(F_0 + F_1(\delta_i)\theta_1 +F_2(\delta_i)\theta_2 + \ldots + F_n(\delta_i)\theta_n
-                                    \leq 0, \quad i = 1, \ldots, N\)</p>
+                                <p>\(\textbf{tr}(A_j\Theta) + b_j = 0,~j=1,\ldots, \alpha\)</p>
+                                <p>\(\textbf{tr}(A_j(\delta_i)\Theta) + b_j(\delta_i) = 0,~j=1,\ldots, \alpha,~i=1,\ldots,N\)</p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -559,7 +558,8 @@
             </div>
             <div class="modal-body">
                 <p></p>
-                <p>\(F_0 + F_1\theta_1 + \ldots + F_n\theta_n\) where \(F_j \in \mathbb{R}^{m\times m},~ \forall j = 1,\ldots, n\)</p>
+                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_j\theta_j\) where \(F_i \in \mathbb{R}^{m\times m},~ \forall i =
+                    0,\ldots, n\)</p>
                 <h6><b>Enter Manually:</b></h6>
                 <div class="mt-3">
                     <label for="matrixRows">\(n\):</label>
@@ -571,7 +571,7 @@
                     <button class="btn btn-primary ml-3" onclick="updateSDPButtons()">Select</button>
                     <p></p>
                     <div id="SDP-matrix-buttons" class="mb-2">
-                    <!-- Buttons for F_0 to F_n will be dynamically inserted here -->
+                        <!-- Buttons for F_0 to F_n will be dynamically inserted here -->
                     </div>
                     <h6><b>OR:</b></h6>
                     <input type="file" name="modal-file" id="SDP-file" class="form-control-file">
@@ -595,53 +595,55 @@
     let currentMatrix = '';
 
     function updateSDPButtons() {
-    const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
-    const container = document.getElementById('SDP-matrix-buttons');
-    container.innerHTML = '';
-    for (let i = 0; i <= n; i++) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-secondary mr-2 mb-2';
-        btn.textContent = `\\(F_${i}(\\delta)\\)`;
-        btn.onclick = function() { openSDPMatrixEditor(i); };
-        container.appendChild(btn);
-    }
-    MathJax.typesetPromise();
-}
-
-function openSDPModal(tab, matrix) {
-    currentMatrix = `${tab}-${matrix}`;
-    const matrixInput = document.getElementById(currentMatrix);
-    let matrixValues;
-
-    document.getElementById('modal-file').value = '';
-
-    // Create dynamic buttons
-    updateSDPButtons();
-
-    // Set default dimensions based on the matrix
-    if (matrix === 'F_d') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
+        const container = document.getElementById('SDP-matrix-buttons');
+        container.innerHTML = '';
+        for (let i = 0; i <= n; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-secondary mr-2 mb-2';
+            btn.textContent = `\\(F_{${i}}(\\delta)\\)`;
+            btn.onclick = function () {
+                openSDPMatrixEditor(i);
+            };
+            container.appendChild(btn);
+        }
         MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix == 'F'){
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit F (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
     }
-}
+
+    function openSDPModal(tab, matrix) {
+        currentMatrix = `${tab}-${matrix}`;
+        const matrixInput = document.getElementById(currentMatrix);
+        let matrixValues;
+
+        document.getElementById('modal-file').value = '';
+
+        // Create dynamic buttons
+        updateSDPButtons();
+
+        // Set default dimensions based on the matrix
+        if (matrix === 'F_d') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#SDPModal').modal('show');
+        } else if (matrix == 'F') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit F (${tab.toUpperCase()})`;
+            document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#SDPModal').modal('show');
+        }
+    }
 
     // Placeholder for matrix editor function
     function openSDPMatrixEditor(idx) {
@@ -730,15 +732,15 @@ function openSDPModal(tab, matrix) {
             return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'b') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-        }else if (matrix === 'F_d') {
+        } else if (matrix === 'F_d') {
             return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-        }else if (matrix === 'F') {
+        } else if (matrix === 'F') {
             return "You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
     }
 
-    function updateSDPGrid(values=null){
+    function updateSDPGrid(values = null) {
         //TODO: populate to create buttons
     }
 
@@ -768,7 +770,7 @@ function openSDPModal(tab, matrix) {
         }
     }
 
-    function saveCollection(){
+    function saveCollection() {
         //TODO: populate to save the collection of matrices
     }
 
@@ -1242,28 +1244,28 @@ function openSDPModal(tab, matrix) {
         } else if (tab === 'sdp') {
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText2 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}F_j(\\delta_i)\\theta_j \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = '';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = 'F_0 + \\displaystyle\\sum_{j=1}^{n}F_j\\theta_j \\leq 0';
             } else if (option === 'robust-regularization') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText2 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}F_j(\\delta_i)\\theta_j \\leq 0, \\quad i = 1, \\ldots, N';
                 latexText3 = '';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = 'F_0 + \\displaystyle\\sum_{j=1}^{n}F_j\\theta_j \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText2 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}F_j(\\delta_i)\\theta_j \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = 'F_0 + \\displaystyle\\sum_{j=1}^{n}F_j\\theta_j \\leq 0';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
                 latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText2 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}F_j(\\delta_i)\\theta_j \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = 'F_0 + \\displaystyle\\sum_{j=1}^{n}F_j\\theta_j \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
@@ -1271,29 +1273,29 @@ function openSDPModal(tab, matrix) {
             }
         } else if (tab === 'sdp2') {
             if (option === 'robust') {
-                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta)';
+                latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
             } else if (option === 'robust-regularization') {
-                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta) + \\tau\\Vert \\Theta - \\bar{\\Theta}\\Vert_{p}';
+                latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta) + \\tau\\Vert \\Theta - \\bar{\\Theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '\\zeta_i \\geq 0,';
-                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
