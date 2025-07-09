@@ -421,9 +421,9 @@
                         <div class="row">
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-c">\(c\):</label>
+                                    <label for="sdp2-c">\(C\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp2','c')">Edit \(c\)
+                                            onclick="openMatrixModal('sdp2','C')">Edit \(C\)
                                     </button>
                                     <input type="hidden" id="sdp2-c" name="c" data-shared="true"
                                            value="{{ request.form.c }}">
@@ -431,32 +431,22 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-Q">\(Q\):</label>
+                                    <label for="sdp2-A_da">\(A_{1,\ldots,\alpha}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp2', 'Q')">Edit \(Q\)
+                                            onclick="openSDPModal('sdp2', 'A_da')">Edit \(A_{1,\ldots,\alpha}(\delta)\)
                                     </button>
-                                    <input type="hidden" id="sdp2-Q" name="Q" data-shared="true"
-                                           value="{{ request.form.Q }}">
+                                    <input type="hidden" id="sdp2-A_da" name="A_da" data-shared="true"
+                                           value="{{ request.form.A_da }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-F_d">\(F_{0,\ldots,n}(\delta)\):</label>
+                                    <label for="sdp2-A_a">\(A_{1,\ldots,n}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'F_d')">Edit \(F_{0,\ldots,n}(\delta)\)
+                                            onclick="openSDPModal('sdp2', 'A_a')">Edit \(A_{1,\ldots,n}\)
                                     </button>
-                                    <input type="hidden" id="sdp2-F_d" name="F_d" data-shared="true"
-                                           value="{{ request.form.F_d }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-F">\(F_{0,\ldots,n}\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'F')">Edit \(F_{0,\ldots,n}\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-F" name="F" data-shared="true"
-                                           value="{{ request.form.F }}">
+                                    <input type="hidden" id="sdp2-A_a" name="A" data-shared="true"
+                                           value="{{ request.form.A_a }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -469,7 +459,10 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp2-theta-bar-group" style="display: none;">
                                     <label for="sdp2-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="sdp2-theta-bar" class="form-control" name="theta_bar"
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp2','theta_bar')">Edit \(\bar{\theta}\)
+                                    </button>
+                                    <input type="hidden" id="sdp2-theta-bar" class="form-control" name="theta_bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
