@@ -601,11 +601,12 @@
     for (let i = 0; i <= n; i++) {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn btn-outline-primary mr-2 mb-2';
-        btn.textContent = `F_${i}`;
+        btn.className = 'btn btn-secondary mr-2 mb-2';
+        btn.textContent = `\\(F_${i}(\\delta)\\)`;
         btn.onclick = function() { openSDPMatrixEditor(i); };
         container.appendChild(btn);
     }
+    MathJax.typesetPromise();
 }
 
 function openSDPModal(tab, matrix) {
@@ -626,6 +627,16 @@ function openSDPModal(tab, matrix) {
         document.getElementById('matrixColumns').disabled = false;
         updateMatrixGrid(matrixValues);
         document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
+        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        MathJax.typesetPromise();
+        $('#SDPModal').modal('show');
+    } else if (matrix == 'F'){
+        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+        document.getElementById('matrixRows').value = matrixValues.length;
+        document.getElementById('matrixColumns').value = matrixValues[0].length;
+        document.getElementById('matrixColumns').disabled = false;
+        updateMatrixGrid(matrixValues);
+        document.getElementById('matrixModalTitle').textContent = `Edit F (${tab.toUpperCase()})`;
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
