@@ -582,8 +582,6 @@
             </div>
             <div class="modal-body">
                 <p></p>
-                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_j\theta_j\) where \(F_i \in \mathbb{R}^{m\times m},~ \forall i =
-                    0,\ldots, n\)</p>
                 <h6><b>Enter Manually:</b></h6>
                 <div class="mt-3">
                     <label for="matrixRows">\(n\):</label>
@@ -626,7 +624,19 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'btn btn-secondary mr-2 mb-2';
-            btn.textContent = `\\(F_{${i}}(\\delta)\\)`;
+            let label = '';
+            if (currentMatrix === 'sdp-F_d') {
+                label = `\\(F_{${i}}(\\delta)\\)`;
+            } else if (currentMatrix === 'sdp-F') {
+                label = `\\(F_{${i}}\\)`;
+            } else if (currentMatrix === 'sdp2-A_a') {
+                label = `\\(A_{${i}}\\)`;
+            } else if (currentMatrix === 'sdp2-A_da') {
+                label = `\\(A_{${i}}(\\delta)\\)`;
+            } else {
+                label = `Matrix ${i}`;
+            }
+            btn.textContent = label;
             btn.onclick = function () {
                 openSDPMatrixEditor(i);
             };
@@ -652,17 +662,37 @@
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = false;
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.getElementById('matrixModalTitle').textContent = `Edit \\(F_j(\\delta)\\) (${tab.toUpperCase()})`;
             document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#SDPModal').modal('show');
-        } else if (matrix == 'F') {
+        } else if (matrix === 'F') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
             document.getElementById('matrixRows').value = matrixValues.length;
             document.getElementById('matrixColumns').value = matrixValues[0].length;
             document.getElementById('matrixColumns').disabled = false;
             updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit F (${tab.toUpperCase()})`;
+            document.getElementById('matrixModalTitle').textContent = `Edit \\(F_j\\) (${tab.toUpperCase()})`;
+            document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#SDPModal').modal('show');
+        } else if (matrix === 'A_da') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit \\(A_j(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#SDPModal').modal('show');
+        } else if (matrix === 'A_a') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false;
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit \\(A_j\\) (${tab.toUpperCase()})`;
             document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#SDPModal').modal('show');
@@ -779,16 +809,16 @@
             return "<i>Ensure \\(F_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'F') {
             return "<i>Ensure \\(F_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'A_da') {
+            return "<i>Ensure \\(A_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'A_a') {
+            return "<i>Ensure \\(A_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'C') {
             return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'Theta-bar') {
             return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
-    }
-
-    function updateSDPGrid(values = null) {
-        //TODO: populate to create buttons
     }
 
     function updateMatrixGrid(values = null) {
