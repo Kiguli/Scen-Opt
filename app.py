@@ -98,6 +98,9 @@ def solve():
     rho_list = []
     tau_list = []
 
+    # update confidence based on number of tau and rho
+    conf = conf / (len(taus) * len(rhos))
+
     for j in range(len(taus)):
         tau = taus[j]
         for i in range(len(rhos)):
@@ -116,9 +119,6 @@ def solve():
                     optimal_x, optimal_s, optimal_cost = solve_sdp(
                         scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
                     N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
-
-                #update confidence based on number of tau and rho
-                conf = conf/(len(taus)*len(rhos))
 
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"
@@ -151,7 +151,7 @@ def solve():
         "tot_con": constraints_list,
         "active_con": active_list,
         "risk": risk_list,
-        "conf": conf,
+        "conf": 1-conf,
         "tau_": tau_list,
         "rho_": rho_list,
         "errorcode": e_list,
