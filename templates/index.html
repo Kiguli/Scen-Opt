@@ -24,7 +24,7 @@
         </li>
         <li class="nav-item">
             <a class="nav-link" id="sdp-tab" data-toggle="tab" href="#sdp" role="tab" aria-controls="sdp"
-               aria-selected="false">SDP</a>
+               aria-selected="false">SDP (inequality form)</a>
         </li>
     </ul>
     <div class="tab-content" id="myTabContent">
@@ -275,7 +275,7 @@
         <div class="tab-pane fade" id="sdp" role="tabpanel" aria-labelledby="sdp-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">Semidefinite Program</h5>
+                    <h5 class="card-title">Semidefinite Program (Inequality Form)</h5>
                     <form id="sdp-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="sdp-options">Select Option:</label>
@@ -300,9 +300,9 @@
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{\theta} c^\top\theta + \frac{1}{2}\theta^\top Q\theta\)</p>
                                 <p>subject to</p>
-                                <p>\(A\theta+b \leq 0\)</p>
-                                <p>\(A(\delta_i)\theta+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
-                                <p>\(Q\succeq 0\)</p>
+                                <p>\(F_0 + F_1\theta_1 +F_2\theta_2 + \ldots + F_n\theta_n \leq 0\)</p>
+                                <p>\(F_0 + F_1(\delta_i)\theta_1 +F_2(\delta_i)\theta_2 + \ldots + F_n(\delta_i)\theta_n
+                                    \leq 0, \quad i = 1, \ldots, N\)</p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -311,19 +311,19 @@
                                    value="{{ request.form.c }}">
                         </div>
                         <div class="form-group">
-                            <label for="sdp-A">\(A(\delta)\):</label>
-                            <input type="text" id="sdp-A" class="form-control" name="A" data-shared="true"
-                                   value="{{ request.form.A }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="sdp-b">\(b(\delta)\):</label>
-                            <input type="text" id="sdp-b" class="form-control" name="b" data-shared="true"
-                                   value="{{ request.form.b }}">
-                        </div>
-                        <div class="form-group">
                             <label for="sdp-Q">\(Q\):</label>
                             <input type="text" id="sdp-Q" class="form-control" name="Q" data-shared="true"
                                    value="{{ request.form.Q }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-F">\(F_j, j=1,\ldots,n\):</label>
+                            <input type="text" id="sdp-F" class="form-control" name="F" data-shared="true"
+                                   value="{{ request.form.F }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="sdp-Fd">\(F_j(\delta),j=1,\ldots,n\):</label>
+                            <input type="text" id="sdp-Fd" class="form-control" name="Fd" data-shared="true"
+                                   value="{{ request.form.Fd }}">
                         </div>
                         <div class="form-group" id="sdp-tau-group" style="display: none;">
                             <label for="sdp-tau">\(\tau\):</label>
@@ -689,179 +689,181 @@
                 const riskLower = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[0] : r) : [data.risk];
                 const riskUpper = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[1] : r) : [data.risk];
 
-                                // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
-const uniqueTau = Array.from(new Set(Array.isArray(data.tau_) ? data.tau_ : [data.tau_]));
-const tauSelect = document.getElementById('tau-select');
-tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
+                // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
+                const uniqueTau = Array.from(new Set(Array.isArray(data.tau_) ? data.tau_ : [data.tau_]));
+                const tauSelect = document.getElementById('tau-select');
+                tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
 
 // Helper to filter data by selected tau
-function getFilteredByTau(selectedTau) {
-    const indices = [];
-    (Array.isArray(data.tau_) ? data.tau_ : [data.tau_]).forEach((tau, i) => {
-        if (String(tau) === String(selectedTau)) indices.push(i);
-    });
-    return {
-        rho: indices.map(i => Array.isArray(data.rho_) ? data.rho_[i] : data.rho_),
-        riskLower: indices.map(i => Array.isArray(riskLower) ? riskLower[i] : riskLower),
-        riskUpper: indices.map(i => Array.isArray(riskUpper) ? riskUpper[i] : riskUpper),
-        cost: indices.map(i => Array.isArray(data.optimal_cost) ? data.optimal_cost[i] : data.optimal_cost)
-    };
-}
+                function getFilteredByTau(selectedTau) {
+                    const indices = [];
+                    (Array.isArray(data.tau_) ? data.tau_ : [data.tau_]).forEach((tau, i) => {
+                        if (String(tau) === String(selectedTau)) indices.push(i);
+                    });
+                    return {
+                        rho: indices.map(i => Array.isArray(data.rho_) ? data.rho_[i] : data.rho_),
+                        riskLower: indices.map(i => Array.isArray(riskLower) ? riskLower[i] : riskLower),
+                        riskUpper: indices.map(i => Array.isArray(riskUpper) ? riskUpper[i] : riskUpper),
+                        cost: indices.map(i => Array.isArray(data.optimal_cost) ? data.optimal_cost[i] : data.optimal_cost)
+                    };
+                }
 
 // Draw chart for selected rho
-let chart;
-function drawRhoChart(selectedTau) {
-    const filtered = getFilteredByTau(selectedTau);
-    const ctx = document.getElementById('resultGraph').getContext('2d');
-    if (chart) chart.destroy();
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: filtered.rho,
-            datasets: [
-                {
-                    label: 'Risk Lower Bound (εₗ)',
-                    data: filtered.riskLower,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    yAxisID: 'y-risk',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Risk Upper Bound (εᵤ)',
-                    data: filtered.riskUpper,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    yAxisID: 'y-risk',
-                    fill: '-1',
-                    tension: 0.1
-                },
-                {
-                    label: 'Cost',
-                    data: filtered.cost,
-                    borderColor: 'rgba(36, 32, 34, 0.8)',
-                    yAxisID: 'y-cost',
-                    fill: false,
-                    tension: 0.1
+                let chart;
+
+                function drawRhoChart(selectedTau) {
+                    const filtered = getFilteredByTau(selectedTau);
+                    const ctx = document.getElementById('resultGraph').getContext('2d');
+                    if (chart) chart.destroy();
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: filtered.rho,
+                            datasets: [
+                                {
+                                    label: 'Risk Lower Bound (εₗ)',
+                                    data: filtered.riskLower,
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                    yAxisID: 'y-risk',
+                                    fill: false,
+                                    tension: 0.1
+                                },
+                                {
+                                    label: 'Risk Upper Bound (εᵤ)',
+                                    data: filtered.riskUpper,
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                    yAxisID: 'y-risk',
+                                    fill: '-1',
+                                    tension: 0.1
+                                },
+                                {
+                                    label: 'Cost',
+                                    data: filtered.cost,
+                                    borderColor: 'rgba(36, 32, 34, 0.8)',
+                                    yAxisID: 'y-cost',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: {mode: 'index', intersect: false},
+                            scales: {
+                                x: {
+                                    title: {display: true, text: 'Relaxation Term (ρ)'},
+                                    type: 'linear',
+                                    position: 'bottom'
+                                },
+                                'y-risk': {
+                                    type: 'linear',
+                                    position: 'left',
+                                    title: {display: true, text: 'Risk (ε)'}
+                                },
+                                'y-cost': {
+                                    type: 'linear',
+                                    position: 'right',
+                                    title: {display: true, text: 'Cost'},
+                                    grid: {drawOnChartArea: false}
+                                }
+                            }
+                        }
+                    });
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Relaxation Term (ρ)' },
-                    type: 'linear',
-                    position: 'bottom'
-                },
-                'y-risk': {
-                    type: 'linear',
-                    position: 'left',
-                    title: { display: true, text: 'Risk (ε)' }
-                },
-                'y-cost': {
-                    type: 'linear',
-                    position: 'right',
-                    title: { display: true, text: 'Cost' },
-                    grid: { drawOnChartArea: false }
-                }
-            }
-        }
-    });
-}
 
 // Initial draw
-drawRhoChart(uniqueTau[0]);
-tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
+                drawRhoChart(uniqueTau[0]);
+                tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
 
                 // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
-const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
-const rhoSelect = document.getElementById('rho-select');
-rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
+                const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
+                const rhoSelect = document.getElementById('rho-select');
+                rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
 
 // Helper to filter data by selected rho
-function getFilteredByRho(selectedRho) {
-    const indices = [];
-    (Array.isArray(data.rho_) ? data.rho_ : [data.rho_]).forEach((rho, i) => {
-        if (String(rho) === String(selectedRho)) indices.push(i);
-    });
-    return {
-        tau: indices.map(i => Array.isArray(data.tau_) ? data.tau_[i] : data.tau_),
-        riskLower: indices.map(i => Array.isArray(riskLower) ? riskLower[i] : riskLower),
-        riskUpper: indices.map(i => Array.isArray(riskUpper) ? riskUpper[i] : riskUpper),
-        cost: indices.map(i => Array.isArray(data.optimal_cost) ? data.optimal_cost[i] : data.optimal_cost)
-    };
-}
+                function getFilteredByRho(selectedRho) {
+                    const indices = [];
+                    (Array.isArray(data.rho_) ? data.rho_ : [data.rho_]).forEach((rho, i) => {
+                        if (String(rho) === String(selectedRho)) indices.push(i);
+                    });
+                    return {
+                        tau: indices.map(i => Array.isArray(data.tau_) ? data.tau_[i] : data.tau_),
+                        riskLower: indices.map(i => Array.isArray(riskLower) ? riskLower[i] : riskLower),
+                        riskUpper: indices.map(i => Array.isArray(riskUpper) ? riskUpper[i] : riskUpper),
+                        cost: indices.map(i => Array.isArray(data.optimal_cost) ? data.optimal_cost[i] : data.optimal_cost)
+                    };
+                }
 
 // Draw chart for selected rho
-let chart2;
-function drawTauChart(selectedRho) {
-    const filtered = getFilteredByRho(selectedRho);
-    const ctx2 = document.getElementById('resultGraph2').getContext('2d');
-    if (chart2) chart2.destroy();
-    chart2 = new Chart(ctx2, {
-        type: 'line',
-        data: {
-            labels: filtered.tau,
-            datasets: [
-                {
-                    label: 'Risk Lower Bound (εₗ)',
-                    data: filtered.riskLower,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    yAxisID: 'y-risk',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Risk Upper Bound (εᵤ)',
-                    data: filtered.riskUpper,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    yAxisID: 'y-risk',
-                    fill: '-1',
-                    tension: 0.1
-                },
-                {
-                    label: 'Cost',
-                    data: filtered.cost,
-                    borderColor: 'rgba(36, 32, 34, 0.8)',
-                    yAxisID: 'y-cost',
-                    fill: false,
-                    tension: 0.1
+                let chart2;
+
+                function drawTauChart(selectedRho) {
+                    const filtered = getFilteredByRho(selectedRho);
+                    const ctx2 = document.getElementById('resultGraph2').getContext('2d');
+                    if (chart2) chart2.destroy();
+                    chart2 = new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: filtered.tau,
+                            datasets: [
+                                {
+                                    label: 'Risk Lower Bound (εₗ)',
+                                    data: filtered.riskLower,
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                    yAxisID: 'y-risk',
+                                    fill: false,
+                                    tension: 0.1
+                                },
+                                {
+                                    label: 'Risk Upper Bound (εᵤ)',
+                                    data: filtered.riskUpper,
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                    yAxisID: 'y-risk',
+                                    fill: '-1',
+                                    tension: 0.1
+                                },
+                                {
+                                    label: 'Cost',
+                                    data: filtered.cost,
+                                    borderColor: 'rgba(36, 32, 34, 0.8)',
+                                    yAxisID: 'y-cost',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: {mode: 'index', intersect: false},
+                            scales: {
+                                x: {
+                                    title: {display: true, text: 'Regularization Term (τ)'},
+                                    type: 'linear',
+                                    position: 'bottom'
+                                },
+                                'y-risk': {
+                                    type: 'linear',
+                                    position: 'left',
+                                    title: {display: true, text: 'Risk (ε)'}
+                                },
+                                'y-cost': {
+                                    type: 'linear',
+                                    position: 'right',
+                                    title: {display: true, text: 'Cost'},
+                                    grid: {drawOnChartArea: false}
+                                }
+                            }
+                        }
+                    });
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Regularization Term (τ)' },
-                    type: 'linear',
-                    position: 'bottom'
-                },
-                'y-risk': {
-                    type: 'linear',
-                    position: 'left',
-                    title: { display: true, text: 'Risk (ε)' }
-                },
-                'y-cost': {
-                    type: 'linear',
-                    position: 'right',
-                    title: { display: true, text: 'Cost' },
-                    grid: { drawOnChartArea: false }
-                }
-            }
-        }
-    });
-}
 
 // Initial draw
-drawTauChart(uniqueRho[0]);
-rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
+                drawTauChart(uniqueRho[0]);
+                rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
                 MathJax.typesetPromise();
             })
             .catch(error => console.error('Error:', error));
@@ -870,22 +872,31 @@ rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
     function generateResultTable(data) {
         // Determine the number of value columns
         const count = data.count || 1;
-        const valueHeaders = Array.from({ length: count }, (_, i) => `<th>Value${i + 1}</th>`).join('');
+        const valueHeaders = Array.from({length: count}, (_, i) => `<th>Value${i + 1}</th>`).join('');
 
         // Prepare rows with values as arrays (or wrap single values)
         const rows = [
-            { label: 'Optimal Cost', values: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost] },
-            { label: 'Optimal &theta;', values: Array.isArray(data.optimal_x) ? data.optimal_x : [data.optimal_x] },
-            { label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s] },
-            { label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_] },
-            { label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_] },
-            { label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
-            { label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
-            { label: 'Degeneracy Detected?', values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy] },
-            { label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con] },
-            { label: 'Number of data samples', values: Array.isArray(data.num_deltas) ? data.num_deltas : [data.num_deltas] },
-            { label: 'Total Constraints', values: Array.isArray(data.tot_con) ? data.tot_con : [data.tot_con] },
-            { label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode] }//,
+            {label: 'Optimal Cost', values: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost]},
+            {label: 'Optimal &theta;', values: Array.isArray(data.optimal_x) ? data.optimal_x : [data.optimal_x]},
+            {label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s]},
+            {label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_]},
+            {label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_]},
+            {
+                label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)',
+                values: Array.isArray(data.conf) ? data.conf : [data.conf]
+            },
+            {label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk]},
+            {
+                label: 'Degeneracy Detected?',
+                values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy]
+            },
+            {label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con]},
+            {
+                label: 'Number of data samples',
+                values: Array.isArray(data.num_deltas) ? data.num_deltas : [data.num_deltas]
+            },
+            {label: 'Total Constraints', values: Array.isArray(data.tot_con) ? data.tot_con : [data.tot_con]},
+            {label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode]}//,
             // { label: 'Form Data', values: [JSON.stringify(data.form_data)] }
         ];
 
@@ -895,7 +906,7 @@ rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
                 ${valueHeaders}
             </tr>`;
         rows.forEach(row => {
-            if (row.values.length===1 && count > 1){
+            if (row.values.length === 1 && count > 1) {
                 row.values = Array(count).fill(row.values[0]);
             }
             table += `
@@ -979,7 +990,7 @@ rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             }
-        } else if (tab === 'qp' || tab === 'sdp') {
+        } else if (tab === 'qp') {
             if (option === 'robust') {
                 latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq 0, \\quad i = 1, \\ldots, N';
@@ -1004,6 +1015,36 @@ rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
                 latexText2 = 'A(\\delta_i)\\theta+b(\\delta_i) \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
                 latexText3 = '\\zeta_i \\geq 0';
                 latexText4 = 'A\\theta+b \\leq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            }
+        } else if (tab === 'sdp') {
+            if (option === 'robust') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText3 = '';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+            } else if (option === 'robust-regularization') {
+                latexText1 = '\\displaystyle\\min_{\\theta} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p}';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq 0, \\quad i = 1, \\ldots, N';
+                latexText3 = '';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                document.getElementById(`${tab}-tau-group`).style.display = 'block';
+                document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
+                document.getElementById(`${tab}-p-group`).style.display = 'block';
+            } else if (option === 'robust-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
+                document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            } else if (option === 'robust-regularization-relaxation') {
+                latexText1 = '\\displaystyle\\min_{\\theta,\\zeta_i} c^\\top\\theta + \\frac{1}{2}\\theta^\\top Q\\theta + \\tau\\Vert \\theta - \\bar{\\theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText2 = 'F_0(\\delta_i) + F_1(\\delta_i)\\theta_1 + F_2(\\delta_i)\\theta_2 + \\ldots + F_n(\\delta_i)\\theta_n \\leq \\zeta_i, \\quad i = 1, \\ldots, N';
+                latexText3 = '\\zeta_i \\geq 0,';
+                latexText4 = 'F_0 + F_1\\theta_1 + F_2\\theta_2 + \\ldots + F_n\\theta_n \\leq 0';
                 document.getElementById(`${tab}-tau-group`).style.display = 'block';
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
