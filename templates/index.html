@@ -334,7 +334,7 @@
                                 <div class="form-group">
                                     <label for="sdp-F_d">\(F_{1,\ldots,n}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp', 'F_d')">Edit \(F_{1,\ldots,n}(\delta)\)
+                                            onclick="openSDPModal('sdp', 'F_d')">Edit \(F_{1,\ldots,n}(\delta)\)
                                     </button>
                                     <input type="hidden" id="sdp-F_d" name="F_d" data-shared="true"
                                            value="{{ request.form.F_d }}">
@@ -344,7 +344,7 @@
                                 <div class="form-group">
                                     <label for="sdp-F">\(F_{1,\ldots,n}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp', 'F')">Edit \(F_{1,\ldots,n}\)
+                                            onclick="openSDPModal('sdp', 'F')">Edit \(F_{1,\ldots,n}\)
                                     </button>
                                     <input type="hidden" id="sdp-F" name="F" data-shared="true"
                                            value="{{ request.form.F }}">
@@ -548,6 +548,41 @@
     </div>
 </div>
 
+<div class="modal" id="SDPModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="SDPModalTitle">Edit Matrices</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p></p>
+                <p>\(F_0 + F_1\theta_1 + \ldots + F_n\theta_n\) where \(F_j \in \mathbb{R}^{m\times m},~ \forall j = 1,\ldots, n\)</p>
+                <h6><b>Enter Manually:</b></h6>
+                <div class="mt-3">
+                    <label for="matrixRows">\(n\):</label>
+                    <input type="number" id="SDPRows" class="form-control d-inline-block" style="width: 80px;"
+                           min="1" value="2">
+                    <label for="matrixColumns" class="ml-3">\(m\):</label>
+                    <input type="number" id="SDPColumns" class="form-control d-inline-block" style="width: 80px;"
+                           min="1" value="2">
+                    <button class="btn btn-primary ml-3" onclick="updateSDPGrid()">Select</button>
+                    <p></p>
+                    <h6><b>OR:</b></h6>
+                    <input type="file" name="modal-file" id="SDP-file" class="form-control-file">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="saveCollection()">Save</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -555,6 +590,26 @@
 
 <script>
     let currentMatrix = '';
+
+    function openSDPModal(tab, matrix) {
+        currentMatrix = `${tab}-${matrix}`;
+        const matrixInput = document.getElementById(currentMatrix);
+        let matrixValues;
+
+        document.getElementById('modal-file').value = '';
+        // Set default dimensions based on the matrix
+        if (matrix === 'F_d') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#SDPModal').modal('show');
+        }
+    }
 
     function openMatrixModal(tab, matrix) {
         currentMatrix = `${tab}-${matrix}`;
@@ -622,10 +677,6 @@
             document.getElementById('matrixModalTitle').textContent = `Edit b (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             $('#matrixModal').modal('show');
-        } else if (matrix === 'F_d'){
-
-        } else if (matrix === 'F'){
-
         }
     }
 
@@ -644,6 +695,10 @@
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
+    }
+
+    function updateSDPGrid(values=null){
+        //TODO: populate to create buttons
     }
 
     function updateMatrixGrid(values = null) {
@@ -670,6 +725,10 @@
 
             grid.appendChild(rowDiv); // Append the row div to the grid
         }
+    }
+
+    function saveCollection(){
+        //TODO: populate to save the collection of matrices
     }
 
     function saveMatrix() {
