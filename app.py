@@ -117,6 +117,9 @@ def solve():
                         scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
                     N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
 
+                #update confidence based on number of tau and rho
+                conf = conf*len(taus)*len(rhos)
+
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"
             except Exception as error:

@@ -776,78 +776,6 @@ function drawRhoChart(selectedTau) {
 drawRhoChart(uniqueTau[0]);
 tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
 
-                // const ctx = document.getElementById('resultGraph').getContext('2d');
-                // new Chart(ctx, {
-                //     type: 'line',
-                //     data: {
-                //         labels: Array.isArray(data.rho_) ? data.rho_ : [data.rho_],
-                //         datasets: [
-                //             {
-                //                 label: 'Risk Lower Bound (εₗ)',
-                //                 data: riskLower,
-                //                 borderColor: 'rgba(75, 192, 192, 1)',
-                //                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                //                 yAxisID: 'y-risk',
-                //                 fill: false,
-                //                 tension: 0.1
-                //             },
-                //             {
-                //                 label: 'Risk Upper Bound (εᵤ)',
-                //                 data: riskUpper,
-                //                 borderColor: 'rgba(54, 162, 235, 1)',
-                //                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                //                 yAxisID: 'y-risk',
-                //                 fill: '-1', // fill between lower and upper
-                //                 tension: 0.1
-                //             },
-                //             {
-                //                 label: 'Cost',
-                //                 data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
-                //                 borderColor: 'rgba(36, 32, 34, 0.8)',
-                //                 yAxisID: 'y-cost',
-                //                 fill: false,
-                //                 tension: 0.1
-                //             }
-                //         ]
-                //     },
-                //     options: {
-                //         responsive: true,
-                //         interaction: {
-                //             mode: 'index',
-                //             intersect: false
-                //         },
-                //         scales: {
-                //             x: {
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Relaxation Term (ρ)'
-                //                 },
-                //                 type: 'linear',
-                //                 position: 'bottom'
-                //             },
-                //             'y-risk': {
-                //                 type: 'linear',
-                //                 position: 'left',
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Risk (ε)'
-                //                 }
-                //             },
-                //             'y-cost': {
-                //                 type: 'linear',
-                //                 position: 'right',
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Cost'
-                //                 },
-                //                 grid: {
-                //                     drawOnChartArea: false
-                //                 }
-                //             }
-                //         }
-                //     }
-                // });
-
                 // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
 const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
 const rhoSelect = document.getElementById('rho-select');
@@ -934,79 +862,6 @@ function drawTauChart(selectedRho) {
 // Initial draw
 drawTauChart(uniqueRho[0]);
 rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
-
-
-                // const ctx2 = document.getElementById('resultGraph2').getContext('2d');
-                // new Chart(ctx2, {
-                //     type: 'line',
-                //     data: {
-                //         labels: Array.isArray(data.tau_) ? data.tau_ : [data.tau_],
-                //         datasets: [
-                //             {
-                //                 label: 'Risk Lower Bound (εₗ)',
-                //                 data: riskLower,
-                //                 borderColor: 'rgba(75, 192, 192, 1)',
-                //                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                //                 yAxisID: 'y-risk',
-                //                 fill: false,
-                //                 tension: 0.1
-                //             },
-                //             {
-                //                 label: 'Risk Upper Bound (εᵤ)',
-                //                 data: riskUpper,
-                //                 borderColor: 'rgba(54, 162, 235, 1)',
-                //                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                //                 yAxisID: 'y-risk',
-                //                 fill: '-1', // fill between lower and upper
-                //                 tension: 0.1
-                //             },
-                //             {
-                //                 label: 'Cost',
-                //                 data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
-                //                 borderColor: 'rgba(36, 32, 34, 0.8)',
-                //                 yAxisID: 'y-cost',
-                //                 fill: false,
-                //                 tension: 0.1
-                //             }
-                //         ]
-                //     },
-                //     options: {
-                //         responsive: true,
-                //         interaction: {
-                //             mode: 'index',
-                //             intersect: false
-                //         },
-                //         scales: {
-                //             x: {
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Regularization Term (τ)'
-                //                 },
-                //                 type: 'linear',
-                //                 position: 'bottom'
-                //             },
-                //             'y-risk': {
-                //                 type: 'linear',
-                //                 position: 'left',
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Risk (ε)'
-                //                 }
-                //             },
-                //             'y-cost': {
-                //                 type: 'linear',
-                //                 position: 'right',
-                //                 title: {
-                //                     display: true,
-                //                     text: 'Cost'
-                //                 },
-                //                 grid: {
-                //                     drawOnChartArea: false
-                //                 }
-                //             }
-                //         }
-                //     }
-                // });
                 MathJax.typesetPromise();
             })
             .catch(error => console.error('Error:', error));
@@ -1024,7 +879,7 @@ rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
             { label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s] },
             { label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_] },
             { label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_] },
-            { label: 'Confidence (1-&beta;)', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
+            { label: 'Confidence 1-(<sup>&beta;</sup>&frasl;<sub>n1*n2</sub>)', values: Array.isArray(data.conf) ? data.conf : [data.conf] },
             { label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk] },
             { label: 'Degeneracy Detected?', values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy] },
             { label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con] },
