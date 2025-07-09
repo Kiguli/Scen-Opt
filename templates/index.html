@@ -421,11 +421,11 @@
                         <div class="row">
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-c">\(C\):</label>
+                                    <label for="sdp2-C">\(C\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('sdp2','C')">Edit \(C\)
                                     </button>
-                                    <input type="hidden" id="sdp2-c" name="c" data-shared="true"
+                                    <input type="hidden" id="sdp2-C" name="c" data-shared="true"
                                            value="{{ request.form.c }}">
                                 </div>
                             </div>
@@ -458,11 +458,11 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp2-theta-bar-group" style="display: none;">
-                                    <label for="sdp2-theta-bar">\(\bar{\theta}\):</label>
+                                    <label for="sdp2-Theta-bar">\(\bar{\Theta}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp2','theta_bar')">Edit \(\bar{\theta}\)
+                                            onclick="openMatrixModal('sdp2','Theta-bar')">Edit \(\bar{\Theta}\)
                                     </button>
-                                    <input type="hidden" id="sdp2-theta-bar" class="form-control" name="theta_bar"
+                                    <input type="hidden" id="sdp2-Theta-bar" class="form-control" name="Theta-bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -721,7 +721,6 @@
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             MathJax.typesetPromise();
             $('#matrixModal').modal('show');
-
         } else if (matrix === 'A') {
             matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 2x2 by default
             document.getElementById('matrixRows').value = matrixValues.length;
@@ -740,6 +739,26 @@
             document.getElementById('matrixModalTitle').textContent = `Edit b (${tab.toUpperCase()})`;
             document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
             $('#matrixModal').modal('show');
+        } else if (matrix === 'C') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit C (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
+        } else if (matrix === 'Theta-bar') {
+            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
+            document.getElementById('matrixRows').value = matrixValues.length;
+            document.getElementById('matrixColumns').value = matrixValues[0].length;
+            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
+            updateMatrixGrid(matrixValues);
+            document.getElementById('matrixModalTitle').textContent = `Edit \\(\\bar{\\Theta}\\) (${tab.toUpperCase()})`;
+            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+            MathJax.typesetPromise();
+            $('#matrixModal').modal('show');
         }
     }
 
@@ -757,9 +776,13 @@
         } else if (matrix === 'b') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'F_d') {
-            return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<i>Ensure \\(F_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'F') {
-            return "You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+            return "<i>Ensure \\(F_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'C') {
+            return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        } else if (matrix === 'Theta-bar') {
+            return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
     }
@@ -1310,13 +1333,13 @@
                 document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
                 document.getElementById(`${tab}-p-group`).style.display = 'block';
             } else if (option === 'robust-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\Theta,\\zeta_i} \\textbf{tr}(C\\Theta) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '\\zeta_i \\geq 0,';
                 latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
                 document.getElementById(`${tab}-rho-group`).style.display = 'block';
             } else if (option === 'robust-regularization-relaxation') {
-                latexText1 = '\\displaystyle\\min_{\\Theta} \\textbf{tr}(C\\Theta) + \\tau\\Vert \\Theta - \\bar{\\Theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+                latexText1 = '\\displaystyle\\min_{\\Theta,\\zeta_i} \\textbf{tr}(C\\Theta) + \\tau\\Vert \\Theta - \\bar{\\Theta}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
                 latexText2 = '\\textbf{tr}(A_j(\\delta_i)\\Theta) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
                 latexText3 = '\\zeta_i \\geq 0,';
                 latexText4 = '\\textbf{tr}(A_j\\Theta) + b_j = 0,~j=1,\\ldots, \\alpha';
