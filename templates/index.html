@@ -568,8 +568,11 @@
                     <label for="matrixColumns" class="ml-3">\(m\):</label>
                     <input type="number" id="SDPColumns" class="form-control d-inline-block" style="width: 80px;"
                            min="1" value="2">
-                    <button class="btn btn-primary ml-3" onclick="updateSDPGrid()">Select</button>
+                    <button class="btn btn-primary ml-3" onclick="updateSDPButtons()">Select</button>
                     <p></p>
+                    <div id="SDP-matrix-buttons" class="mb-2">
+                    <!-- Buttons for F_0 to F_n will be dynamically inserted here -->
+                    </div>
                     <h6><b>OR:</b></h6>
                     <input type="file" name="modal-file" id="SDP-file" class="form-control-file">
                 </div>
@@ -591,24 +594,47 @@
 <script>
     let currentMatrix = '';
 
-    function openSDPModal(tab, matrix) {
-        currentMatrix = `${tab}-${matrix}`;
-        const matrixInput = document.getElementById(currentMatrix);
-        let matrixValues;
+    function updateSDPButtons() {
+    const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
+    const container = document.getElementById('SDP-matrix-buttons');
+    container.innerHTML = '';
+    for (let i = 0; i <= n; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-primary mr-2 mb-2';
+        btn.textContent = `F_${i}`;
+        btn.onclick = function() { openSDPMatrixEditor(i); };
+        container.appendChild(btn);
+    }
+}
 
-        document.getElementById('modal-file').value = '';
-        // Set default dimensions based on the matrix
-        if (matrix === 'F_d') {
-            matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
-            document.getElementById('matrixRows').value = matrixValues.length;
-            document.getElementById('matrixColumns').value = matrixValues[0].length;
-            document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-            updateMatrixGrid(matrixValues);
-            document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
-            document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-            MathJax.typesetPromise();
-            $('#SDPModal').modal('show');
-        }
+function openSDPModal(tab, matrix) {
+    currentMatrix = `${tab}-${matrix}`;
+    const matrixInput = document.getElementById(currentMatrix);
+    let matrixValues;
+
+    document.getElementById('modal-file').value = '';
+
+    // Create dynamic buttons
+    updateSDPButtons();
+
+    // Set default dimensions based on the matrix
+    if (matrix === 'F_d') {
+        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+        document.getElementById('matrixRows').value = matrixValues.length;
+        document.getElementById('matrixColumns').value = matrixValues[0].length;
+        document.getElementById('matrixColumns').disabled = false;
+        updateMatrixGrid(matrixValues);
+        document.getElementById('matrixModalTitle').textContent = `Edit F(\\(\\delta)\\) (${tab.toUpperCase()})`;
+        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        MathJax.typesetPromise();
+        $('#SDPModal').modal('show');
+    }
+}
+
+    // Placeholder for matrix editor function
+    function openSDPMatrixEditor(idx) {
+        alert('Open matrix editor for F_' + idx);
     }
 
     function openMatrixModal(tab, matrix) {
@@ -693,6 +719,10 @@
             return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         } else if (matrix === 'b') {
             return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        }else if (matrix === 'F_d') {
+            return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        }else if (matrix === 'F') {
+            return "You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
         }
         return "Provide valid input for the selected matrix.";
     }
