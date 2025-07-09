@@ -309,46 +309,76 @@
                                     \leq 0, \quad i = 1, \ldots, N\)</p>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="sdp-c">\(c\):</label>
-                            <input type="text" id="sdp-c" class="form-control" name="c" data-shared="true"
-                                   value="{{ request.form.c }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="sdp-Q">\(Q\):</label>
-                            <input type="text" id="sdp-Q" class="form-control" name="Q" data-shared="true"
-                                   value="{{ request.form.Q }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="sdp-F">\(F_j, j=1,\ldots,n\):</label>
-                            <input type="text" id="sdp-F" class="form-control" name="F" data-shared="true"
-                                   value="{{ request.form.F }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="sdp-Fd">\(F_j(\delta),j=1,\ldots,n\):</label>
-                            <input type="text" id="sdp-Fd" class="form-control" name="Fd" data-shared="true"
-                                   value="{{ request.form.Fd }}">
-                        </div>
-                        <div class="form-group" id="sdp-tau-group" style="display: none;">
-                            <label for="sdp-tau">\(\tau\):</label>
-                            <input type="text" id="sdp-tau" class="form-control" name="tau" data-shared="true"
-                                   value="{{ request.form.tau }}">
-                        </div>
-                        <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
-                            <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
-                            <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar"
-                                   data-shared="true"
-                                   value="{{ request.form.theta_bar }}">
-                        </div>
-                        <div class="form-group" id="sdp-p-group" style="display: none;">
-                            <label for="sdp-p">\(p\):</label>
-                            <input type="text" id="sdp-p" class="form-control" name="p" data-shared="true"
-                                   value="{{ request.form.p }}">
-                        </div>
-                        <div class="form-group" id="sdp-rho-group" style="display: none;">
-                            <label for="sdp-rho">\(\rho\):</label>
-                            <input type="text" id="sdp-rho" class="form-control" name="rho" data-shared="true"
-                                   value="{{ request.form.rho }}">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp-c">\(c\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp','c')">Edit \(c\)
+                                    </button>
+                                    <input type="hidden" id="sdp-c" name="c" data-shared="true"
+                                           value="{{ request.form.c }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp-Q">\(Q\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp', 'Q')">Edit \(Q\)
+                                    </button>
+                                    <input type="hidden" id="sdp-Q" name="Q" data-shared="true"
+                                           value="{{ request.form.Q }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp-F_d">\(F_{1,\ldots,n}(\delta)\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp', 'F_d')">Edit \(F_{1,\ldots,n}(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="sdp-F_d" name="F_d" data-shared="true"
+                                           value="{{ request.form.F_d }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp-F">\(F_{1,\ldots,n}\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp', 'F')">Edit \(F_{1,\ldots,n}\)
+                                    </button>
+                                    <input type="hidden" id="sdp-F" name="F" data-shared="true"
+                                           value="{{ request.form.F }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group" id="sdp-tau-group" style="display: none;">
+                                    <label for="sdp-tau">\(\tau\):</label>
+                                    <input type="text" id="sdp-tau" class="form-control" name="tau" data-shared="true"
+                                           value="{{ request.form.tau }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
+                                    <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
+                                    <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar"
+                                           data-shared="true"
+                                           value="{{ request.form.theta_bar }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group" id="sdp-p-group" style="display: none;">
+                                    <label for="sdp-p">\(p\):</label>
+                                    <input type="text" id="sdp-p" class="form-control" name="p" data-shared="true"
+                                           value="{{ request.form.p }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group" id="sdp-rho-group" style="display: none;">
+                                    <label for="sdp-rho">\(\rho\):</label>
+                                    <input type="text" id="sdp-rho" class="form-control" name="rho" data-shared="true"
+                                           value="{{ request.form.rho }}">
+                                </div>
+                            </div>
                         </div>
                         <input type="hidden" name="active_tab" value="sdp-tab">
                     </form>
