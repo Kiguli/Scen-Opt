@@ -662,11 +662,15 @@
             </div>
         </div>
         <div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
-            <h3>ρ Graph</h3>
+            <h3><br> ρ Graph</h3>
+            <div class="form-group">
+            <label for="tau-select">Select 𝜏:</label>
+            <select id="tau-select" class="form-control" style="width: 200px; display: inline-block;"></select>
+            </div>
             <canvas id="resultGraph" width="400" height="300"></canvas>
         </div>
         <div class="tab-pane fade" id="result-graph2" role="tabpanel" aria-labelledby="result-graph2-tab">
-            <h3>𝜏 Graph</h3>
+            <h3><br> 𝜏 Graph</h3>
             <div class="form-group">
             <label for="rho-select">Select ρ:</label>
             <select id="rho-select" class="form-control" style="width: 200px; display: inline-block;"></select>
@@ -685,77 +689,164 @@
                 const riskLower = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[0] : r) : [data.risk];
                 const riskUpper = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[1] : r) : [data.risk];
 
-                const ctx = document.getElementById('resultGraph').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: Array.isArray(data.rho_) ? data.rho_ : [data.rho_],
-                        datasets: [
-                            {
-                                label: 'Risk Lower Bound (εₗ)',
-                                data: riskLower,
-                                borderColor: 'rgba(75, 192, 192, 1)',
-                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                                yAxisID: 'y-risk',
-                                fill: false,
-                                tension: 0.1
-                            },
-                            {
-                                label: 'Risk Upper Bound (εᵤ)',
-                                data: riskUpper,
-                                borderColor: 'rgba(54, 162, 235, 1)',
-                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                                yAxisID: 'y-risk',
-                                fill: '-1', // fill between lower and upper
-                                tension: 0.1
-                            },
-                            {
-                                label: 'Cost',
-                                data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
-                                borderColor: 'rgba(36, 32, 34, 0.8)',
-                                yAxisID: 'y-cost',
-                                fill: false,
-                                tension: 0.1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Relaxation Term (ρ)'
-                                },
-                                type: 'linear',
-                                position: 'bottom'
-                            },
-                            'y-risk': {
-                                type: 'linear',
-                                position: 'left',
-                                title: {
-                                    display: true,
-                                    text: 'Risk (ε)'
-                                }
-                            },
-                            'y-cost': {
-                                type: 'linear',
-                                position: 'right',
-                                title: {
-                                    display: true,
-                                    text: 'Cost'
-                                },
-                                grid: {
-                                    drawOnChartArea: false
-                                }
-                            }
-                        }
-                    }
-                });
+                                // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
+const uniqueTau = Array.from(new Set(Array.isArray(data.tau_) ? data.tau_ : [data.tau_]));
+const tauSelect = document.getElementById('tau-select');
+tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
+
+// Helper to filter data by selected tau
+function getFilteredByTau(selectedTau) {
+    const indices = [];
+    (Array.isArray(data.tau_) ? data.tau_ : [data.tau_]).forEach((tau, i) => {
+        if (String(tau) === String(selectedTau)) indices.push(i);
+    });
+    return {
+        rho: indices.map(i => Array.isArray(data.rho_) ? data.rho_[i] : data.rho_),
+        riskLower: indices.map(i => Array.isArray(riskLower) ? riskLower[i] : riskLower),
+        riskUpper: indices.map(i => Array.isArray(riskUpper) ? riskUpper[i] : riskUpper),
+        cost: indices.map(i => Array.isArray(data.optimal_cost) ? data.optimal_cost[i] : data.optimal_cost)
+    };
+}
+
+// Draw chart for selected rho
+let chart;
+function drawRhoChart(selectedTau) {
+    const filtered = getFilteredByTau(selectedTau);
+    const ctx = document.getElementById('resultGraph').getContext('2d');
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: filtered.rho,
+            datasets: [
+                {
+                    label: 'Risk Lower Bound (εₗ)',
+                    data: filtered.riskLower,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    yAxisID: 'y-risk',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Risk Upper Bound (εᵤ)',
+                    data: filtered.riskUpper,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    yAxisID: 'y-risk',
+                    fill: '-1',
+                    tension: 0.1
+                },
+                {
+                    label: 'Cost',
+                    data: filtered.cost,
+                    borderColor: 'rgba(36, 32, 34, 0.8)',
+                    yAxisID: 'y-cost',
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Relaxation Term (ρ)' },
+                    type: 'linear',
+                    position: 'bottom'
+                },
+                'y-risk': {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: 'Risk (ε)' }
+                },
+                'y-cost': {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: 'Cost' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+// Initial draw
+drawRhoChart(uniqueTau[0]);
+tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
+
+                // const ctx = document.getElementById('resultGraph').getContext('2d');
+                // new Chart(ctx, {
+                //     type: 'line',
+                //     data: {
+                //         labels: Array.isArray(data.rho_) ? data.rho_ : [data.rho_],
+                //         datasets: [
+                //             {
+                //                 label: 'Risk Lower Bound (εₗ)',
+                //                 data: riskLower,
+                //                 borderColor: 'rgba(75, 192, 192, 1)',
+                //                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                //                 yAxisID: 'y-risk',
+                //                 fill: false,
+                //                 tension: 0.1
+                //             },
+                //             {
+                //                 label: 'Risk Upper Bound (εᵤ)',
+                //                 data: riskUpper,
+                //                 borderColor: 'rgba(54, 162, 235, 1)',
+                //                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                //                 yAxisID: 'y-risk',
+                //                 fill: '-1', // fill between lower and upper
+                //                 tension: 0.1
+                //             },
+                //             {
+                //                 label: 'Cost',
+                //                 data: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost],
+                //                 borderColor: 'rgba(36, 32, 34, 0.8)',
+                //                 yAxisID: 'y-cost',
+                //                 fill: false,
+                //                 tension: 0.1
+                //             }
+                //         ]
+                //     },
+                //     options: {
+                //         responsive: true,
+                //         interaction: {
+                //             mode: 'index',
+                //             intersect: false
+                //         },
+                //         scales: {
+                //             x: {
+                //                 title: {
+                //                     display: true,
+                //                     text: 'Relaxation Term (ρ)'
+                //                 },
+                //                 type: 'linear',
+                //                 position: 'bottom'
+                //             },
+                //             'y-risk': {
+                //                 type: 'linear',
+                //                 position: 'left',
+                //                 title: {
+                //                     display: true,
+                //                     text: 'Risk (ε)'
+                //                 }
+                //             },
+                //             'y-cost': {
+                //                 type: 'linear',
+                //                 position: 'right',
+                //                 title: {
+                //                     display: true,
+                //                     text: 'Cost'
+                //                 },
+                //                 grid: {
+                //                     drawOnChartArea: false
+                //                 }
+                //             }
+                //         }
+                //     }
+                // });
 
                 // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
 const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
