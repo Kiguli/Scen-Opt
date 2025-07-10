@@ -877,15 +877,17 @@
                     }
                     // Overwrite the collection with the uploaded file content
                     window.sdpMatrixCollection = fileValues;
-                    document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
-                    $('#SDPModal').modal('hide');
                 } catch (error) {
                     alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
+                    return;
                 }
+                // Always update the hidden input and close the modal
+                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+                $('#SDPModal').modal('hide');
             };
             reader.readAsText(file);
         } else {
-            // Store the collection as a JSON string in the relevant hidden input
+            // Always update the hidden input and close the modal
             document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
             $('#SDPModal').modal('hide');
         }
