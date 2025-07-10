@@ -614,6 +614,8 @@
 <script src="./main.js" defer></script>
 
 <script>
+    window.sdpMatrixCollection = {};
+    window.sdpCurrentMatrixIndex = null;
     let currentMatrix = '';
 
     function updateSDPButtons() {
@@ -699,9 +701,17 @@
         }
     }
 
-    // Placeholder for matrix editor function
     function openSDPMatrixEditor(idx) {
-        alert('Open matrix editor for F_' + idx);
+        window.sdpCurrentMatrixIndex = idx;
+        let values = window.sdpMatrixCollection[idx] || Array.from({length: parseInt(document.getElementById('SDPRows').value)},
+            () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
+        // Set up the matrix modal for editing
+        document.getElementById('matrixRows').value = values.length;
+        document.getElementById('matrixColumns').value = values[0].length;
+        document.getElementById('matrixColumns').disabled = false;
+        updateMatrixGrid(values);
+        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
+        $('#matrixModal').modal('show');
     }
 
     function openMatrixModal(tab, matrix) {
@@ -848,7 +858,9 @@
     }
 
     function saveCollection() {
-        //TODO: populate to save the collection of matrices
+        // Store the collection as a JSON string in the relevant hidden input
+        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+        $('#SDPModal').modal('hide');
     }
 
     function saveMatrix() {
@@ -893,6 +905,14 @@
                 const column = parseInt(input.dataset.column);
                 values[row][column] = input.value; // Save text value
             });
+
+            // If editing from SDP modal, store in collection
+            if (window.sdpCurrentMatrixIndex !== null) {
+                window.sdpMatrixCollection[window.sdpCurrentMatrixIndex] = values;
+                window.sdpCurrentMatrixIndex = null;
+                $('#matrixModal').modal('hide');
+                return;
+            }
 
             document.getElementById(currentMatrix).value = JSON.stringify(values);
             $('#matrixModal').modal('hide');

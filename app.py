@@ -65,11 +65,15 @@ def solve():
 
         A_d = generate_matrix_function(request.form.get('A_d'))
     else:
-        raise ValueError("A(delta) is ill-defined")
+        pass
+        #TODO: check this only for LP and QP
+        #raise ValueError("A(delta) is ill-defined")
     if request.form.get('b_d'):
+        # TODO: check this only for LP and QP
         b_d = generate_matrix_function(request.form.get('b_d'))
     else:
-        raise ValueError("b(delta) is ill-defined")
+        pass
+        #raise ValueError("b(delta) is ill-defined")
     A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
     b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
     c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
