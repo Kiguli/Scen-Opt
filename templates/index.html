@@ -890,6 +890,14 @@
                         throw new Error('Unsupported file type');
                     }
 
+                    // If editing from SDP modal, store in collection
+                    if (window.sdpCurrentMatrixIndex !== null) {
+                        window.sdpMatrixCollection[window.sdpCurrentMatrixIndex] = fileValues;
+                        window.sdpCurrentMatrixIndex = null;
+                        $('#matrixModal').modal('hide');
+                        return;
+                    }
+
                     document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
                     $('#matrixModal').modal('hide');
                 } catch (error) {
@@ -913,7 +921,6 @@
                 $('#matrixModal').modal('hide');
                 return;
             }
-
             document.getElementById(currentMatrix).value = JSON.stringify(values);
             $('#matrixModal').modal('hide');
         }

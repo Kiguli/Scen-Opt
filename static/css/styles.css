@@ -71,3 +71,13 @@
     background: #f8f9fa;
     z-index: 2;
 }
+
+/* Change background color for SDPModal */
+#SDPModal .modal-content {
+    background-color: #f0f8ff; /* Light blue */
+}
+
+/* Change background color for matrixModal */
+#matrixModal .modal-content {
+    background-color: #fffbe6; /* Light yellow */
+}
