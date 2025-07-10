@@ -858,9 +858,37 @@
     }
 
     function saveCollection() {
-        // Store the collection as a JSON string in the relevant hidden input
-        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
-        $('#SDPModal').modal('hide');
+        const fileInput = document.getElementById('SDP-file');
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                try {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    let fileValues;
+                    if (fileExtension === 'json') {
+                        fileValues = JSON.parse(event.target.result);
+                    } else if (fileExtension === 'csv' || fileExtension === 'txt') {
+                        const text = event.target.result;
+                        const rows = text.trim().split('\n');
+                        fileValues = rows.map(row => row.split(',').map(cell => cell.trim()));
+                    } else {
+                        throw new Error('Unsupported file type');
+                    }
+                    // Overwrite the collection with the uploaded file content
+                    window.sdpMatrixCollection = fileValues;
+                    document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+                    $('#SDPModal').modal('hide');
+                } catch (error) {
+                    alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
+                }
+            };
+            reader.readAsText(file);
+        } else {
+            // Store the collection as a JSON string in the relevant hidden input
+            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+            $('#SDPModal').modal('hide');
+        }
     }
 
     function saveMatrix() {
