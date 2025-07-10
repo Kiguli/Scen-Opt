@@ -123,6 +123,10 @@ def solve():
                     optimal_x, optimal_s, optimal_cost = solve_sdp(
                         scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
                     N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
+                elif active_tab == 'sdp2-tab':
+                    optimal_x, optimal_s, optimal_cost = solve_sdp(
+                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                    N, active, constraints, degeneracy = 0, [], [], False  # Set defaults for missing values
 
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"

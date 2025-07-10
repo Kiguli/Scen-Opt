@@ -445,7 +445,7 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openSDPModal('sdp2', 'A_a')">Edit \(A_{1,\ldots,n}\)
                                     </button>
-                                    <input type="hidden" id="sdp2-A_a" name="A" data-shared="true"
+                                    <input type="hidden" id="sdp2-A_a" name="A_a" data-shared="true"
                                            value="{{ request.form.A_a }}">
                                 </div>
                             </div>
@@ -925,11 +925,13 @@
                         window.sdpMatrixCollection[window.sdpCurrentMatrixIndex] = fileValues;
                         window.sdpCurrentMatrixIndex = null;
                         $('#matrixModal').modal('hide');
+                        document.getElementById('SDP-file').value = '';
                         return;
                     }
 
                     document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
                     $('#matrixModal').modal('hide');
+                    document.getElementById('SDP-file').value = '';
                 } catch (error) {
                     alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
                 }
@@ -949,10 +951,12 @@
                 window.sdpMatrixCollection[window.sdpCurrentMatrixIndex] = values;
                 window.sdpCurrentMatrixIndex = null;
                 $('#matrixModal').modal('hide');
+                document.getElementById('SDP-file').value = '';
                 return;
             }
             document.getElementById(currentMatrix).value = JSON.stringify(values);
             $('#matrixModal').modal('hide');
+            document.getElementById('SDP-file').value = '';
         }
     }
 
