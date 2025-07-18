@@ -87,7 +87,7 @@ function openSDPModal(tab, matrix) {
 
 function openSDPMatrixEditor(idx) {
     window.sdpCurrentMatrixIndex = idx;
-    let values = window.sdpMatrixCollection[idx] || Array.from({length: parseInt(document.getElementById('SDPRows').value)},
+    let values = window.sdpMatrixCollection[idx] || Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
         () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
     // Set up the matrix modal for editing
     document.getElementById('matrixRows').value = values.length;
@@ -242,6 +242,7 @@ function updateMatrixGrid(values = null) {
 }
 
 function saveCollection() {
+    //TODO: any matrices left empty are not passed in...
     const fileInput = document.getElementById('SDP-file');
     if (fileInput && fileInput.files.length > 0) {
         const file = fileInput.files[0];
