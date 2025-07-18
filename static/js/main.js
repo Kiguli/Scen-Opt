@@ -845,17 +845,3 @@ function loadFormValues() {
         }
     });
 }
-
-function synchronizeFormValues() {
-    const formElements = document.querySelectorAll('input, select');
-    formElements.forEach(element => {
-        element.addEventListener('change', () => {
-            const value = element.value;
-            const elementsToUpdate = document.querySelectorAll(`#${element.id}`);
-            elementsToUpdate.forEach(el => {
-                el.value = value;
-                localStorage.setItem(el.id, value);
-            });
-        });
-    });
-}
