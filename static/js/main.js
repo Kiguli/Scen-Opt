@@ -251,7 +251,7 @@ function updateMatrixGrid(values = null) {
     }
 }
 
-function saveCollection() {
+function saveCollection(tab) {
     //TODO: any matrices left empty are not passed in...
     const fileInput = document.getElementById('SDP-file');
     if (fileInput && fileInput.files.length > 0) {
@@ -270,8 +270,13 @@ function saveCollection() {
                 } else {
                     throw new Error('Unsupported file type');
                 }
+                if (tab === 'sdp'){
+                    tab = 0;
+                }else if (tab === 'sdp2'){
+                    tab = 1;
+                }
                 // Overwrite the collection with the uploaded file content
-                window.sdpMatrixCollection = fileValues;
+                window.sdpMatrixCollection[tab] = fileValues;
             } catch (error) {
                 alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
                 return;
