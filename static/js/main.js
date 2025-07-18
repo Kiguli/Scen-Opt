@@ -828,20 +828,3 @@ function updateLatexText(tab) {
     document.getElementById(`${tab}-latex`).innerHTML = `<div class="text-center"><p>\\(${latexText1}\\)</p><p>subject to \\(${latexText3}\\)</p><p>\\(${latexText4}\\)</p><p>\\(${latexText2}\\)</p></div>`;
     MathJax.typeset();
 }
-
-function saveFormValues(tab) {
-    const formElements = document.querySelectorAll(`#${tab}-form input, #${tab}-form select`);
-    formElements.forEach(element => {
-        localStorage.setItem(`${element.id}`, element.value);
-    });
-}
-
-function loadFormValues() {
-    const formElements = document.querySelectorAll('input, select');
-    formElements.forEach(element => {
-        const value = localStorage.getItem(element.id);
-        if (value !== null) {
-            element.value = value;
-        }
-    });
-}
