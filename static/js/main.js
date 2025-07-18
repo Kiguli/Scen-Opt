@@ -2,7 +2,7 @@ window.sdpMatrixCollection = {};
 window.sdpCurrentMatrixIndex = null;
 let currentMatrix = '';
 
-function updateSDPButtons() {
+function updateSDPButtons(tab) {
     const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
     const container = document.getElementById('SDP-matrix-buttons');
     container.innerHTML = '';
@@ -24,7 +24,7 @@ function updateSDPButtons() {
         }
         btn.textContent = label;
         btn.onclick = function () {
-            openSDPMatrixEditor(i);
+            openSDPMatrixEditor(tab,i);
         };
         container.appendChild(btn);
     }
@@ -85,11 +85,21 @@ function openSDPModal(tab, matrix) {
     }
 }
 
-function openSDPMatrixEditor(idx) {
+function openSDPMatrixEditor(tab, idx) {
+    // assign a value to the tabs so they are used in storage properly.
+    if (tab === 'sdp'){
+        tab = 0;
+    }else if (tab === 'sdp2'){
+        tab = 1;
+    }
+
+    if (!window.sdpMatrixCollection[tab]) {
+        window.sdpMatrixCollection[tab] = {};
+    }
     window.sdpCurrentMatrixIndex = idx;
-    let values = window.sdpMatrixCollection[idx] || Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
-        () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
-    // Set up the matrix modal for editing
+    let values = window.sdpMatrixCollection[tab][idx] ||
+        Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
+            () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
     document.getElementById('matrixRows').value = values.length;
     document.getElementById('matrixColumns').value = values[0].length;
     document.getElementById('matrixColumns').disabled = false;
