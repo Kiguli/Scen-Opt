@@ -32,8 +32,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     #assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     #assert (Q == Q.T).all(), "Q needs to be symmetric"
     print("In new function")
-    n = F_d(deltas[0])[0].shape[1]  # Number of variables
-    m = F_d(deltas[0])[0].shape[0]  # Number of constraints
+    n = list(F_d(deltas[0]).values())[0].shape[1]
+    m = list(F_d(deltas[0]).values())[0].shape[0]
     print(n)
     print(m)
 
@@ -52,6 +52,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s = np.zeros((m, 1))
+
+    print("Pass phase 1")
     constraints = []
     for i in range(size_of_deltas):
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
@@ -60,6 +62,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
             term = Fk @ x[int(k)] if x.shape[0] > 1 else Fk @ x  # Use x_k if x is multidimensional
             expr = term if expr is None else expr + term
         constraints.append(expr <= s)
+
+    print("Pass phase 2")
 
     if not (F != np.array([])):
         expr = F_dict['0']  # Start with F0
@@ -71,6 +75,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     else:
         non_risk_constraints = []
 
+    print("Pass phase 3")
     # Objective Function
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
 
