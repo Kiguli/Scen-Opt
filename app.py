@@ -46,7 +46,7 @@ def solve():
             # Evaluate each expression in the matrix
             return np.array([
                 [eval(expr, {"delta": delta, "math": __import__('math')}) for expr in row]
-                # TODO: danger using eval on a server!
+                # TODO: danger using eval on a server! Delete all characters that are not numbers, [,], or "delta"??
                 for row in expr_matrix
             ])
 

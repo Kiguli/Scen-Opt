@@ -67,7 +67,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
 
     if (F):
         expr = None
-        for k, Fk in F_dict.items():
+        for k, Fk in F.items():
             assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be positive semi-definite and symmetric"
             if k == '0':
@@ -135,8 +135,8 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
-    # assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
-    # assert (Q == Q.T).all(), "Q needs to be symmetric"
+    assert np.all(np.linalg.eigvals(C) >= 0), "C needs to be positive semi-definite and symmetric"
+    assert (C == C.T).all(), "C needs to be positive semi-definite and symmetric"
     print("In new function")
     n = list(A_da(deltas[0]).values())[0].shape[1]
     m = list(A_da(deltas[0]).values())[0].shape[0]
@@ -146,42 +146,36 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
     except IndexError:
-        num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
+        num_of_deltas = 1
     try:
         size_of_deltas = deltas.shape[0]  # Number of row
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
     # Variables
-    x = cp.Variable((n, 1))
+    X = cp.Variable((n,n), symmetric=True)
+    constraints = []
+    constraints.append(X >> 0)  # X must be positive semidefinite
+
     if P != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s = np.zeros((m, 1))
 
     print("Pass phase 1")
-    constraints = []
+
     for i in range(size_of_deltas):
-        F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
+        A_dict = A_da(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
-        for k, Fk in F_dict.items():
-            if k == '0':
-                term = Fk
-            else:
-                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
-            expr = term if expr is None else expr + term
+        #TODO: logic for Trace(A_j(delta)X)
         constraints.append(expr <= s)
 
     print("Pass phase 2")
 
-    if (F):
+    if (A_a):
         expr = None
-        for k, Fk in F_dict.items():
-            if k == '0':
-                term = Fk
-            else:
-                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
-            expr = term if expr is None else expr + term
+        #TODO: logic for Trace(A_jX)
+
         non_risk_constraints = expr <= 0
         constraints.append(non_risk_constraints)  # hard constraints
 
@@ -191,7 +185,7 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     print("Pass phase 3")
     # Objective Function
     objective = cp.Minimize(
-        (1 / 2) * cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
+        cp.trace(C @ X) + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
