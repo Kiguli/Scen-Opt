@@ -4,7 +4,7 @@ import numpy as np
 
 def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
     """
-        Solves a quadratic programming problem with optional robust and regularization constraints.
+        Solves a semidefinite programming problem with optional robust and regularization constraints.
 
         Parameters:
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
@@ -81,6 +81,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     else:
         non_risk_constraints = []
 
+
+    print("Pass phase 3")
     # Objective Function
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
 
@@ -102,14 +104,115 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     # Find the active constraints
     active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, P, solver)
 
-    #active = degeneracy = []
-
     # Return results
-    return  x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
 def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
-    return []
+    """
+        Solves a semidefinite programming problem with optional robust and regularization constraints.
+
+        Parameters:
+        deltas (numpy.ndarray): Collected deltas that should be added to constraints.
+        A_da (function): Function that returns the matrices for the constraints given a delta.
+        A_a (numpy.ndarray): matrices for the hard constraints.
+        C (numpy.ndarray): cost matrix for the objective function.
+        T (float): Regularization parameter for the norm term in the objective function.
+        x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
+        P (float): Penalty parameter for the slack variables in the objective function.
+        norm_type (int or str, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+
+        Returns:
+        tuple: A tuple containing:
+            - x (numpy.ndarray): Optimal solution vector.
+            - s (numpy.ndarray): Optimal slack variables vector.
+            - s_h (numpy.ndarray): Optimal slack variables vector for hard constraints.
+            - cost (float): Optimal value of the objective function.
+        """
+
+    # TODO: need to change all this...
+    # Check Q is positive semi-definite and symmetric
+    # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
+
+    # assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
+    # assert (Q == Q.T).all(), "Q needs to be symmetric"
+    print("In new function")
+    n = list(A_da(deltas[0]).values())[0].shape[1]
+    m = list(A_da(deltas[0]).values())[0].shape[0]
+    print(n)
+    print(m)
+
+    try:
+        num_of_deltas = deltas.shape[1]  # Number of deltas per row
+    except IndexError:
+        num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
+    try:
+        size_of_deltas = deltas.shape[0]  # Number of row
+    except IndexError:
+        raise ValueError("The input `deltas` must have at least one row.")
+
+    # Variables
+    x = cp.Variable((n, 1))
+    if P != 0:
+        s = cp.Variable((m, 1), nonneg=True)  # Slack variables
+    else:
+        s = np.zeros((m, 1))
+
+    print("Pass phase 1")
+    constraints = []
+    for i in range(size_of_deltas):
+        F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
+        expr = None
+        for k, Fk in F_dict.items():
+            if k == '0':
+                term = Fk
+            else:
+                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+            expr = term if expr is None else expr + term
+        constraints.append(expr <= s)
+
+    print("Pass phase 2")
+
+    if (F):
+        expr = None
+        for k, Fk in F_dict.items():
+            if k == '0':
+                term = Fk
+            else:
+                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+            expr = term if expr is None else expr + term
+        non_risk_constraints = expr <= 0
+        constraints.append(non_risk_constraints)  # hard constraints
+
+    else:
+        non_risk_constraints = []
+
+    print("Pass phase 3")
+    # Objective Function
+    objective = cp.Minimize(
+        (1 / 2) * cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
+
+    # Solve the problem
+    prob = cp.Problem(objective, constraints)
+    prob.solve(solver=solver)
+
+    # Simplify results
+    x_out = x.value
+
+    if P != 0.0:
+        s_out = s.value
+        # print(s)
+    else:
+        s_out = np.zeros((m, 1))
+
+    cost_out = prob.value
+
+    # Find the active constraints
+    active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, P, solver)
+
+    # Return results
+    return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
 def test_active_SDP(prob, objective, active, P=0.0, solver=None):
