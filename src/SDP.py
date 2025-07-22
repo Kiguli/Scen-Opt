@@ -176,7 +176,6 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
     else:
         non_risk_constraints = []
 
-    print("here")
     # Objective Function
     #TODO: work out regularization stuff
     objective = cp.Minimize(cp.trace(C @ X) + P * cp.sum(s)) #+ T * cp.norm(X - X_ref, norm_type)
