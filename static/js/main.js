@@ -24,7 +24,7 @@ function updateSDPButtons(tab) {
         }
         btn.textContent = label;
         btn.onclick = function () {
-            openSDPMatrixEditor(tab,i);
+            openSDPMatrixEditor(tab, i);
         };
         container.appendChild(btn);
     }
@@ -87,17 +87,12 @@ function openSDPModal(tab, matrix) {
 
 function openSDPMatrixEditor(tab, idx) {
     // assign a value to the tabs so they are used in storage properly.
-    if (tab === 'sdp'){
-        tab = 0;
-    }else if (tab === 'sdp2'){
-        tab = 1;
-    }
 
-    if (!window.sdpMatrixCollection[tab]) {
-        window.sdpMatrixCollection[tab] = {};
+    if (!window.sdpMatrixCollection) {
+        window.sdpMatrixCollection = {};
     }
     window.sdpCurrentMatrixIndex = idx;
-    let values = window.sdpMatrixCollection[tab][idx] ||
+    let values = window.sdpMatrixCollection[idx] ||
         Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
             () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
     document.getElementById('matrixRows').value = values.length;
@@ -251,44 +246,56 @@ function updateMatrixGrid(values = null) {
     }
 }
 
-function saveCollection(tab) {
-    //TODO: any matrices left empty are not passed in...
+function saveCollection() {
+    // This function saves the current matrix collection for SDP problems.
+    // It supports uploading matrix data from a file (JSON, CSV, TXT) or saving manually entered data.
+
+    // Get the file input element for uploading matrix data
     const fileInput = document.getElementById('SDP-file');
+
+    // Check if a file is uploaded
     if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
+        const file = fileInput.files[0]; // Get the uploaded file
+        const reader = new FileReader(); // Create a FileReader to read the file
+
+        // Define what happens when the file is read
         reader.onload = function (event) {
             try {
+                // Determine the file extension to handle different formats
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 let fileValues;
+
+                // Parse JSON files directly
                 if (fileExtension === 'json') {
                     fileValues = JSON.parse(event.target.result);
+                    // Parse CSV or TXT files by splitting into rows and columns
                 } else if (fileExtension === 'csv' || fileExtension === 'txt') {
                     const text = event.target.result;
                     const rows = text.trim().split('\n');
                     fileValues = rows.map(row => row.split(',').map(cell => cell.trim()));
                 } else {
+                    // Unsupported file type
                     throw new Error('Unsupported file type');
                 }
-                if (tab === 'sdp'){
-                    tab = 0;
-                }else if (tab === 'sdp2'){
-                    tab = 1;
-                }
-                // Overwrite the collection with the uploaded file content
-                window.sdpMatrixCollection[tab] = fileValues;
+
+                // Overwrite the matrix collection for the selected tab with the uploaded data
+                window.sdpMatrixCollection = fileValues;
             } catch (error) {
+                // Show an error if the file format is invalid
                 alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
                 return;
             }
-            // Always update the hidden input and close the modal
+            // Update the hidden input with the new matrix collection and close the modal
             document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+            alert(document.getElementById(currentMatrix).value);
             $('#SDPModal').modal('hide');
         };
+        // Start reading the file as text
         reader.readAsText(file);
     } else {
-        // Always update the hidden input and close the modal
+        // If no file is uploaded, just save the current matrix collection to the hidden input and close the modal
         document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection);
+        alert(document.getElementById(currentMatrix).value);
         $('#SDPModal').modal('hide');
     }
 }
