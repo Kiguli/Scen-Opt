@@ -94,6 +94,9 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
 
     # Simplify results
     x_out = x.value
+    print(x_out)
+    print(prob.value)
+
     if P != 0.0:
         s_out = s.value
         # print(s)
@@ -175,7 +178,8 @@ def get_active_SDP(constraints, non_risk_constraints, prob, objective, P=0.0, so
     degeneracy = False
     active = []
     for constraint in constraints:
-        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
+        #TODO: print constraint duals for 'normal' problem and see what they are
+        if constraint.dual_value.any() > threshold:  # Check if any dual value is positive
             # print(constraint.dual_value)
             active.append(constraint)
 

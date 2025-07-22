@@ -118,8 +118,8 @@ def solve():
     c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
     Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
     C = generate_matrix(request.form.get('C')) if request.form.get('C') else np.array([])
-    F = generate_tensor(request.form.get('F')) if request.form.get('F') else np.array([])
-    A_a = generate_tensor(request.form.get('A_a')) if request.form.get('A_a') else np.array([])
+    F = generate_tensor(request.form.get('F')) if request.form.get('F') else {}
+    A_a = generate_tensor(request.form.get('A_a')) if request.form.get('A_a') else {}
 
     conf = float(request.form.get('confidence')) if request.form.get('confidence') else 0.0
     # Get values from parameter boxes
