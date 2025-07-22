@@ -30,13 +30,10 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
-    # assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
-    # assert (Q == Q.T).all(), "Q needs to be symmetric"
-    print("In new function")
+    assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
+    assert (Q == Q.T).all(), "Q needs to be symmetric"
     n = list(F_d(deltas[0]).values())[0].shape[1]
     m = list(F_d(deltas[0]).values())[0].shape[0]
-    print(n)
-    print(m)
 
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
@@ -54,12 +51,13 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     else:
         s = np.zeros((m, 1))
 
-    print("Pass phase 1")
     constraints = []
     for i in range(size_of_deltas):
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
         for k, Fk in F_dict.items():
+            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\delta)\\) need to be positive semi-definite and symmetric"
+            assert (Fk == Fk.T).all(), "\\(F_j(\delta)\\) need to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
@@ -67,11 +65,11 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
             expr = term if expr is None else expr + term
         constraints.append(expr <= s)
 
-    print("Pass phase 2")
-
     if (F):
         expr = None
         for k, Fk in F_dict.items():
+            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
+            assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
@@ -83,8 +81,6 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     else:
         non_risk_constraints = []
 
-
-    print("Pass phase 3")
     # Objective Function
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
 
@@ -94,8 +90,6 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
 
     # Simplify results
     x_out = x.value
-    print(x_out)
-    print(prob.value)
 
     if P != 0.0:
         s_out = s.value

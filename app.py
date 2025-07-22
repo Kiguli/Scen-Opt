@@ -158,44 +158,47 @@ def solve():
             rho = rhos[i]
             solver = form_data.get('solver', 'CLARABEL')
 
-            # try:
-            if active_tab == 'lp-tab':
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
-                    scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
-            elif active_tab == 'qp-tab':
-                Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
-                    scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
-            elif active_tab == 'sdp-tab':
-                print("Solving SDP1")
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp1(
-                    scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
-            elif active_tab == 'sdp2-tab':
-                print("Solving SDP2")
-                optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp2(
-                    scenarios, C, A_da, A_a, tau, theta_bar, rho, p, solver)
+            try:
+                if active_tab == 'lp-tab':
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
+                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                elif active_tab == 'qp-tab':
+                    Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
+                        scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+                elif active_tab == 'sdp-tab':
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp1(
+                        scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
+                elif active_tab == 'sdp2-tab':
+                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp2(
+                        scenarios, C, A_da, A_a, tau, theta_bar, rho, p, solver)
 
-            risk = np.array(quantify_risk(len(active), N, conf))
-            e = "None"
-            #TODO: put try catch block back
-            #TODO: any errors are printed to screen...
-        # except Exception as error:
-        #    e = str(error)
-        #    risk = np.array([])
-        #    N, active, constraints, degeneracy = 0, [], [], False
+                risk = np.array(quantify_risk(len(active), N, conf))
+                e = "None"
+                # TODO: put try catch block back
+                # TODO: any errors are printed to screen...
+            except Exception as error:
+                e = str(error)
+                e_list.append(e)
+                risk = np.array([])
+                N, active, constraints, degeneracy = 0, [], [], False
 
         # Append results for this run
-        optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
-        optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
-        optimal_cost_list.append(optimal_cost)
-        N_list.append(N)
-        active_list.append(len(active))
-        constraints_list.append(len(constraints))
-        risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
-        e_list.append(e)
-        degeneracy_list.append(degeneracy)
-        rho_list.append(rho)
-        tau_list.append(tau)
+        try:
+            optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
+            optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
+            optimal_cost_list.append(optimal_cost)
+            N_list.append(N)
+            active_list.append(len(active))
+            constraints_list.append(len(constraints))
+            risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
+            degeneracy_list.append(degeneracy)
+            rho_list.append(rho)
+            tau_list.append(tau)
+        except Exception as error:
+            print(error)
+            # e = str(error)
+            # e_list.append(e)
 
     # Prepare the result dictionary with lists for each parameter
     result = {
