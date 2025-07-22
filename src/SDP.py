@@ -1,7 +1,8 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
+
+def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
     """
         Solves a quadratic programming problem with optional robust and regularization constraints.
 
@@ -25,12 +26,12 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
             - cost (float): Optimal value of the objective function.
         """
 
-    #TODO: need to change all this...
+    # TODO: need to change all this...
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
-    #assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
-    #assert (Q == Q.T).all(), "Q needs to be symmetric"
+    # assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
+    # assert (Q == Q.T).all(), "Q needs to be symmetric"
     print("In new function")
     n = list(F_d(deltas[0]).values())[0].shape[1]
     m = list(F_d(deltas[0]).values())[0].shape[0]
@@ -59,21 +60,29 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
         for k, Fk in F_dict.items():
-            term = Fk @ x[int(k)] if x.shape[0] > 1 else Fk @ x  # Use x_k if x is multidimensional
+            if k == '0':
+                term = Fk
+            else:
+                term = Fk * x[int(k)-1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
             expr = term if expr is None else expr + term
         constraints.append(expr <= s)
 
     print("Pass phase 2")
 
-    if not (F != np.array([])):
-        expr = F_dict['0']  # Start with F0
-        for k in F_dict:
-            if k != '0':
-                expr += F_dict[k] @ x[int(k)]
+    if (F):
+        expr = None
+        for k, Fk in F_dict.items():
+            if k == '0':
+                term = Fk
+            else:
+                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+            expr = term if expr is None else expr + term
         non_risk_constraints = expr <= 0
         constraints.append(non_risk_constraints)  # hard constraints
+
     else:
         non_risk_constraints = []
+
 
     print("Pass phase 3")
     # Objective Function
@@ -94,14 +103,17 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     cost_out = prob.value
 
     # Find the active constraints
-    #active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, P, solver)
+    active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, P, solver)
+
+    #active = degeneracy = []
 
     # Return results
-    return [] #x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return  x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
-def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
 
+def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
     return []
+
 
 def test_active_SDP(prob, objective, active, P=0.0, solver=None):
     """
@@ -126,10 +138,12 @@ def test_active_SDP(prob, objective, active, P=0.0, solver=None):
 
         # Assert that the solutions are the same
         assert np.allclose(prob.variables()[0].value,
-                           prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
+                           prob2.variables()[
+                               0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
 
         if P != 0:
-            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+            assert np.allclose(prob.variables()[1].value, prob2.variables()[
+                1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
 
         # Return True if all assertions pass
         return True
@@ -138,6 +152,7 @@ def test_active_SDP(prob, objective, active, P=0.0, solver=None):
         print(f"Assertion failed: {e}")
         # Return False if any assertion fails
         return False
+
 
 def get_active_SDP(constraints, non_risk_constraints, prob, objective, P=0.0, solver=None, threshold=1e-8):
     """
@@ -156,15 +171,15 @@ def get_active_SDP(constraints, non_risk_constraints, prob, objective, P=0.0, so
         active (list): list of active constraints.
     """
 
-    #TODO: make threshold a global parameter?
+    # TODO: make threshold a global parameter?
     degeneracy = False
     active = []
     for constraint in constraints:
         if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
-            #print(constraint.dual_value)
+            # print(constraint.dual_value)
             active.append(constraint)
 
-    #If solution changes then likely to have degeneracy
+    # If solution changes then likely to have degeneracy
     if not test_active_SDP(prob, objective, active, P=P, solver=solver):
         degeneracy = True
         print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
@@ -184,14 +199,17 @@ def get_active_SDP(constraints, non_risk_constraints, prob, objective, P=0.0, so
         if not test_active_SDP(prob, objective, active, P=P, solver=solver):
             raise ValueError("Error calculating support list! Degeneracy present as active constraints != constraints.")
     else:
-        #If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+        # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
         drop = []
         for a in active:
-            if test_active_SDP(prob, objective, [constraint for constraint in active if constraint != a], P=P, solver=solver):
+            if test_active_SDP(prob, objective, [constraint for constraint in active if constraint != a], P=P,
+                               solver=solver):
                 drop.append(a)
-        if not test_active_SDP(prob, objective, [constraint for constraint in active if constraint not in drop], P=P, solver=solver):
+        if not test_active_SDP(prob, objective, [constraint for constraint in active if constraint not in drop], P=P,
+                               solver=solver):
             degeneracy = True
-            print("Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+            print(
+                "Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")
             # Iteratively remove constraints from active if test_active_SDP returns True when they are removed
             changed = True
             while changed:
@@ -204,11 +222,12 @@ def get_active_SDP(constraints, non_risk_constraints, prob, objective, P=0.0, so
                         break  # Restart loop since active has changed
             # At the end, active contains only constraints whose removal makes test_active_SDP return False
             if not test_active_SDP(prob, objective, active, P=P, solver=solver):
-                raise ValueError("Error calculating support list! Degeneracy present as reduced active constraints != active constraints.")
+                raise ValueError(
+                    "Error calculating support list! Degeneracy present as reduced active constraints != active constraints.")
         else:
             active = [constraint for constraint in active if constraint not in drop]
 
     if non_risk_constraints in active:
         active.remove(non_risk_constraints)
 
-    return active,degeneracy
+    return active, degeneracy
