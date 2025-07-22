@@ -1,5 +1,7 @@
 window.sdpMatrixCollection1 = {};
 window.sdpMatrixCollection2 = {};
+window.sdpMatrixCollection3 = {};
+window.sdpMatrixCollection4 = {};
 window.sdpCurrentMatrixIndex = null;
 let currentMatrix = '';
 
@@ -83,7 +85,7 @@ function openSDPModal(tab, matrix) {
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
-    } else if (matrix === 'b_da'){
+    } else if (matrix === 'b_da') {
         matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
         document.getElementById('matrixRows').value = matrixValues.length;
         document.getElementById('matrixColumns').value = 1;
@@ -132,6 +134,37 @@ function openSDPMatrixEditor(idx) {
         window.sdpCurrentMatrixIndex = idx;
 
         let values = window.sdpMatrixCollection2[idx] ||
+            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
+                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
+        document.getElementById('matrixRows').value = values.length;
+        document.getElementById('matrixColumns').value = values[0].length;
+        document.getElementById('matrixColumns').disabled = false;
+        updateMatrixGrid(values);
+        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
+        $('#matrixModal').modal('show');
+    } else if (currentMatrix.endsWith('b_da')) {
+        if (!window.sdpMatrixCollection3) {
+            window.sdpMatrixCollection3 = {};
+        }
+        window.sdpCurrentMatrixIndex = idx;
+
+        let values = window.sdpMatrixCollection3[idx] ||
+            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
+                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
+        document.getElementById('matrixRows').value = values.length;
+        document.getElementById('matrixColumns').value = values[0].length;
+        document.getElementById('matrixColumns').disabled = false;
+        updateMatrixGrid(values);
+        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
+        $('#matrixModal').modal('show');
+    } else if (currentMatrix.endsWith('b_a')) {
+        if (!window.sdpMatrixCollection4) {
+            window.sdpMatrixCollection4 = {};
+        }
+
+        window.sdpCurrentMatrixIndex = idx;
+
+        let values = window.sdpMatrixCollection4[idx] ||
             Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
                 () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
         document.getElementById('matrixRows').value = values.length;
@@ -255,7 +288,11 @@ function getDynamicTip(matrix) {
     } else if (matrix === 'C') {
         return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'Theta-bar') {
-        return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "You may manually create the matrices or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+    } else if (matrix === 'b_da') {
+        return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+    } else if (matrix === 'b_a') {
+        return "You may manually create the vectors or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     }
     return "Provide valid input for the selected matrix.";
 }
@@ -324,6 +361,12 @@ function saveCollection() {
                 } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
                     // Overwrite the matrix collection for the selected tab with the uploaded data
                     window.sdpMatrixCollection2 = fileValues;
+                } else if (currentMatrix.endsWith('b_da')) {
+                    // Overwrite the matrix collection for the selected tab with the uploaded data
+                    window.sdpMatrixCollection3 = fileValues;
+                } else if (currentMatrix.endsWith('b_a')) {
+                    // Overwrite the matrix collection for the selected tab with the uploaded data
+                    window.sdpMatrixCollection4 = fileValues;
                 }
 
 
@@ -341,6 +384,12 @@ function saveCollection() {
             } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
                 // Overwrite the matrix collection for the selected tab with the uploaded data
                 document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
+            } else if (currentMatrix.endsWith('b_da')) {
+                // Overwrite the matrix collection for the selected tab with the uploaded data
+                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection3);
+            } else if (currentMatrix.endsWith('b_a')) {
+                // Overwrite the matrix collection for the selected tab with the uploaded data
+                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
             }
             $('#SDPModal').modal('hide');
         };
@@ -354,6 +403,12 @@ function saveCollection() {
         } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
             // Overwrite the matrix collection for the selected tab with the uploaded data
             document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
+        } else if (currentMatrix.endsWith('b_da')) {
+            // Overwrite the matrix collection for the selected tab with the uploaded data
+            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection3);
+        } else if (currentMatrix.endsWith('b_a')) {
+            // Overwrite the matrix collection for the selected tab with the uploaded data
+            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
         }
         $('#SDPModal').modal('hide');
     }
@@ -394,6 +449,10 @@ function saveMatrix() {
                         window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = fileValues;
                     } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
                         window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = fileValues;
+                    } else if (currentMatrix.endsWith('b_da')) {
+                        window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = fileValues;
+                    } else if (currentMatrix.endsWith('b_a')) {
+                        window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = fileValues;
                     }
 
                     window.sdpCurrentMatrixIndex = null;
@@ -428,6 +487,10 @@ function saveMatrix() {
                 window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = values;
             } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
                 window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = values;
+            } else if (currentMatrix.endsWith('b_da')) {
+                window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = values;
+            } else if (currentMatrix.endsWith('b_a')) {
+                window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = values;
             }
 
             window.sdpCurrentMatrixIndex = null;

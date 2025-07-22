@@ -193,6 +193,16 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
+                                    <label for="qp-Q">\(Q\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('qp', 'Q')">Edit \(Q\)
+                                    </button>
+                                    <input type="hidden" id="qp-Q" name="Q" data-shared="true"
+                                           value="{{ request.form.Q }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
                                     <label for="qp-A_d">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp', 'A_d')">Edit \(A(\delta)\)
@@ -231,16 +241,7 @@
                                            value="{{ request.form.b }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="qp-Q">\(Q\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('qp', 'Q')">Edit \(Q\)
-                                    </button>
-                                    <input type="hidden" id="qp-Q" name="Q" data-shared="true"
-                                           value="{{ request.form.Q }}">
-                                </div>
-                            </div>
+
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-tau-group" style="display: none;">
                                     <label for="qp-tau">\(\tau\):</label>
