@@ -261,6 +261,16 @@ function openMatrixModal(tab, matrix) {
         document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#matrixModal').modal('show');
+    } else if (matrix === 'theta-bar') {
+        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0], [0]]; // 1 row, 1 column
+        document.getElementById('matrixRows').value = matrixValues.length;
+        document.getElementById('matrixColumns').value = matrixValues[0].length;
+        document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
+        updateMatrixGrid(matrixValues);
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(\\bar{\\theta}\\) (${tab.toUpperCase()})`;
+        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        MathJax.typesetPromise();
+        $('#matrixModal').modal('show');
     }
 }
 
@@ -289,6 +299,8 @@ function getDynamicTip(matrix) {
         return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'Theta-bar') {
         return "You may manually create the matrices or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+    }else if (matrix === 'theta-bar') {
+        return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'b_da') {
         return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'b_a') {

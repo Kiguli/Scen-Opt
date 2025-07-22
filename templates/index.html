@@ -124,7 +124,10 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-theta-bar-group" style="display: none;">
                                     <label for="lp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="lp-theta-bar" class="form-control" name="theta_bar"
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('lp','theta-bar')">Edit \(\bar{\theta}\)
+                                    </button>
+                                    <input type="hidden" id="lp-theta-bar" class="form-control" name="theta-bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -252,7 +255,10 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-theta-bar-group" style="display: none;">
                                     <label for="qp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="qp-theta-bar" class="form-control" name="theta_bar"
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('qp','theta-bar')">Edit \(\bar{\theta}\)
+                                    </button>
+                                    <input type="hidden" id="qp-theta-bar" class="form-control" name="theta-bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -361,7 +367,10 @@
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
                                     <label for="sdp-theta-bar">\(\bar{\theta}\):</label>
-                                    <input type="text" id="sdp-theta-bar" class="form-control" name="theta_bar"
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openMatrixModal('sdp','theta-bar')">Edit \(\bar{\theta}\)
+                                    </button>
+                                    <input type="hidden" id="sdp-theta-bar" class="form-control" name="theta-bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
