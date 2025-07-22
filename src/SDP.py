@@ -108,7 +108,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
     return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
-def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
+def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=0.0, norm_type=2, solver=None):
     """
         Solves a semidefinite programming problem with optional robust and regularization constraints.
 
@@ -116,6 +116,8 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
         A_da (function): Function that returns the matrices for the constraints given a delta.
         A_a (numpy.ndarray): matrices for the hard constraints.
+        b_da (function): Function that returns the vector for the constraints given a delta.
+        b_a (numpy.ndarray): vector for the hard constraints.
         C (numpy.ndarray): cost matrix for the objective function.
         T (float): Regularization parameter for the norm term in the objective function.
         x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
@@ -166,17 +168,18 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
 
     for i in range(size_of_deltas):
         A_dict = A_da(deltas[i])  # Dictionary of submatrices for this delta
-        expr = None
-        #TODO: logic for Trace(A_j(delta)X)
-        constraints.append(expr <= s)
+        b_dict = b_da(deltas[i])  # Dictionary of sub-vectors for this delta
+
+        for key in A_dict.keys():
+            constraints = constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == s)
 
     print("Pass phase 2")
 
-    if (A_a):
-        expr = None
-        #TODO: logic for Trace(A_jX)
+    if (A_a & b_a):
+        non_risk_constraints = []
+        for key in A_a.keys():
+            non_risk_constraints += [cp.trace(A_a[key] @ X) + b_a[key] == 0]
 
-        non_risk_constraints = expr <= 0
         constraints.append(non_risk_constraints)  # hard constraints
 
     else:
@@ -184,15 +187,16 @@ def solve_sdp2(deltas, C, A_da, A_a, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
 
     print("Pass phase 3")
     # Objective Function
-    objective = cp.Minimize(
-        cp.trace(C @ X) + T * cp.norm(x - x_ref, norm_type) + P * cp.sum(s))
+    #TODO: work out regularization stuff
+    objective = cp.Minimize(cp.trace(C @ X) + P * cp.sum(s)) #+ T * cp.norm(X - X_ref, norm_type)
+
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
     prob.solve(solver=solver)
 
     # Simplify results
-    x_out = x.value
+    x_out = X.value
 
     if P != 0.0:
         s_out = s.value
