@@ -175,10 +175,9 @@ def solve():
 
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"
-                # TODO: put try catch block back
-                # TODO: any errors are printed to screen...
             except Exception as error:
                 e = str(error)
+                print(e)
                 e_list.append(e)
                 risk = np.array([])
                 N, active, constraints, degeneracy = 0, [], [], False

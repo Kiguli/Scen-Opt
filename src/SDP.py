@@ -56,8 +56,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_t
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
         for k, Fk in F_dict.items():
-            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\delta)\\) need to be positive semi-definite and symmetric"
-            assert (Fk == Fk.T).all(), "\\(F_j(\delta)\\) need to be positive semi-definite and symmetric"
+            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
+            assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
@@ -158,6 +158,8 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
     X = cp.Variable((n,n), symmetric=True)
     constraints = []
     constraints.append(X >> 0)  # X must be positive semidefinite
+
+    print("To here...")
 
     if P != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
