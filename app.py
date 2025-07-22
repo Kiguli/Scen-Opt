@@ -96,22 +96,27 @@ def solve():
         A_d = generate_matrix_function(request.form.get('A_d'))
     else:
         if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
-            raise ValueError("A(delta) is ill-defined")
+            raise ValueError("\\(A(\\delta)\\) is ill-defined")
     if request.form.get('b_d'):
         b_d = generate_matrix_function(request.form.get('b_d'))
     else:
         if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
-            raise ValueError("b(delta) is ill-defined")
+            raise ValueError("\\(b(\\delta)\\) is ill-defined")
     if request.form.get('F_d'):
         F_d = generate_tensor_function(request.form.get('F_d'))
     else:
         if (active_tab == 'sdp-tab'):
-            raise ValueError("F_j(delta) is ill-defined")
+            raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
     if request.form.get('A_da'):
         A_da = generate_tensor_function(request.form.get('A_da'))
     else:
         if (active_tab == 'sdp2-tab'):
-            raise ValueError("A_j(delta) is ill-defined")
+            raise ValueError("\\(A_j(\\delta)\\) is ill-defined")
+    if request.form.get('b_da'):
+        b_da = generate_tensor_function(request.form.get('b_da'))
+    else:
+        if (active_tab == 'sdp2-tab'):
+            raise ValueError("\\(b_j(\\delta)\\) is ill-defined")
 
     A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
     b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
@@ -120,6 +125,7 @@ def solve():
     C = generate_matrix(request.form.get('C')) if request.form.get('C') else np.array([])
     F = generate_tensor(request.form.get('F')) if request.form.get('F') else {}
     A_a = generate_tensor(request.form.get('A_a')) if request.form.get('A_a') else {}
+    b_a = generate_matrix(request.form.get('b_a')) if request.form.get('b_a') else np.array([])
 
     conf = float(request.form.get('confidence')) if request.form.get('confidence') else 0.0
     # Get values from parameter boxes
@@ -171,7 +177,7 @@ def solve():
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp2-tab':
                     optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp2(
-                        scenarios, C, A_da, A_a, tau, theta_bar, rho, p, solver)
+                        scenarios, C, A_da, A_a, b_da, b_a, tau, theta_bar, rho, p, solver)
 
                 risk = np.array(quantify_risk(len(active), N, conf))
                 e = "None"

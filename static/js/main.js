@@ -83,6 +83,26 @@ function openSDPModal(tab, matrix) {
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
+    } else if (matrix === 'b_da'){
+        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+        document.getElementById('matrixRows').value = matrixValues.length;
+        document.getElementById('matrixColumns').value = 1;
+        document.getElementById('matrixColumns').disabled = true;
+        updateMatrixGrid(matrixValues);
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(b_j(\\delta)\\) (${tab.toUpperCase()})`;
+        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        MathJax.typesetPromise();
+        $('#SDPModal').modal('show');
+    } else if (matrix === 'b_a') {
+        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
+        document.getElementById('matrixRows').value = matrixValues.length;
+        document.getElementById('matrixColumns').value = 1;
+        document.getElementById('matrixColumns').disabled = true;
+        updateMatrixGrid(matrixValues);
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(b_j\\) (${tab.toUpperCase()})`;
+        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        MathJax.typesetPromise();
+        $('#SDPModal').modal('show');
     }
 }
 

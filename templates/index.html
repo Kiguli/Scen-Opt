@@ -425,8 +425,8 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('sdp2','C')">Edit \(C\)
                                     </button>
-                                    <input type="hidden" id="sdp2-C" name="c" data-shared="true"
-                                           value="{{ request.form.c }}">
+                                    <input type="hidden" id="sdp2-C" name="C" data-shared="true"
+                                           value="{{ request.form.C }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -447,6 +447,26 @@
                                     </button>
                                     <input type="hidden" id="sdp2-A_a" name="A_a" data-shared="true"
                                            value="{{ request.form.A_a }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp2-b_da">\(b_{1,\ldots,\alpha}(\delta)\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openSDPModal('sdp2', 'b_da')">Edit \(b_{1,\ldots,\alpha}(\delta)\)
+                                    </button>
+                                    <input type="hidden" id="sdp2-b_da" name="b_da" data-shared="true"
+                                           value="{{ request.form.b_da }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="sdp2-b_a">\(b_{1,\ldots,n}\):</label>
+                                    <button type="button" class="btn btn-secondary btn-block"
+                                            onclick="openSDPModal('sdp2', 'b_a')">Edit \(b_{1,\ldots,n}\)
+                                    </button>
+                                    <input type="hidden" id="sdp2-b_a" name="b_a" data-shared="true"
+                                           value="{{ request.form.b_a }}">
                                 </div>
                             </div>
                             <div class="col-md-2">

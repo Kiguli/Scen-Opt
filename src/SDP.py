@@ -136,14 +136,10 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
     # TODO: need to change all this...
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
-
     assert np.all(np.linalg.eigvals(C) >= 0), "C needs to be positive semi-definite and symmetric"
     assert (C == C.T).all(), "C needs to be positive semi-definite and symmetric"
-    print("In new function")
-    n = list(A_da(deltas[0]).values())[0].shape[1]
-    m = list(A_da(deltas[0]).values())[0].shape[0]
-    print(n)
-    print(m)
+    n = C.shape[1]
+    m = C.shape[0]
 
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
@@ -159,14 +155,10 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
     constraints = []
     constraints.append(X >> 0)  # X must be positive semidefinite
 
-    print("To here...")
-
     if P != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
         s = np.zeros((m, 1))
-
-    print("Pass phase 1")
 
     for i in range(size_of_deltas):
         A_dict = A_da(deltas[i])  # Dictionary of submatrices for this delta
@@ -174,8 +166,6 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
 
         for key in A_dict.keys():
             constraints = constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == s)
-
-    print("Pass phase 2")
 
     if (A_a & b_a):
         non_risk_constraints = []
@@ -187,7 +177,6 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, T=0.0, X_ref=np.array([0.0]), P=
     else:
         non_risk_constraints = []
 
-    print("Pass phase 3")
     # Objective Function
     #TODO: work out regularization stuff
     objective = cp.Minimize(cp.trace(C @ X) + P * cp.sum(s)) #+ T * cp.norm(X - X_ref, norm_type)
