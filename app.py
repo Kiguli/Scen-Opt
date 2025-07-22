@@ -190,6 +190,7 @@ def solve():
             optimal_cost_list.append(optimal_cost)
             N_list.append(N)
             active_list.append(len(active))
+            e_list.append(e)
             constraints_list.append(len(constraints))
             risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
             degeneracy_list.append(degeneracy)
