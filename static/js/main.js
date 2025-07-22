@@ -322,8 +322,6 @@ function saveCollection() {
                 // Overwrite the matrix collection for the selected tab with the uploaded data
                 document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
             }
-
-            alert(document.getElementById(currentMatrix).value);
             $('#SDPModal').modal('hide');
         };
         // Start reading the file as text
@@ -337,7 +335,6 @@ function saveCollection() {
             // Overwrite the matrix collection for the selected tab with the uploaded data
             document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
         }
-        alert(document.getElementById(currentMatrix).value);
         $('#SDPModal').modal('hide');
     }
 }
