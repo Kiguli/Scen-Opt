@@ -426,8 +426,8 @@ Data-Driven Convex Programming </h4>
                                 <p>\(\displaystyle\min_{X} \quad\textbf{tr}(CX)\)</p>
                                 <p>subject to:</p>
                                 <p>\(\textbf{tr}(A_j(\delta_i)X) + b_j(\delta_i) = 0,~j=1,\ldots,
-                                    \alpha,~i=1,\ldots,N\)</p>
-                                <p>\(\textbf{tr}(G_jX) + h_j = 0,~j=1,\ldots, \alpha\)</p>
+                                    \mathfrak{m},~i=1,\ldots,N\)</p>
+                                <p>\(\textbf{tr}(G_kX) + h_k = 0,~k=1,\ldots, \mathfrak{n}\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -443,9 +443,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-A_da">\(A_{1,\ldots,\alpha}(\delta)\):</label>
+                                    <label for="sdp2-A_da">\(A_{1,\ldots,\mathfrak{m}}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'A_da')">Edit \(A_{1,\ldots,\alpha}(\delta)\)
+                                            onclick="openSDPModal('sdp2', 'A_da')">Edit \(A_{1,\ldots,\mathfrak{m}}(\delta)\)
                                     </button>
                                     <input type="hidden" id="sdp2-A_da" name="A_da" data-shared="true"
                                            value="{{ request.form.A_da }}">
@@ -453,9 +453,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-A_a">\(G_{1,\ldots,n}\):</label>
+                                    <label for="sdp2-A_a">\(G_{1,\ldots,\mathfrak{n}}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'A_a')">Edit \(G_{1,\ldots,n}\)
+                                            onclick="openSDPModal('sdp2', 'A_a')">Edit \(G_{1,\ldots,\mathfrak{n}}\)
                                     </button>
                                     <input type="hidden" id="sdp2-A_a" name="A_a" data-shared="true"
                                            value="{{ request.form.A_a }}">
@@ -463,9 +463,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-b_da">\(b_{1,\ldots,\alpha}(\delta)\):</label>
+                                    <label for="sdp2-b_da">\(b_{1,\ldots,\mathfrak{m}}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'b_da')">Edit \(b_{1,\ldots,\alpha}(\delta)\)
+                                            onclick="openSDPModal('sdp2', 'b_da')">Edit \(b_{1,\ldots,\mathfrak{m}}(\delta)\)
                                     </button>
                                     <input type="hidden" id="sdp2-b_da" name="b_da" data-shared="true"
                                            value="{{ request.form.b_da }}">
@@ -473,9 +473,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp2-b_a">\(h_{1,\ldots,n}\):</label>
+                                    <label for="sdp2-b_a">\(h_{1,\ldots,\mathfrak{n}}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'b_a')">Edit \(h_{1,\ldots,n}\)
+                                            onclick="openSDPModal('sdp2', 'b_a')">Edit \(h_{1,\ldots,\mathfrak{n}}\)
                                     </button>
                                     <input type="hidden" id="sdp2-b_a" name="b_a" data-shared="true"
                                            value="{{ request.form.b_a }}">
