@@ -970,28 +970,28 @@ function updateLatexText(tab) {
     } else if (tab === 'sdp2') {
         if (option === 'robust') {
             latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX)';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\mathfrak{m}';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0, \\quad j=1,\\ldots, \\mathfrak{m}';
             latexText3 = 'X\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0,~k=1,\\ldots, \\mathfrak{n}';
+            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
         } else if (option === 'robust-regularization') {
             latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p}';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\mathfrak{m}';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0, \\quad j=1,\\ldots, \\mathfrak{m}';
             latexText3 = 'X\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0,~k=1,\\ldots, \\mathfrak{n}';
+            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-p-group`).style.display = 'block';
         } else if (option === 'robust-relaxation') {
             latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\mathfrak{m}';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i, \\quad j=1,\\ldots, \\mathfrak{m}';
             latexText3 = 'X\\geq 0, \\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0,~k=1,\\ldots, \\mathfrak{n}';
+            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
         } else if (option === 'robust-regularization-relaxation') {
             latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\mathfrak{m}';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i, \\quad j=1,\\ldots, \\mathfrak{m}';
             latexText3 = 'X\\geq 0, \\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0,~k=1,\\ldots, \\mathfrak{n}';
+            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
