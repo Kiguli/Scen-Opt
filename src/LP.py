@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, norm_type=2,solver=None):
+def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2,solver=None):
     """
         Solves a linear programming problem with optional robust and regularization constraints.
 
@@ -9,12 +9,12 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
         A_d (function): Function that returns the coefficient matrix for the constraints given a delta.
         b_d (function): Function that returns the right-hand side vector for the constraints given a delta.
-        A (numpy.ndarray): coefficient matrix for the hard constraints.
-        b (numpy.ndarray): right-hand side vector for the hard constraints.
+        G (numpy.ndarray): coefficient matrix for the hard constraints.
+        h (numpy.ndarray): right-hand side vector for the hard constraints.
         c (numpy.ndarray): Coefficient vector for the objective function.
-        T (float): Regularization parameter for the norm term in the objective function.
+        tau (float): Regularization parameter for the norm term in the objective function.
         x_ref (numpy.ndarray): Regularization parameter for the regularization term in the objective to stay near some point.
-        P (float): Penalty parameter for the slack variables in the objective function.
+        rho (float): Penalty parameter for the slack variables in the objective function.
         norm_type (int, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
         solver (str, optional): The solver to use for the optimization problem. Default is None.
 
@@ -37,7 +37,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     # Variables
     x = cp.Variable((n, 1))
-    if P != 0:
+    if rho != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
     else:
         s = np.zeros((m, 1))
@@ -46,15 +46,15 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     for i in range(size_of_deltas):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Add each row separately
 
-    if not (A.size == 0 or b.size == 0):
-        m = A.shape[0]  # Number of constraints
-        non_risk_constraints = A @ x + b <= 0
+    if not (G.size == 0 or h.size == 0):
+        m = G.shape[0]  # Number of constraints
+        non_risk_constraints = G @ x + h <= 0
         constraints.append(non_risk_constraints)  # hard constraints
     else:
         non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize(c.T @ x + T * cp.norm(x-x_ref, norm_type) + P * cp.sum(s))
+    objective = cp.Minimize(c.T @ x + tau * cp.norm(x-x_ref, norm_type) + rho * cp.sum(s))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -62,7 +62,7 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
 
     # Simplify results
     x_out = x.value
-    if P != 0.0:
+    if rho != 0.0:
         s_out = s.value
         #print(s)
     else:
@@ -75,12 +75,12 @@ def solve_lp(deltas, A_d, b_d, A, b, c, T=0.0, x_ref=np.array([0.0]), P=0.0, nor
     # =====================================
 
     # Find the active constraints
-    active, degeneracy = get_active_LP(constraints, non_risk_constraints, prob, objective, P, solver)
+    active, degeneracy = get_active_LP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     # Return results
     return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
-def test_active_LP(prob, objective, active, P=0.0, solver=None):
+def test_active_LP(prob, objective, active, rho=0.0, solver=None):
     """
         Solves a linear programming problem with optional robust and regularization constraints.
 
@@ -88,7 +88,7 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
         prob: CVXPY problem instance for optimal solution.
         objective: CVXPY objective function.
         active: list of active constraints.
-        P (float): Penalty parameter for the slack variables in the objective function.
+        rho (float): Penalty parameter for the slack variables in the objective function.
         solver (str, optional): The solver to use for the optimization problem. Default is None.
 
         Returns:
@@ -105,7 +105,7 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
         assert np.allclose(prob.variables()[0].value,
                            prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
 
-        if P != 0:
+        if rho != 0:
             assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
 
         # Return True if all assertions pass
@@ -116,7 +116,7 @@ def test_active_LP(prob, objective, active, P=0.0, solver=None):
         # Return False if any assertion fails
         return False
 
-def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, solver=None, threshold=1e-8):
+def get_active_LP(constraints, non_risk_constraints, prob, objective, rho=0.0, solver=None, threshold=1e-8):
     """
         Finds the active constraints of the LP.
 
@@ -125,7 +125,7 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
         non_risk_constraints (list): list of constraints that should not be included in the error calculation.
         prob: CVXPY problem instance for optimal solution.
         objective: CVXPY objective function.
-        P (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
+        rho (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
         solver (str, optional): The solver to use for the optimization problem. Default is None.
         threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
         Returns:
@@ -141,7 +141,7 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
             active.append(constraint)
 
         # If solution changes then likely to have degeneracy
-        if not test_active_LP(prob, objective, active, P=P, solver=solver):
+        if not test_active_LP(prob, objective, active, rho=rho, solver=solver):
             degeneracy = True
             print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
             # loop through all constraints and make a support list from them
@@ -152,22 +152,22 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
                 changed = False
                 for constraint in active[:]:
                     temp_active = [c for c in active if c != constraint]
-                    if test_active_LP(prob, objective, temp_active, P=P, solver=solver):
+                    if test_active_LP(prob, objective, temp_active, rho=rho, solver=solver):
                         active.remove(constraint)
                         changed = True
                         break  # Restart loop since active has changed
             # At the end, active contains only constraints whose removal makes test_active_LP return False
-            if not test_active_LP(prob, objective, active, P=P, solver=solver):
+            if not test_active_LP(prob, objective, active, rho=rho, solver=solver):
                 raise ValueError(
                     "Error calculating support list! Degeneracy present as active constraints != constraints.")
         else:
             # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
             drop = []
             for a in active:
-                if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], P=P,
+                if test_active_LP(prob, objective, [constraint for constraint in active if constraint != a], rho=rho,
                                   solver=solver):
                     drop.append(a)
-            if not test_active_LP(prob, objective, [constraint for constraint in active if constraint not in drop], P=P,
+            if not test_active_LP(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,
                                   solver=solver):
                 degeneracy = True
                 print(
@@ -178,12 +178,12 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, P=0.0, sol
                     changed = False
                     for constraint in active[:]:
                         temp_active = [c for c in active if c != constraint]
-                        if test_active_LP(prob, objective, temp_active, P=P, solver=solver):
+                        if test_active_LP(prob, objective, temp_active, rho=rho, solver=solver):
                             active.remove(constraint)
                             changed = True
                             break  # Restart loop since active has changed
                 # At the end, active contains only constraints whose removal makes test_active_LP return False
-                if not test_active_LP(prob, objective, active, P=P, solver=solver):
+                if not test_active_LP(prob, objective, active, rho=rho, solver=solver):
                     raise ValueError(
                         "Error calculating support list! Degeneracy present as reduced active constraints != active constraints.")
             else:
