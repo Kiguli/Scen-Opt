@@ -229,7 +229,7 @@ function openMatrixModal(tab, matrix) {
         document.getElementById('matrixColumns').value = matrixValues[0].length;
         document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit A (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit G (${tab.toUpperCase()})`;
         document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         $('#matrixModal').modal('show');
     } else if (matrix === 'b') {
@@ -238,7 +238,7 @@ function openMatrixModal(tab, matrix) {
         document.getElementById('matrixColumns').value = matrixValues[0].length;
         document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit b (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit h (${tab.toUpperCase()})`;
         document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         $('#matrixModal').modal('show');
     } else if (matrix === 'C') {
