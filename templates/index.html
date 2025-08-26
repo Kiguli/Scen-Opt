@@ -312,10 +312,10 @@ Data-Driven Convex Programming </h4>
                         <div id="sdp-latex" class="form-group">
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{x} \quad c^\top x + \frac{1}{2}x^\top Qx\)</p>
-                                <p>subject to</p>
-                                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_jx_j \leq 0\)</p>
-                                <p>\(F_0 + \displaystyle\sum_{j=1}^{n}F_j(\delta_i)x_j
+                                <p>subject to: </p>
+                                <p>\(F_0 + \displaystyle\sum_{j=1}^{d}x_jF_j(\delta_i)
                                     \leq 0, \quad i = 1, \ldots, N\)</p>
+                                <p>\(E_0 + \displaystyle\sum_{j=1}^{d}x_jE_j \leq 0\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -341,9 +341,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp-F_d">\(F_{0,\ldots,n}(\delta)\):</label>
+                                    <label for="sdp-F_d">\(F_{0,\ldots,d}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp', 'F_d')">Edit \(F_{0,\ldots,n}(\delta)\)
+                                            onclick="openSDPModal('sdp', 'F_d')">Edit \(F_{0,\ldots,d}(\delta)\)
                                     </button>
                                     <input type="hidden" id="sdp-F_d" name="F_d" data-shared="true"
                                            value="{{ request.form.F_d }}">
@@ -351,9 +351,9 @@ Data-Driven Convex Programming </h4>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp-F">\(F_{0,\ldots,n}\):</label>
+                                    <label for="sdp-F">\(E_{0,\ldots,d}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp', 'F')">Edit \(F_{0,\ldots,n}\)
+                                            onclick="openSDPModal('sdp', 'F')">Edit \(E_{0,\ldots,d}\)
                                     </button>
                                     <input type="hidden" id="sdp-F" name="F" data-shared="true"
                                            value="{{ request.form.F }}">
@@ -424,7 +424,7 @@ Data-Driven Convex Programming </h4>
                         <div id="sdp2-latex" class="form-group">
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{X} \quad\textbf{tr}(CX)\)</p>
-                                <p>subject to</p>
+                                <p>subject to:</p>
                                 <p>\(\textbf{tr}(A_jX) + b_j = 0,~j=1,\ldots, \alpha\)</p>
                                 <p>\(\textbf{tr}(A_j(\delta_i)X) + b_j(\delta_i) = 0,~j=1,\ldots,
                                     \alpha,~i=1,\ldots,N\)</p>
