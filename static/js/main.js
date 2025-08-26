@@ -19,7 +19,7 @@ function updateSDPButtons() {
         } else if (currentMatrix === 'sdp-F') {
             label = `\\(E_{${i}}\\)`;
         } else if (currentMatrix === 'sdp2-A_a') {
-            label = `\\(A_{${i}}\\)`;
+            label = `\\(G_{${i}}\\)`;
         } else if (currentMatrix === 'sdp2-A_da') {
             label = `\\(A_{${i}}(\\delta)\\)`;
         } else {
@@ -81,7 +81,7 @@ function openSDPModal(tab, matrix) {
         document.getElementById('matrixColumns').value = matrixValues[0].length;
         document.getElementById('matrixColumns').disabled = false;
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(A_j\\) (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(G_j\\) (${tab.toUpperCase()})`;
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
@@ -101,7 +101,7 @@ function openSDPModal(tab, matrix) {
         document.getElementById('matrixColumns').value = 1;
         document.getElementById('matrixColumns').disabled = true;
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(b_j\\) (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(h_j\\) (${tab.toUpperCase()})`;
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
@@ -294,7 +294,7 @@ function getDynamicTip(matrix) {
     } else if (matrix === 'A_da') {
         return "<i>Ensure \\(A_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'A_a') {
-        return "<i>Ensure \\(A_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "<i>Ensure \\(G_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'C') {
         return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'Theta-bar') {
@@ -968,28 +968,28 @@ function updateLatexText(tab) {
     } else if (tab === 'sdp2') {
         if (option === 'robust') {
             latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX)';
-            latexText2 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
             latexText3 = '';
-            latexText4 = '\\textbf{tr}(A_jX) + b_j = 0,~j=1,\\ldots, \\alpha';
+            latexText2 = '\\textbf{tr}(G_jX) + h_j = 0,~j=1,\\ldots, \\alpha';
         } else if (option === 'robust-regularization') {
             latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p}';
-            latexText2 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
             latexText3 = '';
-            latexText4 = '\\textbf{tr}(A_jX) + b_j = 0,~j=1,\\ldots, \\alpha';
+            latexText2 = '\\textbf{tr}(G_jX) + h_j = 0,~j=1,\\ldots, \\alpha';
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-p-group`).style.display = 'block';
         } else if (option === 'robust-relaxation') {
             latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText2 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
             latexText3 = '\\zeta_i \\geq 0,';
-            latexText4 = '\\textbf{tr}(A_jX) + b_j = 0,~j=1,\\ldots, \\alpha';
+            latexText2 = '\\textbf{tr}(G_jX) + h_j = 0,~j=1,\\ldots, \\alpha';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
         } else if (option === 'robust-regularization-relaxation') {
             latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText2 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
+            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i,~j=1,\\ldots, \\alpha,~i=1,\\ldots,N';
             latexText3 = '\\zeta_i \\geq 0,';
-            latexText4 = '\\textbf{tr}(A_jX) + b_j = 0,~j=1,\\ldots, \\alpha';
+            latexText2 = '\\textbf{tr}(G_jX) + h_j = 0,~j=1,\\ldots, \\alpha';
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
