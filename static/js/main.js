@@ -17,7 +17,7 @@ function updateSDPButtons() {
         if (currentMatrix === 'sdp-F_d') {
             label = `\\(F_{${i}}(\\delta)\\)`;
         } else if (currentMatrix === 'sdp-F') {
-            label = `\\(F_{${i}}\\)`;
+            label = `\\(E_{${i}}\\)`;
         } else if (currentMatrix === 'sdp2-A_a') {
             label = `\\(A_{${i}}\\)`;
         } else if (currentMatrix === 'sdp2-A_da') {
@@ -61,7 +61,7 @@ function openSDPModal(tab, matrix) {
         document.getElementById('matrixColumns').value = matrixValues[0].length;
         document.getElementById('matrixColumns').disabled = false;
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(F_j\\) (${tab.toUpperCase()})`;
+        document.getElementById('matrixModalTitle').textContent = `Edit \\(E_j\\) (${tab.toUpperCase()})`;
         document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
@@ -290,7 +290,7 @@ function getDynamicTip(matrix) {
     } else if (matrix === 'F_d') {
         return "<i>Ensure \\(F_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'F') {
-        return "<i>Ensure \\(F_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "<i>Ensure \\(E_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'A_da') {
         return "<i>Ensure \\(A_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
     } else if (matrix === 'A_a') {
