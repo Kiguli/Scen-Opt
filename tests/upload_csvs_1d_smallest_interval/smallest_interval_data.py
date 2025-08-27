@@ -21,3 +21,28 @@ print(f"Random points saved to {csv_filename}")
 #B(d) = [delta[0],-delta[0]]^T
 # A = 0
 # B = 0
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load points from CSV
+points = np.loadtxt('smallest_interval_1d.csv', delimiter=',', skiprows=1)
+
+# Plot black line at y=0
+plt.plot([0, 1], [0, 0], color='black', linewidth=0.5)
+
+# Plot red points on the black line
+plt.scatter(points, np.zeros_like(points), color='red', zorder=3)
+
+# Blue marker line above, spanning min to max of points
+y_marker = 0.1
+min_pt, max_pt = np.min(points), np.max(points)
+plt.plot([min_pt, max_pt], [y_marker, y_marker], color='blue', linewidth=3)
+
+# Green marker at the center of the blue line
+center_pt = (min_pt + max_pt) / 2
+plt.scatter([center_pt], [y_marker], color='green', s=100, zorder=4)
+
+plt.axis('off')
+plt.show()

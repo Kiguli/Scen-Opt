@@ -28,3 +28,23 @@ print(f"Data saved to {csv_filename}")
 # A = []
 # b = []
 # Q = diag(1,1,0)
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load data from CSV
+data = np.loadtxt('SVM_example.csv', delimiter=',')
+X = data[:, :2]
+y = data[:, 2]
+
+# Plot points by class
+plt.figure(figsize=(6, 6))
+plt.scatter(X[y == -1, 0], X[y == -1, 1], color='blue')
+plt.scatter(X[y == 1, 0], X[y == 1, 1], color='orange')
+plt.xlabel('x1')
+plt.ylabel('x2')
+#plt.title('SVM Example Points')
+#plt.legend()
+#plt.grid(True)
+plt.show()
