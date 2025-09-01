@@ -803,7 +803,7 @@ function generateResultTable(data) {
         {label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk]},
         {
             label: 'Degeneracy Detected?',
-            values: Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy]
+            values: Array.isArray(data.degeneracy) ? data.degeneracy.map(val => val ? 'Yes' : 'No') : [data.degeneracy ? 'Yes' : 'No']
         },
         {label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con]},
         {
