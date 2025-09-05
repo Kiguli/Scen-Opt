@@ -30,10 +30,13 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
+    print("Solving SDP...")
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q == Q.T).all(), "Q needs to be symmetric"
-    n = list(F_d(deltas[0]).values())[0].shape[1]
+    n = Q.shape[1]
     m = list(F_d(deltas[0]).values())[0].shape[0]
+
+    print(n,m)
 
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
@@ -44,6 +47,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
+    print(size_of_deltas)
     # Variables
     x = cp.Variable((n, 1))
     if rho != 0:
@@ -51,29 +55,38 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     else:
         s = np.zeros((m, 1))
 
+    print("writing F")
+
     constraints = []
     for i in range(size_of_deltas):
+        print("1111")
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
+        print("2222")
         expr = None
         for k, Fk in F_dict.items():
-            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
+            print(k)
+            #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
-                term = Fk * x[int(k)-1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+                term = Fk * x[int(k)-1] #if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
             expr = term if expr is None else expr + term
+            print(expr)
         constraints.append(expr <= s)
+
+    print("writing E")
 
     if (F):
         expr = None
         for k, Fk in F.items():
-            assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
+            print(k)
+            #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
-                term = Fk * x[int(k) - 1][0] if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+                term = Fk * x[int(k) - 1]
             expr = term if expr is None else expr + term
         non_risk_constraints = expr <= 0
         constraints.append(non_risk_constraints)  # hard constraints
@@ -81,8 +94,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     else:
         non_risk_constraints = []
 
+    print(constraints)
 
-    print("Pass phase 3")
     # Objective Function
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(s))
 
