@@ -30,7 +30,6 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Check Q is positive semi-definite and symmetric
     # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 
-    print("Solving SDP...")
     assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
     assert (Q == Q.T).all(), "Q needs to be symmetric"
     n = Q.shape[1]
@@ -49,11 +48,11 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     print(size_of_deltas)
     # Variables
-    x = cp.Variable((n,1))
+    x = cp.Variable(n)
     if rho != 0:
-        s = cp.Variable((m, 1), nonneg=True)  # Slack variables
+        s = cp.Variable((m, m), nonneg=True)  # Slack variables
     else:
-        s = np.zeros((m, 1))
+        s = np.zeros((m, m))
 
     print("writing F")
 
@@ -62,38 +61,34 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
         for k, Fk in F_dict.items():
-            print(k)
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
-                term = cp.multiply(x[int(k)-1], cp.Constant(Fk))   # scalar-variable times numpy matrix is fine
-                print(term) #TODO: code not doing elementwise multiplication here?
+                xk = x[int(k)-1]
+                term = xk * Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
-        constraints.append(expr <= s)
+        constraints.append(expr << s)
 
     print("writing E")
 
     if (F):
         expr = None
         for k, Fk in F.items():
-            print(k)
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be positive semi-definite and symmetric"
             if k == '0':
                 term = Fk
             else:
-                term = x[int(k)-1] * Fk   # scalar-variable times numpy matrix is fine
-                print(term) #TODO: code not doing elementwise multiplication here?
+                xk = x[int(k) - 1]
+                term = xk*Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
-        non_risk_constraints = expr <= 0
+        non_risk_constraints = expr << 0
         constraints.append(non_risk_constraints)  # hard constraints
 
     else:
         non_risk_constraints = []
-
-    print(constraints)
 
     # Objective Function
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(s))
@@ -104,6 +99,10 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     # Simplify results
     x_out = x.value
+
+    print(x_out)
+    print(prob.value)
+    print(objective.value)
 
     if rho != 0.0:
         s_out = s.value
