@@ -49,7 +49,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     print(size_of_deltas)
     # Variables
-    x = cp.Variable((n, 1))
+    x = cp.Variable((n,1))
     if rho != 0:
         s = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
@@ -59,9 +59,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     constraints = []
     for i in range(size_of_deltas):
-        print("1111")
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
-        print("2222")
         expr = None
         for k, Fk in F_dict.items():
             print(k)
@@ -70,9 +68,9 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
             if k == '0':
                 term = Fk
             else:
-                term = Fk * x[int(k)-1] #if x.shape[0] > 1 else Fk * x[0]  # Use x_k if x is multidimensional
+                term = cp.multiply(x[int(k)-1], cp.Constant(Fk))   # scalar-variable times numpy matrix is fine
+                print(term) #TODO: code not doing elementwise multiplication here?
             expr = term if expr is None else expr + term
-            print(expr)
         constraints.append(expr <= s)
 
     print("writing E")
@@ -86,7 +84,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
             if k == '0':
                 term = Fk
             else:
-                term = Fk * x[int(k) - 1]
+                term = x[int(k)-1] * Fk   # scalar-variable times numpy matrix is fine
+                print(term) #TODO: code not doing elementwise multiplication here?
             expr = term if expr is None else expr + term
         non_risk_constraints = expr <= 0
         constraints.append(non_risk_constraints)  # hard constraints
