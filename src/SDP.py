@@ -100,9 +100,8 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Simplify results
     x_out = x.value
 
-    print(x_out)
-    print(prob.value)
-    print(objective.value)
+    if prob.status not in ["optimal", "optimal_inaccurate"]:
+        raise ValueError(f"SDP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
     if rho != 0.0:
         s_out = s.value
@@ -197,6 +196,9 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
 
     # Simplify results
     x_out = X.value
+
+    if prob.status not in ["optimal", "optimal_inaccurate"]:
+        raise ValueError(f"QP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
     if rho != 0.0:
         s_out = s.value

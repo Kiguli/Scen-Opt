@@ -62,6 +62,10 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
 
     # Simplify results
     x_out = x.value
+
+    if prob.status not in ["optimal", "optimal_inaccurate"]:
+        raise ValueError(f"QP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
+
     if rho != 0.0:
         s_out = s.value
         #print(s)
