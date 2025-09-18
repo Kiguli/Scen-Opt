@@ -132,15 +132,14 @@ def solve():
     form_data = request.form.to_dict()
     print(form_data)
 
+    rhos = np.array([float(x) for x in request.form.get('rho', 0).split(',')]) if request.form.get('rho') else np.array(
+        [0.0])
     taus = np.array([float(x) for x in request.form.get('tau', 0).split(',')]) if request.form.get('tau') else np.array(
         [0.0])
     theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get(
         'theta_bar') else 0.0
     p = float(request.form.get('p', 0)) if request.form.get(
         'p') else 2  # TODO: add something to check for 'fro' or 'inf', and any number
-
-    rhos = np.array([float(x) for x in request.form.get('rho', 0).split(',')]) if request.form.get('rho') else np.array(
-        [0.0])
 
     # Initialize lists to collect results for each run
     optimal_x_list = []
@@ -158,9 +157,13 @@ def solve():
     # update confidence based on number of tau and rho
     conf = conf / (len(taus) * len(rhos))
 
+    print(rhos)
+    print(taus)
+
     for j in range(len(taus)):
         tau = taus[j]
         for i in range(len(rhos)):
+            print(i)
             rho = rhos[i]
             solver = form_data.get('solver', 'CLARABEL')
 
@@ -188,23 +191,25 @@ def solve():
                 risk = np.array([])
                 N, active, constraints, degeneracy = 0, [], [], False
 
-        # Append results for this run
-        try:
-            optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
-            optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
-            optimal_cost_list.append(optimal_cost)
-            N_list.append(N)
-            active_list.append(len(active))
-            e_list.append(e)
-            constraints_list.append(len(constraints))
-            risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
-            degeneracy_list.append(degeneracy)
-            rho_list.append(rho)
-            tau_list.append(tau)
-        except Exception as error:
-            print(error)
-            # e = str(error)
-            # e_list.append(e)
+            # Append results for this run
+            try:
+                optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
+                optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
+                optimal_cost_list.append(optimal_cost)
+                N_list.append(N)
+                active_list.append(len(active))
+                e_list.append(e)
+                constraints_list.append(len(constraints))
+                risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
+                degeneracy_list.append(degeneracy)
+                rho_list.append(rho)
+                tau_list.append(tau)
+                print(rho_list)
+                print(tau_list)
+            except Exception as error:
+                print(error)
+                # e = str(error)
+                # e_list.append(e)
 
     # Prepare the result dictionary with lists for each parameter
     result = {
@@ -223,6 +228,8 @@ def solve():
         "errorcode": e_list,
         "degeneracy": degeneracy_list
     }
+
+    print(result)
 
     return jsonify(result)
 

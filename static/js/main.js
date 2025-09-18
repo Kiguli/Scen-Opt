@@ -785,80 +785,70 @@ function solve() {
 }
 
 function generateResultTable(data) {
-    // Determine the number of value columns
-    const count = data.count || 1;
-    const valueHeaders = Array.from({length: count}, (_, i) => `<th>Value${i + 1}</th>`).join('');
+    // Get arrays of rho and tau
+    const rhos = Array.isArray(data.rho_) ? data.rho_ : [data.rho_];
+    const taus = Array.isArray(data.tau_) ? data.tau_ : [data.tau_];
 
-    // Prepare rows with values as arrays (or wrap single values)
+    // Generate all (rho, tau) pairs
+    const pairs = [];
+    for (let i = 0; i < rhos.length; i++) {
+        for (let j = 0; j < taus.length; j++) {
+            pairs.push({rho: rhos[i], tau: taus[j], idx: i * taus.length + j});
+        }
+    }
+
+    // Generate headers
+    const headers = pairs.map((p, idx) => `<th>ρ=${p.rho}, τ=${p.tau}</th>`).join('');
+
+    // Helper to flatten values for each pair
+    function getValue(arr, idx) {
+        if (Array.isArray(arr)) {
+            return arr[idx] !== undefined ? arr[idx] : '';
+        }
+        return arr !== undefined ? arr : '';
+    }
+
+    // Prepare rows
     const rows = [
-        {label: 'Optimal Cost', values: Array.isArray(data.optimal_cost) ? data.optimal_cost : [data.optimal_cost]},
-        {label: 'Optimal &theta;', values: Array.isArray(data.optimal_x) ? data.optimal_x : [data.optimal_x]},
-        {label: 'Optimal &zeta;', values: Array.isArray(data.optimal_s) ? data.optimal_s : [data.optimal_s]},
-        {label: 'Relaxation Parameters &rho;', values: Array.isArray(data.rho_) ? data.rho_ : [data.rho_]},
-        {label: 'Regularization Parameters &tau;', values: Array.isArray(data.tau_) ? data.tau_ : [data.tau_]},
-        {
-            label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)',
-            values: Array.isArray(data.conf) ? data.conf : [data.conf]
-        },
-        {label: 'Risk Bounds &epsilon;', values: Array.isArray(data.risk) ? data.risk : [data.risk]},
-        {
-            label: 'Degeneracy Detected?',
-            values: Array.isArray(data.degeneracy) ? data.degeneracy.map(val => val ? 'Yes' : 'No') : [data.degeneracy ? 'Yes' : 'No']
-        },
-        {label: 'Support Set Size', values: Array.isArray(data.active_con) ? data.active_con : [data.active_con]},
-        {
-            label: 'Number of data samples',
-            values: Array.isArray(data.num_deltas) ? data.num_deltas : [data.num_deltas]
-        },
-        {label: 'Total Constraints', values: Array.isArray(data.tot_con) ? data.tot_con : [data.tot_con]},
-        {label: '<i>Error</i>', values: Array.isArray(data.errorcode) ? data.errorcode : [data.errorcode]}//,
-        // { label: 'Form Data', values: [JSON.stringify(data.form_data)] }
+        {label: 'Optimal Cost', values: data.optimal_cost},
+        {label: 'Optimal &theta;', values: data.optimal_x},
+        {label: 'Optimal &zeta;', values: data.optimal_s},
+        {label: 'Relaxation Parameters &rho;', values: data.rho_},
+        {label: 'Regularization Parameters &tau;', values: data.tau_},
+        {label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)', values: data.conf},
+        {label: 'Risk Bounds &epsilon;', values: data.risk},
+        {label: 'Degeneracy Detected?', values: data.degeneracy},
+        {label: 'Support Set Size', values: data.active_con},
+        {label: 'Number of data samples', values: data.num_deltas},
+        {label: 'Total Constraints', values: data.tot_con},
+        {label: '<i>Error</i>', values: data.errorcode}
     ];
 
     let table = `<table class="result-table">
-            <tr>
-                <th>Parameter</th>
-                ${valueHeaders}
-            </tr>`;
+        <tr>
+            <th>Parameter</th>
+            ${headers}
+        </tr>`;
+
     rows.forEach(row => {
-        if (row.values.length === 1 && count > 1) {
-            row.values = Array(count).fill(row.values[0]);
-        }
-        table += `
-            <tr>
-                <td>${row.label}</td>
-                ${row.values.map((val, i) => {
-            // Risk column: show as [a, b]
-            if (row.label.includes('Risk Bounds')) {
-                if (Array.isArray(val) && val.length === 2) {
-                    return `<td><strong>[${val[0]}, ${val[1]}]</strong></td>`;
-                }
-                return `<td>${val}</td>`;
+        table += `<tr><td>${row.label}</td>`;
+        pairs.forEach((p, idx) => {
+            let val = getValue(row.values, idx);
+            if (row.label.includes('Risk Bounds') && Array.isArray(val) && val.length === 2) {
+                val = `<strong>[${val[0]}, ${val[1]}]</strong>`;
             }
             if (row.label.includes('Optimal Cost')) {
-                return `<td><strong>${val}</strong></td>`;
+                val = `<strong>${val}</strong>`;
             }
-            // Error column: all inside <i>
             if (row.label.includes('Error')) {
-                if (Array.isArray(val)) {
-                    return `<td><i>${val.join('<br>')}</i></td>`;
-                }
-                return `<td><i>${val}</i></td>`;
+                val = `<i>${Array.isArray(val) ? val.join('<br>') : val}</i>`;
             }
             if (row.label.includes('Degeneracy Detected?')) {
-                if (Array.isArray(val) && val.includes("true")) {
-                    return `<td><i>${val}</i></td>`; // TODO: make true appear in a different color!
-                }
-                return `<td>${val}</td>`;
+                val = val ? 'Yes' : 'No';
             }
-
-            // All other columns: newline separated if multiple
-            if (Array.isArray(val)) {
-                return `<td><strong>${val.join('<br>')}<strong></td>`;
-            }
-            return `<td>${val !== undefined ? val : ''}</td>`;
-        }).join('')}
-            </tr>`;
+            table += `<td>${val !== undefined ? val : ''}</td>`;
+        });
+        table += `</tr>`;
     });
     table += `</table>`;
     return table;
