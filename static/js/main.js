@@ -788,19 +788,12 @@ function generateResultTable(data) {
     // Get arrays of rho and tau
     const rhos = Array.isArray(data.rho_) ? data.rho_ : [data.rho_];
     const taus = Array.isArray(data.tau_) ? data.tau_ : [data.tau_];
-
-    // Generate all (rho, tau) pairs
-    const pairs = [];
-    for (let i = 0; i < rhos.length; i++) {
-        for (let j = 0; j < taus.length; j++) {
-            pairs.push({rho: rhos[i], tau: taus[j], idx: i * taus.length + j});
-        }
-    }
+    const count = Math.max(rhos.length, taus.length);
 
     // Generate headers
-    const headers = pairs.map((p, idx) => `<th>ρ=${p.rho}, τ=${p.tau}</th>`).join('');
+    const headers = Array.from({length: count}, (_, i) => `<th>Value${i + 1}</th>`).join('');
 
-    // Helper to flatten values for each pair
+    // Helper to get value or empty string
     function getValue(arr, idx) {
         if (Array.isArray(arr)) {
             return arr[idx] !== undefined ? arr[idx] : '';
@@ -811,7 +804,7 @@ function generateResultTable(data) {
     // Prepare rows
     const rows = [
         {label: 'Optimal Cost', values: data.optimal_cost},
-        {label: 'Optimal &theta;', values: data.optimal_x},
+        {label: `Optimal x`, values: data.optimal_x},
         {label: 'Optimal &zeta;', values: data.optimal_s},
         {label: 'Relaxation Parameters &rho;', values: data.rho_},
         {label: 'Regularization Parameters &tau;', values: data.tau_},
@@ -832,8 +825,15 @@ function generateResultTable(data) {
 
     rows.forEach(row => {
         table += `<tr><td>${row.label}</td>`;
-        pairs.forEach((p, idx) => {
-            let val = getValue(row.values, idx);
+        for (let i = 0; i < count; i++) {
+            let val = getValue(row.values, i);
+
+            if (row.label === 'Optimal x' || row.label === 'Optimal &zeta;') {
+                if (Array.isArray(val)) {
+                    val = val.join('<br>');
+                }
+            }
+
             if (row.label.includes('Risk Bounds') && Array.isArray(val) && val.length === 2) {
                 val = `<strong>[${val[0]}, ${val[1]}]</strong>`;
             }
@@ -847,7 +847,7 @@ function generateResultTable(data) {
                 val = val ? 'Yes' : 'No';
             }
             table += `<td>${val !== undefined ? val : ''}</td>`;
-        });
+        }
         table += `</tr>`;
     });
     table += `</table>`;

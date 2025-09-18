@@ -98,7 +98,7 @@ def test_active_QP(prob, objective, active, rho=0.0, solver=None):
         prob: CVXPY problem instance for optimal solution.
         objective: CVXPY objective function.
         active: list of active constraints.
-        P (float): Penalty parameter for the slack variables in the objective function.
+        rho (float): Penalty parameter for the slack variables in the objective function.
         solver (str, optional): The solver to use for the optimization problem. Default is None.
 
         Returns:
@@ -135,7 +135,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, rho=0.0, s
         non_risk_constraints (list): list of constraints that should not be included in the error calculation.
         prob: CVXPY problem instance for optimal solution.
         objective: CVXPY objective function.
-        P (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
+        rho (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
         solver (str, optional): The solver to use for the optimization problem. Default is None.
         threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
 

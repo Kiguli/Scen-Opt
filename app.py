@@ -130,7 +130,6 @@ def solve():
     conf = float(request.form.get('confidence')) if request.form.get('confidence') else 0.0
     # Get values from parameter boxes
     form_data = request.form.to_dict()
-    print(form_data)
 
     rhos = np.array([float(x) for x in request.form.get('rho', 0).split(',')]) if request.form.get('rho') else np.array(
         [0.0])
@@ -157,13 +156,9 @@ def solve():
     # update confidence based on number of tau and rho
     conf = conf / (len(taus) * len(rhos))
 
-    print(rhos)
-    print(taus)
-
     for j in range(len(taus)):
         tau = taus[j]
         for i in range(len(rhos)):
-            print(i)
             rho = rhos[i]
             solver = form_data.get('solver', 'CLARABEL')
 
@@ -204,16 +199,16 @@ def solve():
                 degeneracy_list.append(degeneracy)
                 rho_list.append(rho)
                 tau_list.append(tau)
-                print(rho_list)
-                print(tau_list)
             except Exception as error:
                 print(error)
                 # e = str(error)
                 # e_list.append(e)
 
+    print(tau_list)
+    print(rho_list)
+
     # Prepare the result dictionary with lists for each parameter
     result = {
-        "count": len(rhos) * len(taus),
         "form_data": form_data,
         "optimal_x": optimal_x_list,
         "optimal_s": optimal_s_list,
