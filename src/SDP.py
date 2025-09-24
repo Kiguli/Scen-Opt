@@ -2,14 +2,14 @@ import cvxpy as cp
 import numpy as np
 
 
-def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
+def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
     """
         Solves a semidefinite programming problem with optional robust and regularization constraints.
 
         Parameters:
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
         F_d (function): Function that returns the matrices for the constraints given a delta.
-        F (numpy.ndarray): matrices for the hard constraints.
+        E (numpy.ndarray): matrices for the hard constraints.
         c (numpy.ndarray): Coefficient vector for the objective function.
         Q (numpy.ndarray): Quadratic cost matrix for the objective function.
         tau (float): Regularization parameter for the norm term in the objective function.
@@ -21,8 +21,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
         Returns:
         tuple: A tuple containing:
             - x (numpy.ndarray): Optimal solution vector.
-            - s (numpy.ndarray): Optimal slack variables vector.
-            - s_h (numpy.ndarray): Optimal slack variables vector for hard constraints.
+            - zeta (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
 
@@ -62,7 +61,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
         expr = None
         for k, Fk in F_dict.items():
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
-            assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
+            assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be symmetric"
             if k == '0':
                 term = Fk
             else:
@@ -73,11 +72,11 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     print("writing E")
 
-    if (F):
+    if (E):
         expr = None
-        for k, Fk in F.items():
+        for k, Fk in E.items():
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
-            assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be positive semi-definite and symmetric"
+            assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be symmetric"
             if k == '0':
                 term = Fk
             else:
@@ -118,16 +117,16 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     return x_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
-def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
+def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
     """
         Solves a semidefinite programming problem with optional robust and regularization constraints.
 
         Parameters:
         deltas (numpy.ndarray): Collected deltas that should be added to constraints.
-        A_da (dictionary of function): Function that returns the matrices for the constraints given a delta.
-        A_a (dictionary of numpy.ndarray): matrices for the hard constraints.
-        b_da (dictionary of function): Function that returns the vector for the constraints given a delta.
-        b_a (dictionary of numpy.ndarray): vector for the hard constraints.
+        A_d (dictionary of function): Function that returns the matrices for the constraints given a delta.
+        G (dictionary of numpy.ndarray): matrices for the hard constraints.
+        b_d (dictionary of function): Function that returns the vector for the constraints given a delta.
+        h (dictionary of numpy.ndarray): vector for the hard constraints.
         C (numpy.ndarray): cost matrix for the objective function.
         tau (float): Regularization parameter for the norm term in the objective function.
         x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
@@ -137,9 +136,8 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
 
         Returns:
         tuple: A tuple containing:
-            - x (numpy.ndarray): Optimal solution vector.
-            - s (numpy.ndarray): Optimal slack variables vector.
-            - s_h (numpy.ndarray): Optimal slack variables vector for hard constraints.
+            - X (numpy.ndarray): Optimal solution vector.
+            - zeta (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
 
@@ -171,15 +169,15 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
         zeta = np.zeros((m, 1))
 
     for i in range(size_of_deltas):
-        A_dict = A_da(deltas[i])  # Dictionary of submatrices for this delta
-        b_dict = b_da(deltas[i])  # Dictionary of sub-vectors for this delta
+        A_dict = A_d(deltas[i])  # Dictionary of submatrices for this delta
+        b_dict = b_d(deltas[i])  # Dictionary of sub-vectors for this delta
         for key in A_dict.keys():
             constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == zeta)
 
-    if A_a and b_a:
+    if G and h:
         non_risk_constraints = []
-        for key in A_a.keys():
-            non_risk_constraints += [cp.trace(A_a[key] @ X) + b_a[key] == 0]
+        for key in G.keys():
+            non_risk_constraints += [cp.trace(G[key] @ X) + h[key] == 0]
 
         constraints.append(non_risk_constraints)  # hard constraints
 
