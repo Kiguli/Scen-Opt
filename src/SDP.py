@@ -170,6 +170,7 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
 
     for i in range(N):
         A_dict = A_d(deltas[i])  # Dictionary of submatrices for this delta
+        #TODO: assert A_d symmetric
         b_dict = b_d(deltas[i])  # Dictionary of sub-vectors for this delta
         for key in A_dict.keys():
             constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == zeta)
@@ -177,6 +178,7 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     if G and h:
         non_risk_constraints = []
         for key in G.keys():
+            #TODO: assert G symmetric
             non_risk_constraints += [cp.trace(G[key] @ X) + h[key] == 0]
 
         constraints.append(non_risk_constraints)  # hard constraints
