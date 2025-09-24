@@ -41,11 +41,10 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     except IndexError:
         num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
     try:
-        size_of_deltas = deltas.shape[0]  # Number of row
+        N = deltas.shape[0]  # Number of row
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
-    print(size_of_deltas)
     # Variables
     x = cp.Variable(n)
     if rho != 0:
@@ -56,7 +55,7 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     print("writing F")
 
     constraints = []
-    for i in range(size_of_deltas):
+    for i in range(N):
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
         expr = None
         for k, Fk in F_dict.items():
@@ -113,8 +112,9 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Find the active constraints
     active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
+    complexity = len(active)
     # Return results
-    return x_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
 
 
 def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
@@ -154,7 +154,7 @@ def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     except IndexError:
         num_of_deltas = 1
     try:
-        size_of_deltas = deltas.shape[0]  # Number of row
+        N = deltas.shape[0]  # Number of row
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
@@ -168,7 +168,7 @@ def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     else:
         zeta = np.zeros((m, 1))
 
-    for i in range(size_of_deltas):
+    for i in range(N):
         A_dict = A_d(deltas[i])  # Dictionary of submatrices for this delta
         b_dict = b_d(deltas[i])  # Dictionary of sub-vectors for this delta
         for key in A_dict.keys():
@@ -210,9 +210,9 @@ def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     #TODO: get_active_SDP2 ???
-
+    complexity = len(active)
     # Return results
-    return X_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return X_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
 
 
 def test_active_SDP(prob, objective, active, rho=0.0, solver=None):

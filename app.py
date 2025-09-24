@@ -164,27 +164,27 @@ def solve():
 
             try:
                 if active_tab == 'lp-tab':
-                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_lp(
+                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
                         scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'qp-tab':
                     Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
-                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_qp(
+                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_qp(
                         scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp-tab':
-                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp1(
+                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp1(
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp2-tab':
-                    optimal_x, optimal_s, optimal_cost, N, active, constraints, degeneracy = solve_sdp2(
+                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp2(
                         scenarios, C, A_da, A_a, b_da, b_a, tau, theta_bar, rho, p, solver)
 
-                risk = np.array(quantify_risk(len(active), N, conf))
+                risk = np.array(quantify_risk(complexity, N, conf))
                 e = "None"
             except Exception as error:
                 e = str(error)
                 print(e)
                 e_list.append(e)
                 risk = np.array([])
-                N, active, constraints, degeneracy = 0, [], [], False
+                N, complexity, constraints, degeneracy = 0, [], [], False
 
             # Append results for this run
             try:
@@ -192,7 +192,7 @@ def solve():
                 optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
                 optimal_cost_list.append(optimal_cost)
                 N_list.append(N)
-                active_list.append(len(active))
+                active_list.append(complexity)
                 e_list.append(e)
                 constraints_list.append(len(constraints))
                 risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)

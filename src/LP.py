@@ -31,7 +31,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     except IndexError:
         num_of_deltas = 1 #TODO: check A_d and b_d don't include delta[i] where i>num_deltas
     try:
-        size_of_deltas = deltas.shape[0]  # Number of row
+        N = deltas.shape[0]  # Number of row
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
@@ -43,7 +43,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         zeta = np.zeros((m, 1))
 
     constraints = []
-    for i in range(size_of_deltas):
+    for i in range(N):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta)  # Add each row separately
 
     if not (G.size == 0 or h.size == 0):
@@ -81,8 +81,10 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     # Find the active constraints
     active, degeneracy = get_active_LP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
+    complexity = len(active)
+
     # Return results
-    return x_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
 
 def test_active_LP(prob, objective, active, rho=0.0, solver=None):
     """
