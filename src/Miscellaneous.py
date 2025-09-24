@@ -50,3 +50,117 @@ def load_file(file_path):
     except Exception as e:
         print(f"Error: {e}")
         return None
+
+def test_active(prob, objective, active, rho=0.0, solver=None):
+    """
+        Solves a convex optimization problem with optional robust and regularization constraints.
+
+        Parameters:
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        active: list of active constraints.
+        rho (float): Penalty parameter for the slack variables in the objective function.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+
+        Returns:
+        bool: True if all assertions pass, False if any assertion fails.
+    """
+    try:
+        prob2 = cp.Problem(objective, active)
+        prob2.solve(solver=solver)
+
+        # Assert that the objective values are the same
+        assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
+
+        # Assert that the solutions are the same
+        assert np.allclose(prob.variables()[0].value,
+                           prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
+
+        if rho != 0:
+            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for zeta differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+
+        # Return True if all assertions pass
+        return True
+
+    except AssertionError as e:
+        print(f"Assertion failed: {e}")
+        # Return False if any assertion fails
+        return False
+
+def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solver=None, threshold=1e-8):
+    """
+        Finds the active constraints of the Convex optimization problem.
+
+        Parameters:
+        constraints (list): list of constraints.
+        non_risk_constraints (list): list of constraints that should not be included in the error calculation.
+        prob: CVXPY problem instance for optimal solution.
+        objective: CVXPY objective function.
+        rho (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
+        solver (str, optional): The solver to use for the optimization problem. Default is None.
+        threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
+        Returns:
+        active (list): list of active constraints.
+    """
+
+    #TODO: make threshold a global parameter?
+    degeneracy = False
+    active = []
+    for constraint in constraints:
+        print(max(constraint.dual_value))
+        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
+            active.append(constraint)
+
+        # If solution changes then likely to have degeneracy
+        if not test_active(prob, objective, active, rho=rho, solver=solver):
+            degeneracy = True
+            print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+            # loop through all constraints and make a support list from them
+            active = constraints.copy()
+            # Iteratively remove constraints from active if test_active returns True when they are removed
+            changed = True
+            while changed:
+                changed = False
+                for constraint in active[:]:
+                    temp_active = [c for c in active if c != constraint]
+                    if test_active(prob, objective, temp_active, rho=rho, solver=solver):
+                        active.remove(constraint)
+                        changed = True
+                        break  # Restart loop since active has changed
+            # At the end, active contains only constraints whose removal makes test_active return False
+            if not test_active(prob, objective, active, rho=rho, solver=solver):
+                raise ValueError(
+                    "Error calculating support list! Degeneracy present as active constraints != constraints.")
+        else:
+            # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+            drop = []
+            for a in active:
+                if test_active(prob, objective, [constraint for constraint in active if constraint != a], rho=rho,
+                                  solver=solver):
+                    drop.append(a)
+            if not test_active(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,
+                                  solver=solver):
+                degeneracy = True
+                print(
+                    "Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
+                # Iteratively remove constraints from active if test_active returns True when they are removed
+                changed = True
+                while changed:
+                    changed = False
+                    for constraint in active[:]:
+                        temp_active = [c for c in active if c != constraint]
+                        if test_active(prob, objective, temp_active, rho=rho, solver=solver):
+                            active.remove(constraint)
+                            changed = True
+                            break  # Restart loop since active has changed
+                # At the end, active contains only constraints whose removal makes test_active return False
+                if not test_active(prob, objective, active, rho=rho, solver=solver):
+                    raise ValueError(
+                        "Error calculating support list! Degeneracy present as reduced active constraints != active constraints.")
+            else:
+                active = [constraint for constraint in active if constraint not in drop]
+
+        if non_risk_constraints in active:
+            active.remove(non_risk_constraints)
+
+        return active, degeneracy

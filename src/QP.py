@@ -1,7 +1,6 @@
-from faulthandler import dump_traceback_later
-
 import cvxpy as cp
 import numpy as np
+from src.Miscellaneous import get_active
 
 def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2,solver=None):
     """
@@ -84,7 +83,7 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     cost_out = prob.value
 
     # Find the active constraints
-    active,degeneracy = get_active_QP(constraints, non_risk_constraints, prob, objective, rho, solver)
+    active,degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     complexity = len(active)
     # Return results
