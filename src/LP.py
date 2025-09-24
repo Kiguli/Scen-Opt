@@ -21,7 +21,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         Returns:
         tuple: A tuple containing:
             - x (numpy.ndarray): Optimal solution vector.
-            - s (numpy.ndarray): Optimal slack variables vector.
+            - zeta (numpy.ndarray): Optimal slack variables vector.
             - cost (float): Optimal value of the objective function.
         """
     n = A_d(deltas[0]).shape[1]  # Number of variables
@@ -38,13 +38,13 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     # Variables
     x = cp.Variable((n, 1))
     if rho != 0:
-        s = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
+        zeta = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
     else:
-        s = np.zeros((m, 1))
+        zeta = np.zeros((m, 1))
 
     constraints = []
     for i in range(size_of_deltas):
-        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= s)  # Add each row separately
+        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta)  # Add each row separately
 
     if not (G.size == 0 or h.size == 0):
         m = G.shape[0]  # Number of constraints
@@ -54,7 +54,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize(c.T @ x + tau * cp.norm(x-x_ref, norm_type) + rho * cp.sum(s))
+    objective = cp.Minimize(c.T @ x + tau * cp.norm(x-x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -67,10 +67,10 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         raise ValueError(f"LP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
     if rho != 0.0:
-        s_out = s.value
-        #print(s)
+        zeta_out = zeta.value
+        #print(zeta)
     else:
-        s_out = np.zeros((m,1))
+        zeta_out = np.zeros((m,1))
 
     cost_out = prob.value
 
@@ -82,7 +82,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     active, degeneracy = get_active_LP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     # Return results
-    return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return x_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 def test_active_LP(prob, objective, active, rho=0.0, solver=None):
     """
@@ -110,7 +110,7 @@ def test_active_LP(prob, objective, active, rho=0.0, solver=None):
                            prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
 
         if rho != 0:
-            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for s differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
+            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for zeta differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
 
         # Return True if all assertions pass
         return True

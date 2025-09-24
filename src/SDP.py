@@ -50,9 +50,9 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Variables
     x = cp.Variable(n)
     if rho != 0:
-        s = cp.Variable((m, m), nonneg=True)  # Slack variables
+        zeta = cp.Variable((m, m), nonneg=True)  # Slack variables
     else:
-        s = np.zeros((m, m))
+        zeta = np.zeros((m, m))
 
     print("writing F")
 
@@ -69,7 +69,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
                 xk = x[int(k)-1]
                 term = xk * Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
-        constraints.append(expr << s)
+        constraints.append(expr << zeta)
 
     print("writing E")
 
@@ -91,7 +91,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
         non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(s))
+    objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)
@@ -104,10 +104,10 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
         raise ValueError(f"SDP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
     if rho != 0.0:
-        s_out = s.value
+        zeta_out = zeta.value
         # print(s)
     else:
-        s_out = np.zeros((m, 1))
+        zeta_out = np.zeros((m, 1))
 
     cost_out = prob.value
 
@@ -115,7 +115,7 @@ def solve_sdp1(deltas, F_d, F, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     # Return results
-    return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return x_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
 def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
@@ -166,15 +166,15 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
     constraints.append(X >> 0)  # X must be positive semidefinite
 
     if rho != 0:
-        s = cp.Variable((m, 1), nonneg=True)  # Slack variables
+        zeta = cp.Variable((m, 1), nonneg=True)  # Slack variables
     else:
-        s = np.zeros((m, 1))
+        zeta = np.zeros((m, 1))
 
     for i in range(size_of_deltas):
         A_dict = A_da(deltas[i])  # Dictionary of submatrices for this delta
         b_dict = b_da(deltas[i])  # Dictionary of sub-vectors for this delta
         for key in A_dict.keys():
-            constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == s)
+            constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == zeta)
 
     if A_a and b_a:
         non_risk_constraints = []
@@ -187,7 +187,7 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
         non_risk_constraints = []
 
     # Objective Function
-    objective = cp.Minimize(cp.trace(C @ X) + rho * cp.sum(s) + tau * cp.norm(X - X_ref, norm_type))
+    objective = cp.Minimize(cp.trace(C @ X) + rho * cp.sum(zeta) + tau * cp.norm(X - X_ref, norm_type))
 
 
     # Solve the problem
@@ -195,24 +195,26 @@ def solve_sdp2(deltas, C, A_da, A_a, b_da, b_a, tau=0.0, X_ref=np.array([0.0]), 
     prob.solve(solver=solver)
 
     # Simplify results
-    x_out = X.value
+    X_out = X.value
 
     if prob.status not in ["optimal", "optimal_inaccurate"]:
-        raise ValueError(f"QP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
+        raise ValueError(f"SDP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, X: {X_out}")
 
     if rho != 0.0:
-        s_out = s.value
-        # print(s)
+        zeta_out = zeta.value
+        # print(zeta)
     else:
-        s_out = np.zeros((m, 1))
+        zeta_out = np.zeros((m, 1))
 
     cost_out = prob.value
 
     # Find the active constraints
     active, degeneracy = get_active_SDP(constraints, non_risk_constraints, prob, objective, rho, solver)
 
+    #TODO: get_active_SDP2 ???
+
     # Return results
-    return x_out, s_out, cost_out, size_of_deltas, active, constraints, degeneracy
+    return X_out, zeta_out, cost_out, size_of_deltas, active, constraints, degeneracy
 
 
 def test_active_SDP(prob, objective, active, rho=0.0, solver=None):
