@@ -156,7 +156,7 @@ def get_active_QP(constraints, non_risk_constraints, prob, objective, rho=0.0, s
         degeneracy = True
         print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
         # loop through all constraints and make a support list from them
-        active = constraints
+        active = constraints.copy()
         # Iteratively remove constraints from active if test_active_QP returns True when they are removed
         changed = True
         while changed:

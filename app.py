@@ -175,7 +175,7 @@ def solve():
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp2-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp2(
-                        scenarios, C, A_da, A_a, b_da, b_a, tau, theta_bar, rho, p, solver)
+                        scenarios, C, A_da, b_da, A_a, b_a, tau, theta_bar, rho, p, solver)
 
                 risk = np.array(quantify_risk(complexity, N, conf))
                 e = "None"

@@ -117,7 +117,7 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
 
 
-def solve_sdp2(deltas, C, A_d, G, b_d, h, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
+def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
     """
         Solves a semidefinite programming problem with optional robust and regularization constraints.
 
@@ -285,7 +285,7 @@ def get_active_SDP(constraints, non_risk_constraints, prob, objective, rho=0.0, 
         degeneracy = True
         print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
         # loop through all constraints and make a support list from them
-        active = constraints
+        active = constraints.copy()
         # Iteratively remove constraints from active if test_active_SDP returns True when they are removed
         changed = True
         while changed:

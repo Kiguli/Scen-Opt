@@ -73,14 +73,14 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         zeta_out = np.zeros((m,1))
 
     cost_out = prob.value
-
+    print(cost_out)
     # =====================================
     #SOLVE FOR ACTIVE CONSTRAINTS
     # =====================================
 
     # Find the active constraints
     active, degeneracy = get_active_LP(constraints, non_risk_constraints, prob, objective, rho, solver)
-
+    print(active, degeneracy)
     complexity = len(active)
 
     # Return results
@@ -142,7 +142,7 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, rho=0.0, s
     degeneracy = False
     active = []
     for constraint in constraints:
-        #print(max(constraint.dual_value))
+        print(max(constraint.dual_value))
         if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
             active.append(constraint)
 
@@ -151,7 +151,7 @@ def get_active_LP(constraints, non_risk_constraints, prob, objective, rho=0.0, s
             degeneracy = True
             print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
             # loop through all constraints and make a support list from them
-            active = constraints
+            active = constraints.copy()
             # Iteratively remove constraints from active if test_active_QP returns True when they are removed
             changed = True
             while changed:
