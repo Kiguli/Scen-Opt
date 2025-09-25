@@ -1,3 +1,4 @@
+import concurrent.futures
 import cvxpy as cp
 import numpy as np
 import pandas as pd
@@ -87,6 +88,8 @@ def test_active(prob, objective, active, rho=0.0, solver=None):
         # Return False if any assertion fails
         return False
 
+
+
 def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solver=None, threshold=1e-8):
     """
         Finds the active constraints of the Convex optimization problem.
@@ -105,18 +108,42 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
 
     #TODO: make threshold a global parameter?
     degeneracy = False
-    active = []
-    for constraint in constraints:
-        print(max(constraint.dual_value))
-        if max(constraint.dual_value) > threshold:  # Check if any dual value is positive
-            active.append(constraint)
 
-        # If solution changes then likely to have degeneracy
+    def is_active(constraint, threshold):
+       return max(constraint.dual_value) > threshold
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+       results = list(executor.map(lambda c: is_active(c,threshold), constraints))
+
+    active = [c for c, is_act in zip(constraints, results) if is_act]
+
+    # If solution changes then likely to have degeneracy
+    if not test_active(prob, objective, active, rho=rho, solver=solver):
+        degeneracy = True
+        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
+        # loop through all constraints and make a support list from them
+        active = constraints.copy()
+        # Iteratively remove constraints from active if test_active returns True when they are removed
+        i = 0
+        while i < len(active):
+            temp_active = active[:i] + active[i + 1:]
+            if test_active(prob, objective, temp_active, rho=rho, solver=solver):
+                # Remove constraint and don't increment i
+                active.pop(i)
+            else:
+                i += 1
+        # At the end, active contains only constraints whose removal makes test_active return False
         if not test_active(prob, objective, active, rho=rho, solver=solver):
+            raise ValueError("Error calculating support list! Perhaps try another solver?")
+    else:
+        # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
+        drop = []
+        for a in active:
+            if test_active(prob, objective, [constraint for constraint in active if constraint != a], rho=rho,solver=solver):
+                drop.append(a)
+        if not test_active(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,solver=solver):
             degeneracy = True
-            print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
-            # loop through all constraints and make a support list from them
-            active = constraints.copy()
+            print("Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
             # Iteratively remove constraints from active if test_active returns True when they are removed
             i = 0
             while i < len(active):
@@ -128,40 +155,14 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
                     i += 1
             # At the end, active contains only constraints whose removal makes test_active return False
             if not test_active(prob, objective, active, rho=rho, solver=solver):
-                raise ValueError(
-                    "Error calculating support list! Perhaps try another solver?")
+                raise ValueError("Error calculating support list! Perhaps try another solver?")
         else:
-            # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
-            drop = []
-            for a in active:
-                if test_active(prob, objective, [constraint for constraint in active if constraint != a], rho=rho,
-                                  solver=solver):
-                    drop.append(a)
-            if not test_active(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,
-                                  solver=solver):
-                degeneracy = True
-                print(
-                    "Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
-                # Iteratively remove constraints from active if test_active returns True when they are removed
-                i = 0
-                while i < len(active):
-                    temp_active = active[:i] + active[i + 1:]
-                    if test_active(prob, objective, temp_active, rho=rho, solver=solver):
-                        # Remove constraint and don't increment i
-                        active.pop(i)
-                    else:
-                        i += 1
-                # At the end, active contains only constraints whose removal makes test_active return False
-                if not test_active(prob, objective, active, rho=rho, solver=solver):
-                    raise ValueError(
-                        "Error calculating support list! Perhaps try another solver?")
-            else:
-                active = [constraint for constraint in active if constraint not in drop]
+            active = [constraint for constraint in active if constraint not in drop]
 
-        if non_risk_constraints in active:
-            scenario_constraints = active.remove(non_risk_constraints)
-            complexity = len(scenario_constraints)
-        else:
-            complexity = len(active)
+    if non_risk_constraints in active:
+        scenario_constraints = active.remove(non_risk_constraints)
+        complexity = len(scenario_constraints)
+    else:
+        complexity = len(active)
 
-        return complexity, active, degeneracy
+    return complexity, active, degeneracy
