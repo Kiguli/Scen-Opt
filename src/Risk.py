@@ -16,12 +16,6 @@ def quantify_risk(k,N,beta):
     t2 = k/N
     threshold = 1e-10
 
-    #add in a function to check for t2 = 0 or 1.0, to avoid nan values?
-    # if t2 == 0:
-    #     return
-    # elif t2 == 1:
-    #     return
-
 
     while (t2 - t1) > threshold:
         t = (t1+t2)/2

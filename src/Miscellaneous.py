@@ -118,19 +118,18 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
             # loop through all constraints and make a support list from them
             active = constraints.copy()
             # Iteratively remove constraints from active if test_active returns True when they are removed
-            changed = True
-            while changed:
-                changed = False
-                for constraint in active[:]:
-                    temp_active = [c for c in active if c != constraint]
-                    if test_active(prob, objective, temp_active, rho=rho, solver=solver):
-                        active.remove(constraint)
-                        changed = True
-                        break  # Restart loop since active has changed
+            i = 0
+            while i < len(active):
+                temp_active = active[:i] + active[i + 1:]
+                if test_active(prob, objective, temp_active, rho=rho, solver=solver):
+                    # Remove constraint and don't increment i
+                    active.pop(i)
+                else:
+                    i += 1
             # At the end, active contains only constraints whose removal makes test_active return False
             if not test_active(prob, objective, active, rho=rho, solver=solver):
                 raise ValueError(
-                    "Error calculating support list! Degeneracy present as active constraints != constraints.")
+                    "Error calculating support list! Perhaps try another solver?")
         else:
             # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
             drop = []
@@ -144,19 +143,18 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
                 print(
                     "Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
                 # Iteratively remove constraints from active if test_active returns True when they are removed
-                changed = True
-                while changed:
-                    changed = False
-                    for constraint in active[:]:
-                        temp_active = [c for c in active if c != constraint]
-                        if test_active(prob, objective, temp_active, rho=rho, solver=solver):
-                            active.remove(constraint)
-                            changed = True
-                            break  # Restart loop since active has changed
+                i = 0
+                while i < len(active):
+                    temp_active = active[:i] + active[i + 1:]
+                    if test_active(prob, objective, temp_active, rho=rho, solver=solver):
+                        # Remove constraint and don't increment i
+                        active.pop(i)
+                    else:
+                        i += 1
                 # At the end, active contains only constraints whose removal makes test_active return False
                 if not test_active(prob, objective, active, rho=rho, solver=solver):
                     raise ValueError(
-                        "Error calculating support list! Degeneracy present as reduced active constraints != active constraints.")
+                        "Error calculating support list! Perhaps try another solver?")
             else:
                 active = [constraint for constraint in active if constraint not in drop]
 
