@@ -111,9 +111,8 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     cost_out = prob.value
 
     # Find the active constraints
-    active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
+    complexity, active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
 
-    complexity = len(active)
     # Return results
     return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
 
@@ -210,9 +209,7 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     cost_out = prob.value
 
     # Find the active constraints
-    active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
+    complexity, active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
 
-    #TODO: get_active_SDP2 ???
-    complexity = len(active)
     # Return results
     return X_out, zeta_out, cost_out, N, complexity, constraints, degeneracy

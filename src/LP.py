@@ -80,9 +80,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     # =====================================
 
     # Find the active constraints
-    active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
-    print(active, degeneracy)
-    complexity = len(active)
+    complexity, active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
 
     # Return results
     return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy
