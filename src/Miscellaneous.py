@@ -159,6 +159,9 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
                 active = [constraint for constraint in active if constraint not in drop]
 
         if non_risk_constraints in active:
-            active.remove(non_risk_constraints)
+            scenario_constraints = active.remove(non_risk_constraints)
+            complexity = len(scenario_constraints)
+        else:
+            complexity = len(active)
 
-        return active, degeneracy
+        return complexity, active, degeneracy
