@@ -137,10 +137,13 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
             raise ValueError("Error calculating support list! Perhaps try another solver?")
     else:
         # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
-        drop = []
-        for a in active:
-            if test_active(prob, objective, [constraint for constraint in active if constraint != a], rho=rho,solver=solver):
-                drop.append(a)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = list(executor.map(
+                lambda a: test_active(prob, objective, [constraint for constraint in active if constraint != a],
+                                      rho=rho, solver=solver),
+                active
+            ))
+        drop = [a for a, should_drop in zip(active, results) if should_drop]
         if not test_active(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,solver=solver):
             degeneracy = True
             print("Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
