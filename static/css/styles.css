@@ -1,3 +1,42 @@
+h1{
+    color: #082f49;
+}
+
+h4{
+    color: #0c4a6e;
+}
+
+.card{
+    background-color: #f9fafb !important; /* Light gray background */
+}
+
+.btn-secondary{
+     background-color: #0284c7; /* Blue background */
+    border-color: #0369a1;
+}
+
+.nav-link{
+    color: #0369a1;
+}
+
+.btn-success{
+    background-color: #10b981; /* Blue background */
+    border-color: #059669;
+}
+
+body{
+    background-color: #f1f5f9;
+}
+
+.nav-item{
+    border: 1px solid #ddd;
+    background-color: #f9fafb;
+}
+
+.nav-item .active{
+    background-color: #0284c7 !important; /* Darker gray for active state */
+    color: #fff !important;
+}
 .matrix-row {
     margin-bottom: 10px; /* Add spacing between rows */
 }
@@ -47,11 +86,11 @@
 }
 
 .result-table td strong {
-    color: #007bff;
+    color: #bae6fd;
 }
 
 .result-table td i {
-    color: #ff4466;
+    color: #fecdd3;
 }
 
 .result-table-container {
@@ -68,7 +107,7 @@
 .result-table td:first-child {
     position: sticky;
     left: 0;
-    background: #f8f9fa;
+    background: #f8f9fa; /*TODO: Change to white?*/
     z-index: 2;
 }
 
@@ -79,5 +118,5 @@
 
 /* Change background color for matrixModal */
 #matrixModal .modal-content {
-    background-color: #fffbe6; /* Light yellow */
+    background-color: #f0f8ff; /* Light blue */
 }
