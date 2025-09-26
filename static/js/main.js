@@ -811,7 +811,7 @@ function generateResultTable(data) {
         {label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)', values: data.conf},
         {label: 'Risk Bounds &epsilon;', values: data.risk},
         {label: 'Degeneracy Detected?', values: data.degeneracy},
-        {label: 'Support Set Size', values: data.active_con},
+        {label: 'Complexity (support list size)', values: data.active_con},
         {label: 'Number of data samples', values: data.num_deltas},
         {label: 'Total Constraints', values: data.tot_con},
         {label: '<i>Error</i>', values: data.errorcode}
