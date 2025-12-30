@@ -1,0 +1,15 @@
+# Fresh Produce Distribution Benchmark
+# 5 products: Strawberries, Tomatoes, Lettuce, Avocados, Bell Peppers
+#
+# Uncertainty (15D):
+#   delta[0:5]   = yields (correlated, product-specific spoilage)
+#   delta[5:10]  = demands (correlated, regional patterns)
+#   delta[10:15] = space efficiency factors (packing variability)
+#
+# Decision: order quantities q[0], ..., q[4] (cases per day)
+# Constraints: budget $12000, warehouse 800 cu.ft., supplier limits
+# Objective: minimize ordering cost + rho * worst-case service shortfall
+
+rho = 100.0
+tau = 0
+confidence = 0.99
