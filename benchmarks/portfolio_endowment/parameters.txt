@@ -1,0 +1,17 @@
+# Sierra Vista University Endowment Portfolio Benchmark
+# 10 assets from S&P 500, 15D uncertainty
+#
+# Assets: AAPL, MSFT, GOOGL, AMZN, PG, JPM, JNJ, XOM, CAT, MCD
+#
+# Uncertainty (15D):
+#   delta[0:10]  = asset returns (bootstrapped from 5 years of data + noise)
+#   delta[10]    = volatility regime indicator [0, 1]
+#   delta[11]    = correlation stress factor [0, 0.5]
+#   delta[12:15] = factor returns (market, size, value)
+#
+# Decision: portfolio weights w[0], ..., w[9]
+# Constraints: min 5%, max 25% per asset, tech sector <= 40%, fully invested
+
+rho = 50.0
+tau = 0
+confidence = 0.99
