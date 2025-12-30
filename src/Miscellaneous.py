@@ -110,7 +110,13 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
     degeneracy = False
 
     def is_active(constraint, threshold):
-       return max(constraint.dual_value) > threshold
+        dv = constraint.dual_value
+        if dv is None:
+            return False
+        # Handle both vector and matrix dual values (for SDP)
+        if hasattr(dv, 'flatten'):
+            return np.max(np.abs(dv.flatten())) > threshold
+        return max(dv) > threshold
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
        results = list(executor.map(lambda c: is_active(c,threshold), constraints))
@@ -163,8 +169,8 @@ def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solv
             active = [constraint for constraint in active if constraint not in drop]
 
     if non_risk_constraints in active:
-        scenario_constraints = active.remove(non_risk_constraints)
-        complexity = len(scenario_constraints)
+        active.remove(non_risk_constraints)
+        complexity = len(active)
     else:
         complexity = len(active)
 

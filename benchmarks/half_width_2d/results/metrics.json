@@ -1,0 +1,16 @@
+{
+  "center": 0.5006347034386931,
+  "half_width": 0.498309968223239,
+  "interval_min": 0.002324735215454121,
+  "interval_max": 0.9989446716619321,
+  "optimal_cost": 0.498309968223239,
+  "N": 100,
+  "k": 2,
+  "eps_lower": 0.0,
+  "eps_upper": 0.11441000926075501,
+  "degeneracy": false,
+  "support_indices": [
+    89,
+    94
+  ]
+}

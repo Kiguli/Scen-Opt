@@ -35,8 +35,6 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     n = Q.shape[1]
     m = list(F_d(deltas[0]).values())[0].shape[0]
 
-    print(n,m)
-
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
     except IndexError:
@@ -53,8 +51,6 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     else:
         zeta = np.zeros((m, m))
 
-    print("writing F")
-
     constraints = []
     for i in range(N):
         F_dict = F_d(deltas[i])  # Dictionary of submatrices for this delta
@@ -69,8 +65,6 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
                 term = xk * Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
         constraints.append(expr << zeta)
-
-    print("writing E")
 
     if (E):
         expr = None
