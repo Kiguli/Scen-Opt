@@ -1,0 +1,9 @@
+ticker,name,class,role
+SPY,S&P 500 ETF,US Equity,Core Growth
+AGG,US Aggregate Bond,Fixed Income,Stability
+VNQ,Real Estate (REIT),Real Assets,Inflation Hedge
+GLD,Gold,Commodities,Crisis Hedge
+EFA,Intl Developed,Intl Equity,Diversification
+TLT,20+ Year Treasury,Long Bonds,Duration
+VWO,Emerging Markets,Intl Equity,Growth
+LQD,Investment Grade Corp,Credit,Yield

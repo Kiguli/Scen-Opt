@@ -1,0 +1,18 @@
+# Golden State Teachers' Pension Fund CVaR Benchmark
+# 8 ETF assets, 12D uncertainty
+#
+# CVaR formulation at 95% confidence level
+# rho = 1/((1-alpha)*N) where alpha=0.95, N=500
+#
+# Uncertainty:
+#   delta[0:8]  = asset returns
+#   delta[8]    = market stress indicator
+#   delta[9]    = credit spread shock
+#   delta[10]   = interest rate shock
+#   delta[11]   = volatility scaling
+#
+# Decision: portfolio weights w[0:8] + VaR threshold alpha
+
+rho = 0.040000
+tau = 0
+confidence = 0.99

@@ -1,0 +1,4 @@
+-(1+0.3*delta[8])*delta[0],-(1+0.3*delta[8])*delta[1],-(1+0.3*delta[8])*delta[2],-(1+0.3*delta[8])*delta[3],-(1+0.3*delta[8])*delta[4],-(1+0.3*delta[8])*delta[5],-(1+0.3*delta[8])*delta[6],-(1+0.3*delta[8])*delta[7],-1
+0,-delta[9]*0.5,0,0,0,-delta[9]*0.3,0,-delta[9]*1.0,0
+0,-delta[10]*5,0,0,0,-delta[10]*18,0,-delta[10]*8,0
+-(delta[8]*0.5)*delta[0],0,0,0,-(delta[8]*0.5)*delta[4],0,-(delta[8]*0.5)*delta[6],0,0
