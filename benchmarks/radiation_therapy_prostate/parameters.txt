@@ -1,6 +1,6 @@
-n_beamlets: 30
-n_voxels: 150
-n_scenarios: 100
+n_beamlets: 50
+n_voxels: 250
+n_scenarios: 200
 target_dose: 145.0
 D_min: 137.75
 Rectum_max: 100.0

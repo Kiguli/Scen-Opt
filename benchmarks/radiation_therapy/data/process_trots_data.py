@@ -499,14 +499,14 @@ def process_prostate_bt(data_dir, output_dir, patient_id=1,
     A_rows = []
     b_values = []
 
-    # Target coverage (minimum dose)
+    # Target coverage (minimum dose): -D @ x + D_min <= 0 means D @ x >= D_min
     A_rows.extend(-D_target)
-    b_values.extend([D_min] * D_target.shape[0])
+    b_values.extend([D_min] * D_target.shape[0])  # Positive b for target min
 
-    # OAR limits (maximum dose)
+    # OAR limits (maximum dose): D @ x - D_max <= 0 means D @ x <= D_max
     for name, D_oar in D_oars.items():
         A_rows.extend(D_oar)
-        b_values.extend([oar_limits.get(name, 100.0)] * D_oar.shape[0])
+        b_values.extend([-oar_limits.get(name, 100.0)] * D_oar.shape[0])  # Negative b for OAR max
 
     A_nominal = np.array(A_rows)
     b_nominal = np.array(b_values)
@@ -533,7 +533,7 @@ def process_prostate_bt(data_dir, output_dir, patient_id=1,
     # Build affine constraint strings
     print("Building affine constraint expressions...")
     A_d_strings, b_d_strings = build_affine_constraint_strings(
-        A_nominal, deltas, A_scenarios, -b_nominal  # Note: b is negative in A@x + b <= 0
+        A_nominal, deltas, A_scenarios, b_nominal  # b already has correct signs
     )
 
     # Create QP objective
@@ -695,14 +695,14 @@ def process_liver(data_dir, output_dir, patient_id=1,
     A_rows = []
     b_values = []
 
-    # Target coverage
+    # Target coverage (minimum dose): -D @ x + D_min <= 0 means D @ x >= D_min
     A_rows.extend(-D_target)
-    b_values.extend([D_min] * D_target.shape[0])
+    b_values.extend([D_min] * D_target.shape[0])  # Positive b for target min
 
-    # OAR limits
+    # OAR limits (maximum dose): D @ x - D_max <= 0 means D @ x <= D_max
     for name, D_oar in D_oars.items():
         A_rows.extend(D_oar)
-        b_values.extend([oar_limits.get(name, 30.0)] * D_oar.shape[0])
+        b_values.extend([-oar_limits.get(name, 30.0)] * D_oar.shape[0])  # Negative b for OAR max
 
     A_nominal = np.array(A_rows)
     b_nominal = np.array(b_values)
@@ -726,7 +726,7 @@ def process_liver(data_dir, output_dir, patient_id=1,
     # Build affine strings
     print("Building affine constraint expressions...")
     A_d_strings, b_d_strings = build_affine_constraint_strings(
-        A_nominal, deltas, A_scenarios, -b_nominal
+        A_nominal, deltas, A_scenarios, b_nominal  # b already has correct signs
     )
 
     # Estimate appropriate max_intensity from reference solution if available

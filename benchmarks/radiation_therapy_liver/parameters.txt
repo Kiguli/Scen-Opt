@@ -1,6 +1,6 @@
 n_beamlets: 50
-n_voxels: 83
-n_scenarios: 150
+n_voxels: 103
+n_scenarios: 200
 target_dose: 50.0
 D_min: 47.5
 Liver_max: 30.0
