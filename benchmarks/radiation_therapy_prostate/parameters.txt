@@ -1,0 +1,9 @@
+n_beamlets: 30
+n_voxels: 150
+n_scenarios: 100
+target_dose: 145.0
+D_min: 137.75
+Rectum_max: 100.0
+Bladder_max: 120.0
+Urethra_max: 160.0
+max_intensity: 100.0

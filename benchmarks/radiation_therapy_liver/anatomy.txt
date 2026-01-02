@@ -1,0 +1,4 @@
+PTV: 0-79 (target, 80 voxels)
+Spinal_Cord: 80-80 (OAR, 1 voxels)
+Kidney_R: 81-81 (OAR, 1 voxels)
+Kidney_L: 82-82 (OAR, 1 voxels)

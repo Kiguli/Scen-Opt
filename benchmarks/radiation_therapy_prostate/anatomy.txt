@@ -1,0 +1,4 @@
+Prostate: 0-59 (target, 60 voxels)
+Rectum: 60-89 (OAR, 30 voxels)
+Bladder: 90-119 (OAR, 30 voxels)
+Urethra: 120-149 (OAR, 30 voxels)
