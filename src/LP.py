@@ -26,7 +26,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
             - cost (float): Optimal value of the objective function.
         """
     n = A_d(deltas[0]).shape[1]  # Number of variables
-    m = A_d(deltas[0]).shape[0]  # Number of constraints
+    m_scenario = A_d(deltas[0]).shape[0]  # Number of scenario constraints
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
     except IndexError:
@@ -39,16 +39,15 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     # Variables
     x = cp.Variable((n, 1))
     if rho != 0:
-        zeta = cp.Variable((m, 1), nonneg=True)  # Adjust size based on constraints
+        zeta = cp.Variable((m_scenario, 1), nonneg=True)  # Adjust size based on constraints
     else:
-        zeta = np.zeros((m, 1))
+        zeta = np.zeros((m_scenario, 1))
 
     constraints = []
     for i in range(N):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta)  # Add each row separately
 
     if not (G.size == 0 or h.size == 0):
-        m = G.shape[0]  # Number of constraints
         non_risk_constraints = G @ x + h <= 0
         constraints.append(non_risk_constraints)  # hard constraints
     else:
@@ -71,7 +70,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
         zeta_out = zeta.value
         #print(zeta)
     else:
-        zeta_out = np.zeros((m,1))
+        zeta_out = np.zeros((m_scenario, 1))
 
     cost_out = prob.value
     print(cost_out)
