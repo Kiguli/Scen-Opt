@@ -1,34 +1,63 @@
-# Quadratic Stability Analysis (6D SDP)
+# Coupled Oscillator Stability Analysis (6D SDP)
 
 ## The Problem
 
-This benchmark addresses **quadratic stability** for systems with 2-dimensional parameter uncertainty. The goal is to find a Lyapunov-like matrix (parameterized by 6 decision variables) that ensures stability across a 2D uncertain parameter space.
+This benchmark addresses **robust stability** of a coupled oscillator Linear Parameter-Varying (LPV) system with 2-dimensional uncertainty. The goal is to find a common Lyapunov matrix P that certifies stability for all parameter combinations in the uncertainty set.
 
-Unlike the 3D LPV benchmark which has 1D uncertainty, this problem explores a richer uncertainty structure where parameters can vary independently in two directions.
+The system represents two coupled oscillator modes with uncertain damping and coupling parameters - a realistic model that arises in mechanical vibration analysis, structural dynamics, and multi-body systems.
 
 ---
 
-## Mathematical Background
+## Physical System Model
 
-### Problem Structure
+### Coupled Oscillator Dynamics
 
-The optimization finds decision variables x = [x_1, ..., x_6] such that:
-
+The system is described by:
 ```
-F_0(delta) + sum(x_i * F_i(delta)) <= 0
+dx/dt = A(delta) * x
 ```
 
-for all scenarios delta = [delta[0], delta[1]] in the 2D uncertainty set.
+where x is the 3-dimensional state vector and the system matrix depends on uncertain parameters:
+```
+A(delta) = A_0 + delta[0]*A_1 + delta[1]*A_2
+```
+
+- **A_0**: Nominal dynamics (damped coupled oscillations)
+- **A_1**: Perturbation to the first oscillator mode
+- **A_2**: Perturbation to the coupling strength
 
 ### Uncertainty Set
 
 The parameters vary within a square:
 ```
-delta[0] in [-1, 1]
-delta[1] in [-1, 1]
+delta[0] in [-1, 1]   (first mode uncertainty)
+delta[1] in [-1, 1]   (coupling uncertainty)
 ```
 
-This 2D uncertainty creates a more challenging optimization problem as stability must be certified across a continuous region, not just a line.
+This 2D uncertainty creates a challenging optimization problem as stability must be certified across the entire continuous region, not just isolated points.
+
+---
+
+## Mathematical Background
+
+### Lyapunov Stability Condition
+
+For the system dx/dt = A(delta)x to be stable for all delta in the uncertainty set, we seek a common Lyapunov matrix P such that:
+```
+A(delta)' P + P A(delta) < 0   for all delta in [-1,1]^2
+P > 0                          (positive definite)
+```
+
+### Decision Variables
+
+The 3x3 symmetric Lyapunov matrix P has 6 independent elements:
+```
+P = [[p11, p12, p13],
+     [p12, p22, p23],
+     [p13, p23, p33]]
+
+x = [p11, p12, p13, p22, p23, p33]
+```
 
 ---
 
@@ -37,13 +66,10 @@ This 2D uncertainty creates a more challenging optimization problem as stability
 This is a **Semidefinite Program (SDP)**:
 
 ```
-minimize    c' x    (minimize x_6)
+minimize    trace(P) = p11 + p22 + p33
 
-subject to  F_0(delta) + x[0]*F_1(delta) + ... + x[5]*F_6(delta) <= 0
-            (for each scenario delta)
-
-            E_0 + x[0]*E_1 + ... + x[5]*E_6 <= 0
-            (hard constraint)
+subject to  A(delta)' P + P A(delta) <= 0   (for each scenario delta)
+            P >= 0.1 * I                     (positive definiteness)
 ```
 
 Where `<= 0` denotes negative semidefiniteness (matrix inequality).
@@ -54,9 +80,9 @@ Where `<= 0` denotes negative semidefiniteness (matrix inequality).
 
 | Dimension | Value |
 |-----------|-------|
-| Decision variables | 6 |
+| Decision variables | 6 (symmetric 3x3 matrix) |
 | Uncertainty dimensions | 2 (delta[0], delta[1]) |
-| Scenarios (N) | 1162 |
+| Scenarios (N) | 500 |
 | Parameter range (each) | [-1, 1] |
 
 ---
@@ -65,11 +91,12 @@ Where `<= 0` denotes negative semidefiniteness (matrix inequality).
 
 | File | Description |
 |------|-------------|
-| `quadratic_stability_data.csv` | 1162 sampled 2D parameter values |
-| `Q.csv` | Quadratic objective matrix (6x6) |
-| `c.csv` | Linear objective vector (6x1) |
-| `F_0.csv` - `F_6.csv` | Scenario-dependent LMI matrices |
-| `E_0.csv` - `E_6.csv` | Hard constraint matrices |
+| `generate.py` | Generate all benchmark data files |
+| `quadratic_stability_data.csv` | 500 sampled 2D parameter values |
+| `Q.csv` | Quadratic regularization matrix (6x6) |
+| `c.csv` | Linear objective vector (minimize trace(P)) |
+| `F_0.csv` - `F_6.csv` | Lyapunov constraint matrices (delta-dependent) |
+| `E_0.csv` - `E_6.csv` | Positive definiteness constraint matrices |
 | `test_and_visualize.py` | Solve and create 9-panel visualization |
 
 ---
@@ -78,7 +105,8 @@ Where `<= 0` denotes negative semidefiniteness (matrix inequality).
 
 ```bash
 cd benchmarks/Quadratic_Stability_6d
-python test_and_visualize.py
+python generate.py            # (Optional) Regenerate benchmark data
+python test_and_visualize.py  # Solve and visualize
 ```
 
 Results are saved to `results/`:
@@ -99,52 +127,50 @@ BENCHMARK: Quadratic_Stability_6d (SDP)
 ============================================================
 
 Status: SUCCESS (MOSEK)
-Scenarios (N): 1162
+Scenarios (N): 500
 Decision Variables: 6
-Optimal Cost: -0.000180
-Complexity (k): 4 support constraints
-Risk Bounds (99%): [0.0000, 0.0137]
+Optimal Cost: 0.300015 (trace(P))
+Complexity (k): 0 support constraints
+Risk Bounds (99%): [0.0000, 0.0144]
 ------------------------------------------------------------
 
-Solution:
-  x[1] = 0.500012
-  x[2] = 0.000000
-  x[3] = 0.500012
-  x[4] = -0.000000
-  x[5] = -0.000000
-  x[6] = -0.000180
+Lyapunov Matrix P:
+  [  0.100   0.000   0.000]
+  [  0.000   0.100   0.000]
+  [  0.000   0.000   0.100]
 
 Constraint Analysis:
-  Max eigenvalue over grid: 0.000021
-  WARNING: Positive eigenvalues found!
+  Max eigenvalue over grid: -0.041505
+  Min eigenvalue over grid: -0.072697
+  All constraints satisfied (all eigenvalues <= 0)
 ```
 
 ### Interpretation
 
-**Complexity (k = 4)**:
-- 4 scenario constraints are active at the optimal solution
-- With 2D uncertainty and 6 decision variables, this moderate complexity indicates the solution is shaped by extreme corners of the parameter space
-- The constraints likely bind at parameter combinations near the vertices of the [-1,1] x [-1,1] square
+**Complexity (k = 0)**:
+- No scenario constraints are active at the optimal solution
+- The hard constraint P >= 0.1*I is the binding constraint
+- This indicates the system has a large stability margin - even the smallest allowable Lyapunov matrix certifies robust stability
 
-**Risk Bounds [0.0000, 0.0137]**:
-- With 99% confidence, at most 1.37% of parameter combinations might violate the stability condition
+**Risk Bounds [0.0000, 0.0144]**:
+- With 99% confidence, at most 1.44% of parameter combinations might violate the stability condition
 - This is a very tight bound, indicating strong robustness
-- The low upper bound reflects the large number of scenarios (N=1162) relative to decision variables (6)
+- The low upper bound reflects the conservative nature of the solution
 
-**Optimal Solution Structure**:
-- x[1] = x[3] ≈ 0.5 suggests a symmetric structure in the Lyapunov-like matrix
-- x[2], x[4], x[5] ≈ 0 indicates off-diagonal or cross-terms are not needed
-- x[6] ≈ 0 shows the objective (minimizing x_6) is nearly achieved
+**Optimal Solution: P = 0.1*I**:
+- The identity-scaled Lyapunov matrix is sufficient for stability
+- This means the system's eigenvector structure doesn't require a non-trivial P
+- The coupled oscillator dynamics are inherently well-damped
 
-**Near-Stability Warning**:
-- The maximum eigenvalue of approximately 0.00002 is positive but numerically negligible
-- This indicates the solution is at the boundary of feasibility
-- For practical purposes, this is effectively stable (within numerical tolerance)
+**Stability Margin**:
+- Maximum eigenvalue of A(delta)'P + PA(delta) is **-0.041505** (strictly negative)
+- All eigenvalues are bounded away from zero by at least 0.04
+- No numerical issues - the solution is robustly feasible
 
-**2D Parameter Space Coverage**:
-- The 1162 scenarios provide dense coverage of the 2D uncertainty region
-- This is significantly more than the 100 scenarios used in the 1D LPV benchmark
-- Higher scenario count leads to tighter risk bounds
+**Physical Interpretation**:
+- The system is robustly stable for all combinations of mode and coupling uncertainty
+- The identity Lyapunov function V(x) = x'Px = 0.1||x||² works universally
+- This suggests the nominal design has excellent stability margins
 
 ---
 
@@ -155,12 +181,12 @@ The 9-panel visualization includes:
 1. **Scenario Scatter**: 2D distribution of sampled parameters
 2. **Scenario Density**: Heatmap of parameter distribution
 3. **Max Eigenvalue Heatmap**: Stability margin across parameter space
-4. **Decision Variables**: Bar chart of optimal x values
+4. **Decision Variables**: Bar chart of Lyapunov matrix elements
 5. **Risk Bounds**: Scenario approach confidence intervals
 6. **Eigenvalue Distribution**: Histogram of stability margins
 7. **3D Stability Surface**: Surface plot of max eigenvalue vs parameters
 8. **Marginal Distributions**: Parameter histograms for each dimension
-9. **Summary Statistics**: Key metrics and interpretation
+9. **Summary Statistics**: Lyapunov matrix and key metrics
 
 ---
 
@@ -168,13 +194,15 @@ The 9-panel visualization includes:
 
 | Aspect | LPV_stability_3d | Quadratic_Stability_6d |
 |--------|------------------|------------------------|
+| System dimension | 2x2 | 3x3 |
 | Decision variables | 3 | 6 |
 | Uncertainty dim | 1 | 2 |
-| Scenarios | 100 | 1162 |
-| Complexity (k) | 1 | 4 |
-| Risk upper bound | 9.41% | 1.37% |
+| Scenarios | 100 | 500 |
+| Complexity (k) | 1 | 0 |
+| Max eigenvalue | ~0 | -0.04 |
+| Physical model | Generic LPV | Coupled oscillators |
 
-The 6D problem has tighter risk bounds despite higher dimensionality due to the much larger scenario count. This illustrates the fundamental tradeoff in scenario-based optimization: more scenarios yield better guarantees but increase computational cost.
+The 6D problem demonstrates a well-designed system with substantial stability margins, while the 3D problem operates closer to the feasibility boundary.
 
 ---
 
@@ -190,4 +218,4 @@ The 6D problem has tighter risk bounds despite higher dimensionality due to the 
 
 ---
 
-*This benchmark is part of the Scenario Approach Tool, demonstrating data-driven robust stability analysis with 2D parameter uncertainty.*
+*This benchmark is part of the Scenario Approach Tool, demonstrating data-driven robust stability analysis for coupled oscillator systems with 2D parameter uncertainty.*

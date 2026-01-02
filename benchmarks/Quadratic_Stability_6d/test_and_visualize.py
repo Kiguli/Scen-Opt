@@ -6,21 +6,32 @@ Test and Visualization for Quadratic_Stability_6d (SDP) Benchmark
 This script tests the 6-dimensional quadratic stability benchmark using
 the scenario approach tool and creates visualizations of the results.
 
-The problem finds a Lyapunov matrix P (parameterized by 6 decision variables)
-that ensures stability across a 2D uncertain parameter space.
+Physical System: Coupled Oscillator LPV Model
+    The system represents two coupled oscillator modes with uncertain parameters.
+    The state-space model is:
+        dx/dt = A(delta) * x
+    where A(delta) = A_0 + delta[0]*A_1 + delta[1]*A_2
 
-Decision Variables: x = [x1, x2, x3, x4, x5, x6] (6 variables)
-    These parameterize a 2x2 symmetric Lyapunov-like matrix structure.
+    A_0 captures the nominal dynamics (damped oscillations with coupling),
+    A_1 represents perturbation to the first oscillator mode,
+    A_2 represents coupling strength uncertainty.
+
+Decision Variables: x = [p11, p12, p13, p22, p23, p33] (6 variables)
+    These parameterize a 3x3 symmetric Lyapunov matrix:
+        P = [[p11, p12, p13],
+             [p12, p22, p23],
+             [p13, p23, p33]]
 
 Scenario Parameters: delta = [delta[0], delta[1]] in [-1, 1] x [-1, 1]
-    Two-dimensional uncertainty set (square).
+    Two-dimensional uncertainty set representing parameter variations.
 
-Mathematical formulation:
-    minimize    c'x  (minimize x6)
-    subject to  F_0 + sum(xi * F_i) <= 0  (for each scenario delta)
-                E_0 + sum(xi * E_i) <= 0  (hard constraint)
+Mathematical formulation (Lyapunov stability):
+    minimize    trace(P) = p11 + p22 + p33
+    subject to  A(delta)'*P + P*A(delta) <= 0  (stability for each scenario)
+                P >= epsilon*I                  (positive definiteness)
 
 Where <= denotes matrix inequality (negative semidefinite).
+A stable system has all eigenvalues of A(delta)'P + PA(delta) strictly negative.
 
 Usage:
     python test_and_visualize.py
@@ -384,29 +395,28 @@ def main():
     feasible_status = "FEASIBLE" if np.max(all_max_eigs) <= 1e-6 else "CHECK REQUIRED"
 
     summary_text = f"""
-    QUADRATIC STABILITY RESULTS
-    ---------------------------
+    COUPLED OSCILLATOR STABILITY
+    ----------------------------
 
-    Problem: 6D Quadratic Stability
-    with 2D parameter uncertainty
+    System: 3x3 LPV coupled oscillator
+    dx/dt = A(delta) * x
 
     Uncertainty Set:
-      delta[0] in [-1, 1]
-      delta[1] in [-1, 1]
+      delta[0] in [-1, 1] (mode 1)
+      delta[1] in [-1, 1] (coupling)
 
     Scenario Approach:
       N = {N} sampled scenarios
       k = {k} support constraints
 
-    Optimal Solution:
-      x1 = {x[0]:.4f}
-      x2 = {x[1]:.4f}
-      x3 = {x[2]:.4f}
-      x4 = {x[3]:.4f}
-      x5 = {x[4]:.4f}
-      x6 = {x[5]:.4f}
+    Lyapunov Matrix P:
+      [{x[0]:7.3f} {x[1]:7.3f} {x[2]:7.3f}]
+      [{x[1]:7.3f} {x[3]:7.3f} {x[4]:7.3f}]
+      [{x[2]:7.3f} {x[4]:7.3f} {x[5]:7.3f}]
 
-    Constraint Analysis:
+    trace(P) = {x[0]+x[3]+x[5]:.4f}
+
+    Stability Analysis:
       Max eigenvalue: {np.max(all_max_eigs):.6f}
       Status: {feasible_status}
 
