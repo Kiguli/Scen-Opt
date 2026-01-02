@@ -148,8 +148,8 @@ def compute_doses(D, x):
 
 def main():
     print("=" * 70)
-    print("BENCHMARK: Prostate Brachytherapy (TROTS Dataset)")
-    print("Robust Radiation Therapy Under Implantation Uncertainty")
+    print("BENCHMARK: Liver SBRT (TROTS Dataset)")
+    print("Robust Radiation Therapy Under Respiratory Motion Uncertainty")
     print("=" * 70)
     print()
 
@@ -203,9 +203,9 @@ def main():
     N = len(scenarios)
     n_vars = c.shape[0]
 
-    print(f"  Beamlets (dwell positions): {n_beamlets}")
+    print(f"  Beamlets: {n_beamlets}")
     print(f"  Scenarios: {N}")
-    print(f"  Uncertainty dimensions: 3 (implant positioning)")
+    print(f"  Uncertainty dimensions: 3 (respiratory motion)")
     print(f"  Decision variables: {n_vars}")
     print(f"  Target dose: {target_dose} Gy")
     print(f"  Minimum target dose (D95): {D_min} Gy")
@@ -291,7 +291,7 @@ def main():
     print("-" * 70)
 
     print()
-    print("BEAMLET INTENSITIES (Dwell Times):")
+    print("BEAMLET INTENSITIES:")
     print("-" * 70)
     print(f"  Min: {np.min(intensities):.2f}")
     print(f"  Max: {np.max(intensities):.2f}")
@@ -309,7 +309,7 @@ def main():
                 print(f"    min={np.min(dose_vals):.2f} Gy, "
                       f"mean={np.mean(dose_vals):.2f} Gy, "
                       f"max={np.max(dose_vals):.2f} Gy")
-                if 'prostate' in name.lower():
+                if 'ptv' in name.lower() or 'liver' == name.lower():
                     d95 = np.percentile(dose_vals, 5)
                     print(f"    D95={d95:.2f} Gy (target: {D_min:.1f} Gy)")
 
@@ -318,7 +318,7 @@ def main():
     print("-" * 70)
     print(f"  With {(1-beta)*100:.0f}% confidence:")
     print(f"  Probability of constraint violation ε ∈ [{eps_lower:.4f}, {eps_upper:.4f}]")
-    print(f"  This means: in >{(1-eps_upper)*100:.1f}% of implant procedures,")
+    print(f"  This means: in >{(1-eps_upper)*100:.1f}% of treatment fractions,")
     print(f"  dose constraints will be satisfied.")
 
     # Save results
@@ -342,7 +342,7 @@ def main():
             solution_data[f'{name}_dose_min'] = float(np.min(dose_vals))
             solution_data[f'{name}_dose_mean'] = float(np.mean(dose_vals))
             solution_data[f'{name}_dose_max'] = float(np.max(dose_vals))
-            if 'prostate' in name.lower():
+            if 'ptv' in name.lower():
                 solution_data[f'{name}_D95'] = float(np.percentile(dose_vals, 5))
 
     with open(os.path.join(results_dir, 'metrics.json'), 'w') as f:
@@ -358,14 +358,14 @@ def main():
     fig = plt.figure(figsize=(20, 15))
     gs = fig.add_gridspec(3, 4, height_ratios=[1.2, 1, 1], hspace=0.35, wspace=0.3)
 
-    # ===== Plot 1: Dwell Time Distribution =====
+    # ===== Plot 1: Beamlet Intensity Distribution =====
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.hist(intensities, bins=25, color='steelblue', alpha=0.7, edgecolor='white')
     ax1.axvline(x=np.mean(intensities), color='red', linestyle='--', linewidth=2,
                label=f'Mean={np.mean(intensities):.1f}')
-    ax1.set_xlabel('Dwell Time (s)', fontsize=11)
+    ax1.set_xlabel('Intensity (MU)', fontsize=11)
     ax1.set_ylabel('Frequency', fontsize=11)
-    ax1.set_title('Dwell Time Distribution', fontsize=12, fontweight='bold')
+    ax1.set_title('Beamlet Intensity Distribution', fontsize=12, fontweight='bold')
     ax1.legend(fontsize=9)
     ax1.grid(True, alpha=0.3, axis='y')
 
@@ -454,16 +454,16 @@ def main():
     ax4.set_title(f'Positioning Scenarios (N={N})', fontsize=12, fontweight='bold')
     ax4.legend(fontsize=8)
 
-    # ===== Plot 5: Active Dwell Positions =====
+    # ===== Plot 5: Active Beamlets =====
     ax5 = fig.add_subplot(gs[1, 0])
     active_threshold = 0.1
     active_mask = intensities > active_threshold
     ax5.bar(range(len(intensities)), intensities, color=['steelblue' if a else 'lightgray' for a in active_mask],
            alpha=0.7)
     ax5.axhline(y=active_threshold, color='red', linestyle='--', alpha=0.5)
-    ax5.set_xlabel('Dwell Position Index', fontsize=11)
-    ax5.set_ylabel('Dwell Time (s)', fontsize=11)
-    ax5.set_title(f'Dwell Times ({np.sum(active_mask)}/{len(intensities)} active)', fontsize=12, fontweight='bold')
+    ax5.set_xlabel('Beamlet Index', fontsize=11)
+    ax5.set_ylabel('Intensity (MU)', fontsize=11)
+    ax5.set_title(f'Beamlet Intensities ({np.sum(active_mask)}/{len(intensities)} active)', fontsize=12, fontweight='bold')
     ax5.grid(True, alpha=0.3, axis='y')
 
     # ===== Plot 6: Risk Bounds =====
@@ -521,7 +521,7 @@ def main():
 
         for name, dose_vals in structure_doses.items():
             if len(dose_vals) > 0:
-                if 'prostate' in name.lower():
+                if 'ptv' in name.lower():
                     # Target: D95 must be >= D_min
                     d95 = np.percentile(dose_vals, 5)
                     constraint_names.append(f'{name}\nD95')
@@ -585,7 +585,7 @@ def main():
         ax10.text(0.5, 0.5, 'Data not available', ha='center', va='center')
         ax10.set_title('Dose Heatmap', fontsize=12, fontweight='bold')
 
-    # ===== Plot 11: Dwell Time Map =====
+    # ===== Plot 11: Intensity Map =====
     ax11 = fig.add_subplot(gs[2, 2])
     n = int(np.sqrt(len(intensities)))
     if n * n >= len(intensities):
@@ -597,65 +597,65 @@ def main():
         im = ax11.imshow(intensity_grid, cmap='YlOrRd', aspect='auto')
         ax11.set_xlabel('Position Column', fontsize=11)
         ax11.set_ylabel('Position Row', fontsize=11)
-        ax11.set_title('Dwell Time Map', fontsize=12, fontweight='bold')
-        plt.colorbar(im, ax=ax11, shrink=0.8, label='Time (s)')
+        ax11.set_title('Beamlet Intensity Map', fontsize=12, fontweight='bold')
+        plt.colorbar(im, ax=ax11, shrink=0.8, label='Intensity (MU)')
     else:
         ax11.bar(range(len(intensities)), intensities, color='steelblue', alpha=0.7)
-        ax11.set_title('Dwell Times', fontsize=12, fontweight='bold')
+        ax11.set_title('Beamlet Intensities', fontsize=12, fontweight='bold')
 
     # ===== Plot 12: Summary Box =====
     ax12 = fig.add_subplot(gs[2, 3])
     ax12.axis('off')
 
     # Get dose statistics
-    prostate_d95 = 0
-    prostate_mean = 0
-    if structure_doses and 'Prostate' in structure_doses:
-        prostate_d95 = np.percentile(structure_doses['Prostate'], 5)
-        prostate_mean = np.mean(structure_doses['Prostate'])
+    ptv_d95 = 0
+    ptv_mean = 0
+    if structure_doses and 'PTV' in structure_doses:
+        ptv_d95 = np.percentile(structure_doses['PTV'], 5)
+        ptv_mean = np.mean(structure_doses['PTV'])
 
     oar_max = {}
-    for name in ['Rectum', 'Bladder', 'Urethra']:
+    for name in ['Liver', 'Spinal_Cord', 'Kidney_R', 'Kidney_L', 'Stomach']:
         if name in structure_doses and len(structure_doses[name]) > 0:
             oar_max[name] = np.max(structure_doses[name])
 
     summary_text = f"""
-    PROSTATE BRACHYTHERAPY
+    LIVER SBRT
     (TROTS Dataset)
     ======================
 
     Problem Size:
-      {n_beamlets} dwell positions
+      {n_beamlets} beamlets
       {n_voxels} voxels
       {N} scenarios
-      3D uncertainty (±5mm)
+      3D uncertainty (±8mm)
 
     Prescription:
       Target: {target_dose} Gy
-      D95 ≥ {D_min:.1f} Gy
+      D95 >= {D_min:.1f} Gy
 
     Results:
-      Prostate D95: {prostate_d95:.1f} Gy
-      Prostate mean: {prostate_mean:.1f} Gy
+      PTV D95: {ptv_d95:.1f} Gy
+      PTV mean: {ptv_mean:.1f} Gy
 """
     for name, val in oar_max.items():
         limit = oar_limits.get(name, 100)
-        summary_text += f"      {name} max: {val:.1f} Gy (≤{limit})\n"
+        summary_text += f"      {name} max: {val:.1f} Gy (limit {limit})\n"
 
     summary_text += f"""
     Scenario Approach:
       k = {k} support constraints
       Risk: [{eps_lower:.4f}, {eps_upper:.4f}]
 
-      99% confidence that ≥{(1-eps_upper)*100:.1f}%
-      of procedures satisfy limits.
+      99% confidence that >={(1-eps_upper)*100:.1f}%
+      of fractions satisfy limits.
     """
 
     ax12.text(0.05, 0.95, summary_text, transform=ax12.transAxes, fontsize=10,
              verticalalignment='top', fontfamily='monospace',
              bbox=dict(boxstyle='round', facecolor='lightcyan', alpha=0.9, edgecolor='steelblue'))
 
-    plt.suptitle("Prostate Brachytherapy - Robust Treatment Planning (TROTS Dataset)",
+    plt.suptitle("Liver SBRT - Robust Treatment Planning (TROTS Dataset)",
                  fontsize=14, fontweight='bold', y=0.98)
     try:
         plt.tight_layout(rect=[0, 0, 1, 0.96])

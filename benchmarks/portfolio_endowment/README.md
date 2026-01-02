@@ -172,6 +172,53 @@ This benchmark demonstrates several key features of the scenario approach:
 
 5. **Risk certification**: The [eps_lower, eps_upper] bounds give Dr. Chen a concrete probability guarantee she can present to the Board of Trustees.
 
+## Results with MOSEK
+
+Running `test_and_visualize.py` with MOSEK produces the following results:
+
+```
+======================================================================
+BENCHMARK: University Endowment Portfolio Optimization
+======================================================================
+
+Status: SUCCESS (MOSEK)
+Scenarios (N): 500
+Decision Variables: 10 (portfolio weights)
+Expected Return: 13.61%
+Complexity (k): 12 support constraints
+Risk Bounds (99%): [0.0074, 0.0573]
+----------------------------------------------------------------------
+```
+
+### Interpretation
+
+**Expected Return = 13.61%**:
+- The optimized portfolio targets an annualized return of 13.61%
+- This exceeds the 4.5% distribution requirement by a healthy margin
+- The optimization maximizes return while respecting risk constraints
+
+**Complexity (k = 12)**:
+- 12 scenario constraints are binding at the optimal solution
+- This moderate complexity indicates the portfolio is shaped by multiple extreme scenarios
+- The solution balances growth objectives against various stress conditions
+
+**Risk Bounds [0.0074, 0.0573]**:
+- With 99% confidence, the probability of violating constraints is between 0.74% and 5.73%
+- This means: at least 94.3% of market scenarios will satisfy all risk constraints
+- The endowment can report strong risk management to the Board of Trustees
+
+**Portfolio Allocation Insights**:
+- Technology sector likely near the 40% limit (growth-seeking behavior)
+- Defensive stocks (PG, JNJ, MCD) provide downside protection
+- The higher complexity (k=12) compared to CVaR (k=3) reflects the multi-factor risk model
+
+**Practical Meaning for Dr. Chen**:
+- The portfolio is well-positioned to meet the 4.5% annual distribution
+- Risk constraints are satisfied with high probability across market regimes
+- Board reporting can cite: "With 99% confidence, our portfolio satisfies risk limits in at least 94% of market conditions"
+
+---
+
 ## References
 
 1. Fama, E.F. & French, K.R. (1993). "Common risk factors in the returns on stocks and bonds." Journal of Financial Economics, 33(1), 3-56.

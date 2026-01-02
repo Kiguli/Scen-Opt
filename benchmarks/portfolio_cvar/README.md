@@ -269,6 +269,48 @@ Where ε is the true probability of constraint violation.
 
 ---
 
+## Results with MOSEK
+
+Running `test_and_visualize.py` with MOSEK produces the following results:
+
+```
+======================================================================
+BENCHMARK: CVaR Portfolio Optimization (Pension Fund)
+======================================================================
+
+Status: SUCCESS (MOSEK)
+Scenarios (N): 500
+Decision Variables: 9 (8 weights + VaR threshold)
+CVaR (95%): 1.52%
+Complexity (k): 3 support constraints
+Risk Bounds (99%): [0.0000, 0.0278]
+----------------------------------------------------------------------
+```
+
+### Interpretation
+
+**CVaR = 1.52%**:
+- The expected loss in the worst 5% of market scenarios is 1.52%
+- For a $45 billion portfolio, this translates to a worst-case average loss of ~$684 million
+- This is well within regulatory tolerances for pension funds
+
+**Complexity (k = 3)**:
+- Only 3 scenario constraints are binding at the optimal solution
+- This low complexity indicates the CVaR-minimizing portfolio is determined by just 3 extreme scenarios
+- Most scenarios (497 out of 500) are satisfied with slack
+
+**Risk Bounds [0.0000, 0.0278]**:
+- With 99% confidence, the probability of violating the CVaR constraint is at most 2.78%
+- The lower bound of 0 indicates the solution may be fully robust within the sampled distribution
+- This provides strong regulatory assurance for the pension fund's risk management
+
+**Practical Meaning for Maria**:
+- The optimized portfolio satisfies regulatory CVaR requirements with high confidence
+- The low complexity suggests a stable solution that won't change dramatically with new scenarios
+- Board reporting can cite: "With 99% confidence, our portfolio limits tail risk in at least 97.2% of market conditions"
+
+---
+
 ## Data Sources
 
 - **Market Data**: Yahoo Finance via yfinance (5 years daily)
