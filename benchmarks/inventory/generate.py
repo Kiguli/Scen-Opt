@@ -20,6 +20,7 @@ Usage:
     python generate.py [--n_scenarios N] [--seed SEED]
 """
 
+import os
 import numpy as np
 import argparse
 
@@ -190,7 +191,10 @@ def save_constraint_files():
         space_row.append(f'{space}*delta[{10+j}]')
     a_d_rows.append(','.join(space_row))
 
-    with open('A_d.csv', 'w') as f:
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+
+    with open(os.path.join(data_dir, 'A_d.csv'), 'w') as f:
         f.write('\n'.join(a_d_rows) + '\n')
 
     # b_d.csv: 6 rows
@@ -201,12 +205,12 @@ def save_constraint_files():
         b_d_rows.append(f'delta[{5+j}]')  # demand
     b_d_rows.append(f'-{WAREHOUSE_CAPACITY}')  # capacity RHS
 
-    with open('b_d.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'b_d.csv'), 'w') as f:
         f.write('\n'.join(b_d_rows) + '\n')
 
     # c.csv: ordering costs
     costs = [PRODUCTS[p]['cost_per_case'] for p in PRODUCT_NAMES]
-    with open('c.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'c.csv'), 'w') as f:
         for c in costs:
             f.write(f'{c}\n')
 
@@ -237,11 +241,11 @@ def save_constraint_files():
     G_rows.append(budget_row)
     h_vals.append(-BUDGET_LIMIT)
 
-    with open('G.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'G.csv'), 'w') as f:
         for row in G_rows:
             f.write(','.join(str(x) for x in row) + '\n')
 
-    with open('h.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'h.csv'), 'w') as f:
         for h in h_vals:
             f.write(f'{h}\n')
 
@@ -272,8 +276,10 @@ def main():
     scenarios = generate_scenarios(args.n_scenarios, args.seed)
 
     # Save scenarios
-    np.savetxt('scenarios.csv', scenarios, delimiter=',', fmt='%.10f')
-    print(f"Saved scenarios.csv: {args.n_scenarios} x 15")
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    np.savetxt(os.path.join(data_dir, 'scenarios.csv'), scenarios, delimiter=',', fmt='%.10f')
+    print(f"Saved data/scenarios.csv: {args.n_scenarios} x 15")
 
     # Save constraint files
     print("Generating constraint files...")
