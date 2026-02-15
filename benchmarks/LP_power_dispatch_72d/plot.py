@@ -103,7 +103,7 @@ ax.axvline(x=k, color=C_DEMAND, linestyle='-', linewidth=1.5, alpha=0.8)
 k_idx = min(k, len(eps_lo) - 1)
 ax.scatter([k], [eps_lo[k_idx]], c=C_DEMAND, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi[k_idx]], c=C_DEMAND, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 5, eps_hi[k_idx] + 0.15),
+ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 5, eps_hi[k_idx] + 0.08),
             fontsize=9, color=C_DEMAND,
             arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
 ax.set_xlabel('Complexity $k$')
