@@ -1,0 +1,14 @@
+# QP Robot Navigation Benchmark Parameters
+# Workspace: 10.0m x 8.0m
+# Start: [0.5 2.5]
+# Goal: [9.5 2.5]
+# Time horizon: 20 steps, dt=0.4s (8.0s total)
+# Wall: x=[3.0, 7.0], y=[0.0, 3.0]
+# Wall face uncertainty: sigma=0.05m
+# Robot radius: 0.2m
+# Safety margin: 0.1m
+# Safety distance from face: 0.30000000000000004m
+
+rho = 0
+tau = 0
+confidence = 0.99

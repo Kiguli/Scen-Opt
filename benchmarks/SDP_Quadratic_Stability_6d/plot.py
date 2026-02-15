@@ -134,7 +134,7 @@ else:
 
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
-ax.set_title(f'(b) Risk bounds ($N={N}$, 99\\% confidence)')
+ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=0.01$)')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', loc='upper left')
 
 # ── Panel (c): Scenario samples coloured by max eigenvalue ──

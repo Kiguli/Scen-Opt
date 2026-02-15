@@ -151,7 +151,7 @@ for i in range(3):
     ratio = ratio[ratio < 5]  # filter extreme outliers
     growth_ratios.append(ratio)
 
-bp = ax.boxplot(growth_ratios, patch_artist=True, labels=labels, widths=0.5)
+bp = ax.boxplot(growth_ratios, patch_artist=True, tick_labels=labels, widths=0.5)
 box_colors = ['#4393c3', '#74add1', '#abd9e9']
 for patch, color in zip(bp['boxes'], box_colors):
     patch.set_facecolor(color)
