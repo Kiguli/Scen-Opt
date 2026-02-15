@@ -1,0 +1,13 @@
+# LPV Stability 3D Benchmark
+# 2x2 LPV system: dx/dt = A(delta) x
+#   A(delta) = A_0 + delta * A_1
+#   delta in [-0.22, 1]
+#
+# Decision: x = [p11, p12, p22] (symmetric Lyapunov matrix P)
+# Constraint: A(delta)'P + PA(delta) <= 0 (stability)
+# Hard constraint: P >= 0 (positive definiteness)
+# Objective: minimize (1/2) x'Qx + c'x
+
+rho = 1.0
+tau = 0
+confidence = 0.99

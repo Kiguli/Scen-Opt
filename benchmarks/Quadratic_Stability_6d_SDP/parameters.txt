@@ -1,0 +1,13 @@
+# Quadratic Stability 6D Benchmark
+# 3x3 coupled oscillator LPV system: dx/dt = A(delta) x
+#   A(delta) = A_0 + delta_1 * A_1 + delta_2 * A_2
+#   delta in [-1, 1]^2
+#
+# Decision: x = [p11, p12, p13, p22, p23, p33] (symmetric Lyapunov matrix P)
+# Constraint: A(delta)'P + PA(delta) <= 0 (stability)
+# Hard constraint: P >= 0.01*I (positive definiteness)
+# Objective: minimize trace(P)
+
+rho = 0.0
+tau = 0
+confidence = 0.99

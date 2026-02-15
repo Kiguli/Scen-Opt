@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""
+Solve the LPV Stability 3D (SDP) benchmark using the scenario approach.
+
+Finds a common Lyapunov matrix P that ensures stability of an LPV system
+across all sampled parameter values delta in [-0.22, 1].
+
+Usage:
+    python run.py
+"""
+
+import sys
+import os
+import json
+import numpy as np
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from src.SDP import solve_sdp1
+from src.Miscellaneous import load_file
+from src.Risk import quantify_risk
+
+
+def parse_expression_matrix(filepath):
+    """Parse a CSV file containing expressions with delta[i] terms."""
+    with open(filepath, 'r') as f:
+        lines = f.read().strip().split('\n')
+
+    expr_matrix = []
+    for line in lines:
+        if line.strip():
+            row = [cell.strip() for cell in line.split(',')]
+            expr_matrix.append(row)
+
+    def matrix_function(delta):
+        result = []
+        for row in expr_matrix:
+            result_row = []
+            for expr in row:
+                val = eval(expr, {"delta": delta, "math": __import__('math')})
+                result_row.append(val)
+            result.append(result_row)
+        return np.array(result)
+
+    return matrix_function
+
+
+def load_matrix(filepath):
+    """Load a matrix from a CSV file."""
+    with open(filepath, 'r') as f:
+        lines = f.read().strip().split('\n')
+    matrix = []
+    for line in lines:
+        if line.strip():
+            row = [float(x.strip()) for x in line.split(',')]
+            matrix.append(row)
+    return np.array(matrix)
+
+
+def load_vector(filepath):
+    """Load a vector from a CSV file (one value per line)."""
+    with open(filepath, 'r') as f:
+        lines = f.read().strip().split('\n')
+    return np.array([float(line.strip()) for line in lines if line.strip()])
+
+
+def main():
+    print("=" * 60)
+    print("BENCHMARK: LPV_stability_3d (SDP)")
+    print("Common Lyapunov Function for LPV System")
+    print("=" * 60)
+    print()
+
+    benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(benchmark_dir, 'data')
+    results_dir = os.path.join(benchmark_dir, 'results')
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Load data
+    print("Loading data files...")
+    scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
+    if scenarios.ndim == 2 and scenarios.shape[1] == 1:
+        scenarios = scenarios.flatten()
+
+    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
+    c = load_vector(os.path.join(data_dir, 'c.csv'))
+
+    F_0_func = parse_expression_matrix(os.path.join(data_dir, 'F_0.csv'))
+    F_1_func = parse_expression_matrix(os.path.join(data_dir, 'F_1.csv'))
+    F_2_func = parse_expression_matrix(os.path.join(data_dir, 'F_2.csv'))
+    F_3_func = parse_expression_matrix(os.path.join(data_dir, 'F_3.csv'))
+
+    E_0 = load_matrix(os.path.join(data_dir, 'E_0.csv'))
+    E_1 = load_matrix(os.path.join(data_dir, 'E_1.csv'))
+    E_2 = load_matrix(os.path.join(data_dir, 'E_2.csv'))
+    E_3 = load_matrix(os.path.join(data_dir, 'E_3.csv'))
+
+    N = len(scenarios)
+    n_vars = Q.shape[0]
+    m = F_0_func([0]).shape[0]
+
+    print(f"  Scenarios (parameter samples): {N}")
+    print(f"  Decision variables: {n_vars}")
+    print(f"  Matrix dimension: {m}x{m}")
+    print(f"  Parameter range: [{scenarios.min():.4f}, {scenarios.max():.4f}]")
+    print()
+
+    def F_d(delta):
+        if np.isscalar(delta):
+            delta = np.array([delta])
+        elif isinstance(delta, np.ndarray):
+            delta = delta.flatten()
+            if delta.size == 1:
+                delta = np.array([delta.item()])
+        return {
+            '0': F_0_func(delta),
+            '1': F_1_func(delta),
+            '2': F_2_func(delta),
+            '3': F_3_func(delta)
+        }
+
+    E = {'0': E_0, '1': E_1, '2': E_2, '3': E_3}
+
+    # Solve
+    print("Solving SDP with MOSEK...")
+    rho_value = 1.0
+
+    try:
+        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+            deltas=scenarios, F_d=F_d, E=E, c=c, Q=Q,
+            tau=0.0, x_ref=np.zeros(n_vars), rho=rho_value,
+            norm_type=2, solver='MOSEK'
+        )
+        print(f"Solved with MOSEK")
+    except Exception as e:
+        print(f"MOSEK failed: {e}")
+        print("Attempting with SCS solver...")
+        try:
+            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+                deltas=scenarios, F_d=F_d, E=E, c=c, Q=Q,
+                tau=0.0, x_ref=np.zeros(n_vars), rho=rho_value,
+                norm_type=2, solver='SCS'
+            )
+            print(f"Solved with SCS")
+        except Exception as e2:
+            print(f"SCS also failed: {e2}")
+            return
+
+    # Risk bounds
+    beta = 0.01
+    eps_lower, eps_upper = quantify_risk(k, N, beta)
+
+    # Results
+    print()
+    print("-" * 60)
+    print(f"Optimal Cost: {cost:.6f}")
+    print(f"Complexity (k): {k}")
+    if degeneracy:
+        print(f"Risk Bounds (99%): [unreliable, {eps_upper:.4f}]")
+    else:
+        print(f"Risk Bounds (99%): [{eps_lower:.4f}, {eps_upper:.4f}]")
+    print("-" * 60)
+
+    print()
+    print("Solution (Lyapunov Parameters):")
+    for i in range(n_vars):
+        print(f"  x[{i+1}] = {x[i]:.6f}")
+
+    # Stability check
+    print()
+    print("Stability Analysis:")
+    test_deltas = [scenarios.min(), 0, scenarios.max()]
+    for delta in test_deltas:
+        F_result = F_d([delta])
+        F_combined = F_result['0'] + x[0]*F_result['1'] + x[1]*F_result['2'] + x[2]*F_result['3']
+        eigs = np.linalg.eigvals(F_combined)
+        max_eig = np.max(np.real(eigs))
+        print(f"  delta={delta:.4f}: max eigenvalue = {max_eig:.6f} {'(stable)' if max_eig < 0 else '(unstable)'}")
+
+    # Save results
+    solution_data = {
+        'x': x.tolist(),
+        'optimal_cost': float(cost),
+        'N': int(N),
+        'k': int(k),
+        'eps_lower': float(eps_lower),
+        'eps_upper': float(eps_upper),
+        'degeneracy': bool(degeneracy),
+        'parameter_range': [float(scenarios.min()), float(scenarios.max())]
+    }
+
+    with open(os.path.join(results_dir, 'metrics.json'), 'w') as f:
+        json.dump(solution_data, f, indent=2)
+
+    np.savetxt(os.path.join(results_dir, 'solution.csv'), x, delimiter=',')
+    print(f"\nResults saved to: {results_dir}")
+
+
+if __name__ == '__main__':
+    main()
