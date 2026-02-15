@@ -1,0 +1,5 @@
+# Generator Parameters
+# Name, Capacity(MW), MinOutput(MW), Cost($/MWh), RampRate(MW/h)
+Gas1, 400, 100, 40, 200
+Gas2, 300, 75, 50, 150
+Coal, 500, 200, 30, 100
