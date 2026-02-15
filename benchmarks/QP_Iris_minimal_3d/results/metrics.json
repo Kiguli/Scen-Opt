@@ -8,11 +8,7 @@
   "N": 150,
   "k": 2,
   "eps_lower": 0.0,
-  "eps_upper": 0.07765861976581317,
+  "eps_upper": 0.14300981911209715,
   "accuracy": 1.0,
-  "degeneracy": false,
-  "support_indices": [
-    44,
-    98
-  ]
+  "degeneracy": false
 }

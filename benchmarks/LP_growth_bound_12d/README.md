@@ -1,217 +1,64 @@
-# Data-Driven Growth Bounds for Vehicle Dynamics (12D LP)
+# Data-Driven Growth Bound for Finite Abstraction
 
-## The Problem
+## Problem Description
 
-This benchmark computes **data-driven growth bounds** for a vehicle dynamics system, providing probabilistic guarantees on reachable set over-approximations. The approach is based on the methodology from:
+Finite abstractions group continuous states into grid cells, each represented by a cell center. Following Kazemi et al. (2024), we compute a data-driven growth bound from sampled trajectories of a vehicle dynamics system, formulated as a linear program. We consider a 3-dimensional hypercube of side length l = 1.6 centered at (0, 1.2, 0) with bicycle-like dynamics:
 
-> **Kazemi, M., Salamati, M., Wooding, B., Soudjani, S., & Majumdar, R.** "Data-Driven Reachability Analysis for Stochastic Systems"
+    x'(1) = u(1) cos(α + x(3)) / cos(α)
+    x'(2) = u(1) sin(α + x(3)) / cos(α)
+    x'(3) = u(1) tan(u(2))
 
-The goal is to bound how much the system state can evolve from one time step to the next, enabling efficient reachability analysis without requiring explicit knowledge of the system dynamics.
+where α = arctan(tan(u(2))/2). A total of 3127 trajectories (xₖ, xₖ') are sampled under fixed input u = (0.3, 0.3), where (c, c') denotes the trajectory from the cell center. The growth bound M·[0.5l, 0.5l, 0.5l]' + γ is computed by solving for the matrix M and bias b.
 
----
+## Formulation
 
-## Background: Reachability Analysis
+This is a Linear Program with 12 decision variables: 9 entries of the growth matrix M and 3 bias terms b. The objective minimizes the off-diagonal entries of M plus the bias terms. Each scenario δₖ is a 6-dimensional concatenation |xₖ - c|, |xₖ' - c'|. Hard constraints enforce |mᵢᵢ| ≤ bᵢ and mᵢⱼ ≥ 0 when i ≠ j. No regularisation (τ = 0) or slack penalty (ρ = 0).
 
-**Reachability analysis** answers the question: "Given an initial set of states, what states can the system reach after one time step?"
+## Results
 
-Traditional approaches require:
-- Explicit system dynamics model
-- Conservative approximations (often too loose)
-- Computationally expensive set propagation
+![Growth Bound](results/growth_bound.png)
 
-**Data-driven approach**:
-- Sample state transitions from simulations or experiments
-- Learn growth bounds from data using scenario optimization
-- Obtain probabilistic guarantees on over-approximation quality
+The LP solves with N = 3127 sampled trajectories. The optimal growth matrix and bias are:
 
----
+    M* = [[-1.000, 0.000, 0.005], [0.000, -1.000, 0.009], [0.000, 0.000, -1.000]]
+    b* = [-1.000, -1.000, -1.000]
 
-## Vehicle Dynamics Model
-
-The system follows **bicycle-like dynamics**:
-
-```
-x_dot = v * cos(alpha + theta) / cos(alpha)
-y_dot = v * sin(alpha + theta) / cos(alpha)
-theta_dot = v * tan(steering)
-```
-
-Where:
-- `(x, y)` is the position
-- `theta` is the heading angle
-- `v` is the velocity (control input)
-- `steering` is the steering angle (control input)
-- `alpha = arctan(tan(steering)/2)` is the slip angle
-
-**State**: x = [x, y, theta]
-**Control**: u = [v, steering]
-
----
-
-## Growth Bound Formulation
-
-For a set centered at `x_center` with deviations `|x - x_center|`, we seek bounds:
-
-```
-|x_next - x_next_center| <= L * |x - x_center| + U
-```
-
-Where:
-- L is a linear growth factor matrix (or vector)
-- U is an additive offset term
-- The bound holds with high probability across sampled transitions
-
-### Decision Variables
-
-The 12 decision variables encode the growth bound parameters:
-- 9 variables for the L matrix (3x3 for linear growth)
-- 3 variables for the U vector (additive terms)
-
----
-
-## Problem Formulation
-
-This is a **Linear Program (LP)**:
-
-```
-minimize    c' x    (minimize growth bound terms)
-
-subject to  A_d(delta) @ x + b_d(delta) <= 0    for each scenario
-
-            G @ x + h <= 0    (hard constraints)
-```
-
-Where each scenario `delta` contains:
-- `delta[0:3]`: |x_current - x_center| (current deviations)
-- `delta[3:6]`: |x_next - x_next_center| (next-step deviations)
-
----
-
-## Problem Dimensions
-
-| Dimension | Value |
-|-----------|-------|
-| Decision variables | 12 (growth bound parameters) |
-| State dimensions | 3 (x, y, theta) |
-| Scenarios (N) | 100 (mini dataset) |
-| Initial set width | 1.6 (square around center) |
-| Time step | 0.03 seconds |
-
----
+With pre-selected bias γ = 0.067 and β = 10⁻⁶, the support set size is k = 6 and degeneracy was detected, so no lower bound on risk can be certified. The upper bound is ε̄ = 0.01.
 
 ## Files
 
-| File | Description |
-|------|-------------|
-| `growth_bound.csv` | Full dataset of state transitions |
-| `growth_bound_mini.csv` | Mini dataset (100 samples) for faster testing |
-| `c.csv` | Linear objective vector (12x1) |
-| `G.csv` | Hard constraint matrix |
-| `h.csv` | Hard constraint RHS |
-| `A_d.csv` | Scenario-dependent constraint matrix |
-| `b_d.csv` | Scenario-dependent constraint RHS |
-| `data-collection.py` | Script to generate transition data |
-| `test_and_visualize.py` | Solve LP and create 9-panel visualization |
-
----
+```
+LP_growth_bound_12d/
+├── README.md           This file
+├── parameters.txt      Solver parameters (rho, tau, confidence)
+├── generate.py         Generate trajectory data via RK4 simulation
+├── run.py              Solve the LP and print results
+├── plot.py             Generate the paper figure
+├── data/
+│   ├── A_d.csv         Scenario-dependent constraint matrix (3 × 12 expressions)
+│   ├── b_d.csv         Scenario-dependent RHS (3 × 1 expressions)
+│   ├── c.csv           Objective vector (12 × 1)
+│   ├── G.csv           Hard constraint matrix (6 × 12)
+│   ├── h.csv           Hard constraint RHS (6 × 1)
+│   ├── growth_bound.csv       Full dataset (3127 × 6)
+│   └── growth_bound_mini.csv  Mini dataset (99 × 6)
+└── results/
+    ├── metrics.json    Solver output (growth matrix, bias, risk bounds)
+    ├── solution.csv    Raw solution vector
+    ├── growth_bound.png  Paper figure (300 dpi)
+    └── growth_bound.pdf  Paper figure (vector)
+```
 
 ## Usage
 
 ```bash
-cd benchmarks/growth_bound_12d
-python test_and_visualize.py
+# Regenerate trajectory data
+python generate.py
+
+# Solve the LP (use --mini for faster testing)
+python run.py
+python run.py --mini
+
+# Generate paper figure
+python plot.py
 ```
-
-Results are saved to `results/`:
-- `metrics.json`: Growth parameters, complexity, risk bounds
-- `solution.csv`: Optimal decision variables
-- `visualization.png`: 9-panel reachability analysis
-
----
-
-## Results with MOSEK
-
-Running `test_and_visualize.py` with MOSEK produces the following results:
-
-```
-============================================================
-BENCHMARK: growth_bound_12d (LP)
-Reachability Analysis for Vehicle Dynamics
-============================================================
-
-Status: SUCCESS (MOSEK)
-Scenarios (N): 100
-Decision Variables: 12
-Optimal Cost: -2.986429
-Complexity (k): 5 support constraints
-Risk Bounds (99%): [unreliable, 0.1663]
-Degeneracy: True (lower bound unreliable)
-------------------------------------------------------------
-
-Solution (Growth Bound Parameters):
-  x[0] = 0.000000
-  x[1] = 0.000000
-  x[2] = 0.000000
-  ...
-  (parameters define growth bound L, U)
-
-Minimized variables (growth bound terms): [indices of active terms]
-```
-
-### Interpretation
-
-**Complexity (k = 5)**:
-- 5 scenario constraints are active at the optimal solution
-- These correspond to the most "extreme" state transitions that shape the growth bound
-- The growth bound is determined by transitions near the boundary of the reachable set
-
-**Risk Bounds [unreliable, 0.1663]**:
-- With 99% confidence, at most 16.63% of state transitions might exceed the computed bound
-- **Degeneracy detected**: The lower bound is unreliable
-- Degeneracy occurs when multiple growth bounds achieve the same optimal objective
-
-**Degeneracy Explanation**:
-- In reachability analysis, multiple parameter combinations can yield equivalent bounds
-- This is common when the dynamics have symmetry or the initial set is symmetric
-- The upper bound (16.63%) remains valid for conservative analysis
-
-**Practical Meaning**:
-- The computed growth bound is valid for at least 83.4% of state transitions
-- For safety-critical applications, this provides a probabilistic over-approximation
-- Additional scenarios would tighten the bounds
-
-**Vehicle Dynamics Insights**:
-- The growth bound captures how position and heading errors propagate
-- Larger initial deviations lead to larger next-step deviations (growth)
-- The L matrix encodes the linearized growth rate; U captures nonlinear effects
-
----
-
-## Visualization Guide
-
-The 9-panel visualization includes:
-
-1. **3D Current Deviations**: Scatter plot of initial state deviations
-2. **3D Next Deviations**: Scatter plot of next-step deviations
-3. **Growth Ratio Distribution**: Box plot of deviation growth per dimension
-4. **Reachable Set (X-Y Plane)**: 2D projection with initial and reached sets
-5. **Deviation Correlation**: Current vs next deviation scatter
-6. **Risk Bounds**: Scenario approach confidence intervals
-7. **Vehicle Trajectory**: Nominal trajectory with uncertainty tube
-8. **Max Deviation Histogram**: Distribution of maximum deviations
-9. **Summary Statistics**: Key metrics and interpretation
-
----
-
-## Connection to Formal Methods
-
-This benchmark bridges **data-driven methods** with **formal verification**:
-
-| Classical Reachability | Data-Driven Reachability |
-|------------------------|--------------------------|
-| Requires explicit dynamics | Works with simulation data |
-| Conservative interval arithmetic | Tight probabilistic bounds |
-| Exponential complexity in time | Linear in number of scenarios |
-| Guaranteed (but loose) | Probabilistic (but tight) |
-
-The scenario approach provides a principled way to obtain safety guarantees from data, complementing model-based formal methods.

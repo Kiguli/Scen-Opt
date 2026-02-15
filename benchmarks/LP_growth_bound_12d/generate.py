@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 def rk4_step(f, x, u, dt):
@@ -53,4 +54,6 @@ for i in range(num_points):
     diffs[i, :3] = np.abs(matrix[i, :3] - x_center)
     diffs[i, 3:] = np.abs(matrix[i, 3:] - x_next_center)
 
-np.savetxt('growth_bound.csv', diffs, delimiter=',')
+data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+os.makedirs(data_dir, exist_ok=True)
+np.savetxt(os.path.join(data_dir, 'growth_bound.csv'), diffs, delimiter=',')

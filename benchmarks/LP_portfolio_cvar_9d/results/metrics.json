@@ -16,7 +16,6 @@
   "alternatives_allocation": 0.44999999999752127,
   "mean_return": 0.0006073265801994023,
   "std_return": 0.006506080736221274,
-  "worst_scenario": -0.032314992256393296,
   "objective_value": 0.050687475348336015,
   "N": 500,
   "k": 3,

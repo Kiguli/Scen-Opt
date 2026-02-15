@@ -1,0 +1,3 @@
+rho = 0
+tau = 0
+confidence = 0.999999

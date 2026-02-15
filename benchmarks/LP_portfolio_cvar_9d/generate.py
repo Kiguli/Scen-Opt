@@ -22,6 +22,7 @@ Usage:
     python generate.py [--n_scenarios N] [--seed SEED] [--years Y]
 """
 
+import os
 import numpy as np
 import pandas as pd
 import argparse
@@ -150,7 +151,7 @@ def generate_scenarios(returns, n_scenarios, seed=42):
     return scenarios, mean_returns, volatility, correlation
 
 
-def save_constraint_files(mean_returns, n_scenarios):
+def save_constraint_files(data_dir, mean_returns, n_scenarios):
     """Generate and save all constraint CSV files for CVaR formulation.
 
     CVaR Formulation:
@@ -211,20 +212,20 @@ def save_constraint_files(mean_returns, n_scenarios):
     equity_row[8] = '0'
     a_d_rows.append(','.join(equity_row))
 
-    with open('A_d.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'A_d.csv'), 'w') as f:
         f.write('\n'.join(a_d_rows) + '\n')
 
     # b_d.csv: All zeros (constraints are <= zeta)
     b_d_rows = ['0'] * 4
 
-    with open('b_d.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'b_d.csv'), 'w') as f:
         f.write('\n'.join(b_d_rows) + '\n')
 
     # c.csv: Objective coefficients
     # Minimize: alpha + rho * sum(zeta)
     # c = [0, 0, ..., 0, 1] - weights have 0 cost, alpha has cost 1
     c_values = [0] * N_ASSETS + [1]
-    with open('c.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'c.csv'), 'w') as f:
         for val in c_values:
             f.write(f'{val}\n')
 
@@ -297,16 +298,16 @@ def save_constraint_files(mean_returns, n_scenarios):
     G_rows.append(alpha_upper)
     h_vals.append(-0.05)
 
-    with open('G.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'G.csv'), 'w') as f:
         for row in G_rows:
             f.write(','.join(str(x) for x in row) + '\n')
 
-    with open('h.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'h.csv'), 'w') as f:
         for h in h_vals:
             f.write(f'{h}\n')
 
     # Save asset info for visualization
-    with open('assets.csv', 'w') as f:
+    with open(os.path.join(data_dir, 'assets.csv'), 'w') as f:
         f.write('ticker,name,class,role\n')
         for ticker in TICKERS:
             info = ASSET_INFO[ticker]
@@ -341,6 +342,11 @@ def main():
     print(f"  - 1 volatility scaling factor")
     print()
 
+    # Set up directories
+    benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(benchmark_dir, 'data')
+    os.makedirs(data_dir, exist_ok=True)
+
     # Download real data
     print("Downloading data from Yahoo Finance...")
     prices, returns = download_stock_data(TICKERS, args.years)
@@ -354,44 +360,21 @@ def main():
     )
 
     # Save scenarios
-    np.savetxt('scenarios.csv', scenarios, delimiter=',', fmt='%.10f')
-    print(f"Saved scenarios.csv: {args.n_scenarios} x 12")
+    np.savetxt(os.path.join(data_dir, 'scenarios.csv'), scenarios, delimiter=',', fmt='%.10f')
+    print(f"Saved data/scenarios.csv: {args.n_scenarios} x 12")
 
     # Save prices for visualization
-    prices.to_csv('historical_prices.csv')
-    print("Saved historical_prices.csv")
+    prices.to_csv(os.path.join(data_dir, 'historical_prices.csv'))
+    print("Saved data/historical_prices.csv")
 
     # Save returns for reference
-    returns.to_csv('historical_returns.csv')
-    print("Saved historical_returns.csv")
+    returns.to_csv(os.path.join(data_dir, 'historical_returns.csv'))
+    print("Saved data/historical_returns.csv")
 
     # Save constraint files
     print("Generating constraint files...")
-    save_constraint_files(mean_returns, args.n_scenarios)
-    print("Saved: A_d.csv, b_d.csv, c.csv, G.csv, h.csv, assets.csv")
-
-    # Save parameters
-    rho = 1.0 / ((1 - CVAR_ALPHA) * args.n_scenarios)
-    with open('parameters.txt', 'w') as f:
-        f.write("# Golden State Teachers' Pension Fund CVaR Benchmark\n")
-        f.write("# 8 ETF assets, 12D uncertainty\n")
-        f.write("#\n")
-        f.write("# CVaR formulation at 95% confidence level\n")
-        f.write("# rho = 1/((1-alpha)*N) where alpha=0.95, N=500\n")
-        f.write("#\n")
-        f.write("# Uncertainty:\n")
-        f.write("#   delta[0:8]  = asset returns\n")
-        f.write("#   delta[8]    = market stress indicator\n")
-        f.write("#   delta[9]    = credit spread shock\n")
-        f.write("#   delta[10]   = interest rate shock\n")
-        f.write("#   delta[11]   = volatility scaling\n")
-        f.write("#\n")
-        f.write("# Decision: portfolio weights w[0:8] + VaR threshold alpha\n")
-        f.write("\n")
-        f.write(f"rho = {rho:.6f}\n")
-        f.write("tau = 0\n")
-        f.write("confidence = 0.99\n")
-    print("Saved parameters.txt")
+    save_constraint_files(data_dir, mean_returns, args.n_scenarios)
+    print("Saved: data/A_d.csv, b_d.csv, c.csv, G.csv, h.csv, assets.csv")
 
     # Print summary statistics
     print()

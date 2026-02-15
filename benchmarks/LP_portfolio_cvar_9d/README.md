@@ -1,256 +1,69 @@
-# Golden State Teachers' Pension Fund: CVaR Portfolio Optimization
-
-## The Story
-
-**Golden State Teachers' Pension Fund (GSTPF)** manages $45 billion in retirement assets for over 300,000 current and former public school teachers across California. Chief Investment Officer Maria Santos faces a challenging mandate: generate stable returns to meet pension obligations while strictly limiting downside risk.
-
-The fund's board requires that in 95% of market scenarios, the portfolio's worst-case losses remain within acceptable bounds. After the 2008 financial crisis devastated similar funds, GSTPF adopted **Conditional Value-at-Risk (CVaR)** as their primary risk metric, focusing on the average loss in the worst 5% of scenarios rather than just point estimates.
-
-Maria's team must allocate across 8 asset classes while navigating multiple sources of uncertainty: market returns, credit spreads, interest rate movements, and correlation breakdowns during stress periods. The scenario approach provides data-driven risk bounds that satisfy the board's regulatory requirements.
-
-**This benchmark demonstrates CVaR optimization using the scenario approach framework.**
-
----
-
-## Background: What is CVaR?
-
-**Conditional Value-at-Risk (CVaR)**, also known as Expected Shortfall, measures the average loss in the worst (1-β)% of scenarios. Unlike Value-at-Risk (VaR) which only identifies a threshold, CVaR captures the severity of tail losses.
-
-For β = 95%:
-- **VaR(95%)**: "We're 95% confident losses won't exceed X"
-- **CVaR(95%)**: "When losses do exceed VaR, they average Y"
-
-CVaR is preferred by regulators because:
-1. It's a **coherent risk measure** (satisfies subadditivity)
-2. It captures **tail risk** severity, not just frequency
-3. It can be formulated as a **linear program**
-
-### The Rockafellar-Uryasev Formulation
-
-CVaR minimization can be expressed as:
-
-```
-minimize    α + (1/(1-β)N) * Σ max(0, loss_i - α)
-
-subject to  portfolio constraints
-```
-
-Where α is the VaR threshold (optimized jointly) and N is the number of scenarios.
-
----
+# CVaR Portfolio Optimization
 
 ## Problem Description
 
-Determine optimal portfolio weights for 8 ETF asset classes to minimize CVaR at the 95% confidence level, subject to pension fund regulatory constraints.
+A pension fund must allocate capital across 8 ETF asset classes to minimize tail risk (Conditional Value-at-Risk) while satisfying regulatory allocation constraints. CVaR at the 95% level measures the average loss in the worst 5% of market scenarios — a coherent risk measure that captures the severity of extreme losses, not just their probability.
 
-### Asset Classes (Real Data via yfinance)
+| Ticker | Asset | Class | Role |
+|--------|-------|-------|------|
+| SPY | S&P 500 ETF | US Equity | Core Growth |
+| AGG | US Aggregate Bond | Fixed Income | Stability |
+| VNQ | Real Estate (REIT) | Real Assets | Inflation Hedge |
+| GLD | Gold | Commodities | Crisis Hedge |
+| EFA | Intl Developed | Intl Equity | Diversification |
+| TLT | 20+ Year Treasury | Long Bonds | Duration |
+| VWO | Emerging Markets | Intl Equity | Growth |
+| LQD | Investment Grade Corp | Credit | Yield |
 
-| Ticker | Asset Class | Role | Characteristics |
-|--------|-------------|------|-----------------|
-| SPY | US Large Cap Equity | Growth | High return, high volatility |
-| AGG | US Aggregate Bonds | Stability | Low return, low volatility |
-| VNQ | Real Estate (REITs) | Income | Moderate return, high correlation to equity |
-| GLD | Gold | Hedge | Low correlation, inflation protection |
-| EFA | Developed Intl Equity | Diversification | Moderate return, currency exposure |
-| TLT | Long-Term Treasuries | Safety | Interest rate sensitive, flight-to-quality |
-| VWO | Emerging Markets | Growth | High return, high volatility |
-| LQD | Investment Grade Corp Bonds | Income | Credit spread sensitive |
+Position limits are 5-30% per asset. Equities (SPY+EFA+VWO) must be 30-60%, fixed income (AGG+TLT+LQD) at least 25%. Scenario data is bootstrapped from 5 years of real daily ETF returns downloaded via yfinance.
 
-### Regulatory Constraints
+## Formulation
 
-GSTPF operates under California Public Employees' Pension Reform Act guidelines:
+This is a Linear Program using the Rockafellar-Uryasev CVaR formulation. The decision variable is x = [w, alpha] in R^9, where w in R^8 are portfolio weights and alpha is the VaR threshold. The objective c = [0,...,0,1] minimizes alpha, with slack penalty rho = 1/((1-0.95)*500) = 0.04 so that alpha + rho*sum(zeta) approximates CVaR at the 95% level. No regularisation (tau = 0).
 
-- **Equity Exposure**: Between 30% and 60% (SPY + EFA + VWO)
-- **Fixed Income Minimum**: At least 25% in bonds (AGG + TLT + LQD)
-- **Position Limits**: Each position between 5% and 30%
-- **Full Investment**: All capital must be deployed (weights sum to 1)
+Each scenario delta_i in R^12 encodes 8 asset returns (delta[0:8]), a market stress indicator (delta[8]), credit spread shock (delta[9]), interest rate shock (delta[10]), and volatility scaling (delta[11]). The 4 scenario-dependent constraints capture: (1) portfolio loss with stress amplification, (2) credit spread impact on bonds, (3) interest rate duration exposure, and (4) equity correlation breakdown during crises. Hard constraints encode position limits, budget (weights sum to 1), equity allocation range, and fixed income minimum (23 rows total).
 
----
+## Results
 
-## Mathematical Formulation
+![CVaR Portfolio Results](results/portfolio_cvar.png)
 
-### Decision Variables
+The LP solves with N = 500 scenarios. The optimizer tilts heavily toward alternatives: GLD (24.1%) and VNQ (20.9%) dominate, while equities sit at the 30% regulatory minimum and fixed income at 25%. This defensive posture minimizes tail risk — the CVaR(95%) is only 1.52% daily loss. The LP had complexity k = 3, no degeneracy, and risk bounds [0.0000, 0.0278].
 
-```
-x = [w_SPY, w_AGG, w_VNQ, w_GLD, w_EFA, w_TLT, w_VWO, w_LQD, α]
-```
-
-Where w_i are portfolio weights and α is the VaR threshold.
-
-### CVaR Objective
+## Files
 
 ```
-minimize    α + ρ * ζ
-
-where ρ = 1/((1-0.95) * 500) = 0.04
+LP_portfolio_cvar_9d/
+├── README.md           This file
+├── parameters.txt      Solver parameters (rho, tau, confidence)
+├── generate.py         Download ETF data and generate scenarios (requires yfinance)
+├── run.py              Solve the LP and print results
+├── plot.py             Generate the paper figure
+├── data/
+│   ├── A_d.csv         Scenario-dependent constraint matrix (4 x 9)
+│   ├── b_d.csv         Scenario-dependent RHS vector (4 x 1, all zeros)
+│   ├── c.csv           Objective vector (9 x 1)
+│   ├── G.csv           Hard constraint matrix (23 x 9)
+│   ├── h.csv           Hard constraint RHS (23 x 1)
+│   ├── scenarios.csv   500 x 12 uncertainty scenarios
+│   ├── assets.csv      Asset metadata
+│   ├── historical_prices.csv   5-year ETF price history
+│   └── historical_returns.csv  Daily returns
+└── results/
+    ├── metrics.json    Solver output (weights, CVaR, risk bounds)
+    ├── solution.csv    Raw solution vector
+    ├── portfolio_cvar.png   Paper figure (300 dpi)
+    └── portfolio_cvar.pdf   Paper figure (vector)
 ```
 
-The auxiliary variable ζ captures max(0, loss - α) across scenarios.
-
-### Scenario Constraints (A_d matrix)
-
-For each scenario with uncertainty vector δ:
-
-**Row 1 - Main CVaR Loss Constraint:**
-```
--(1 + 0.3*δ[8]) * Σ δ[i]*w[i] - α ≤ ζ
-```
-The (1 + 0.3*δ[8]) term amplifies losses during high-volatility regimes.
-
-**Row 2 - Credit Spread Stress:**
-```
--δ[9] * (0.5*w_AGG + 0.3*w_TLT + 1.0*w_LQD) ≤ ζ
-```
-Corporate bonds (LQD) are most sensitive to credit spreads.
-
-**Row 3 - Interest Rate Shock:**
-```
--δ[10] * (0.3*w_AGG + 1.0*w_TLT + 0.5*w_LQD) ≤ ζ
-```
-Long-term treasuries (TLT) have highest duration exposure.
-
-**Row 4 - Equity Correlation Stress:**
-```
--(1 + δ[11]) * (δ[0]*w_SPY + δ[4]*w_EFA + δ[6]*w_VWO) ≤ ζ
-```
-During crises, equity correlations approach 1.0.
-
-### Hard Constraints (G, h matrices)
-
-```
-Position limits:           0.05 ≤ w[i] ≤ 0.30  for all i
-Equity allocation:         0.30 ≤ w_SPY + w_EFA + w_VWO ≤ 0.60
-Fixed income minimum:      w_AGG + w_TLT + w_LQD ≥ 0.25
-Budget constraint:         Σ w[i] = 1
-```
-
----
-
-## Uncertainty Characterization
-
-**12-dimensional uncertainty vector** δ:
-
-| Index | Parameter | Distribution | Source |
-|-------|-----------|--------------|--------|
-| δ[0:8] | Asset returns | Historical bootstrap | yfinance 5-year daily returns |
-| δ[8] | Stress indicator | Uniform(0, 1) | Volatility regime proxy |
-| δ[9] | Credit shock | Normal(0, 0.02) | Credit spread movement |
-| δ[10] | Rate shock | Normal(0, 0.01) | Interest rate change |
-| δ[11] | Correlation stress | Uniform(0, 0.5) | Crisis correlation increase |
-
-### Scenario Generation Process
-
-1. Download 5 years of daily returns for all 8 ETFs via yfinance
-2. Bootstrap sample returns from historical distribution
-3. Add Gaussian perturbations for regime changes
-4. Generate stress indicators from volatility percentiles
-5. Sample credit and rate shocks from calibrated distributions
-6. Create 500 scenarios for robust optimization
-
----
-
-## File Structure
-
-| File | Description | Dimensions |
-|------|-------------|------------|
-| `generate.py` | Downloads data, generates scenarios and constraint matrices | - |
-| `scenarios.csv` | 500 scenarios × 12 uncertainty parameters | 500 × 12 |
-| `A_d.csv` | Scenario-dependent constraint matrix with delta expressions | 4 × 9 |
-| `b_d.csv` | RHS of scenario constraints | 4 × 1 |
-| `c.csv` | Objective coefficients (CVaR: [0,...,0,1]) | 9 × 1 |
-| `G.csv` | Hard constraint matrix | 19 × 9 |
-| `h.csv` | Hard constraint RHS | 19 × 1 |
-| `parameters.txt` | rho=0.04, confidence=0.95 | - |
-| `test_and_visualize.py` | Solves problem, generates 12-panel visualization | - |
-
----
-
-## Running the Benchmark
-
-### Generate Data and Constraints
+## Usage
 
 ```bash
-cd benchmarks/portfolio_cvar
-python generate.py
+# Regenerate scenarios (requires yfinance and internet)
+python generate.py --n_scenarios 500 --seed 42
+
+# Solve the LP
+python run.py
+
+# Generate paper figure
+python plot.py
 ```
-
-This downloads real market data and creates all constraint files.
-
-### Solve and Visualize
-
-```bash
-python test_and_visualize.py
-```
-
-Produces:
-- Optimal portfolio weights
-- CVaR and VaR estimates
-- Risk bounds from scenario approach
-- 12-panel visualization saved to `cvar_portfolio_analysis.png`
-
----
-
-## Expected Results
-
-| Metric | Expected Range |
-|--------|----------------|
-| Complexity (k) | 4-8 support constraints |
-| CVaR (95%) | 1.5% - 3.0% |
-| VaR (95%) | 1.0% - 2.5% |
-| Risk bound (ε) | 0.01 - 0.05 at 95% confidence |
-| Equity allocation | Near 45-55% |
-| Fixed income | Near 30-40% |
-
-The scenario approach provides **finite-sample guarantees** on out-of-sample constraint satisfaction, critical for pension fund regulatory compliance.
-
----
-
-## Visualization Guide
-
-The 12-panel visualization includes:
-
-1. **Historical Prices**: 5-year normalized price history
-2. **Optimal Weights**: Bar chart of portfolio allocation
-3. **Return Distributions**: Box plots by asset class
-4. **Correlation Heatmap**: Asset return correlations
-5. **Stress Regime Distribution**: Histogram of δ[8]
-6. **CVaR Tail Analysis**: Worst 5% of portfolio returns
-7. **Portfolio vs Benchmark**: Cumulative return comparison
-8. **Drawdown Analysis**: Maximum drawdown over time
-9. **Asset Class Allocation**: Pie chart by category
-10. **Credit vs Rate Shocks**: Scatter plot of shock scenarios
-11. **Risk Bounds**: Scenario approach confidence intervals
-12. **Summary Statistics**: Key metrics table
-
----
-
-## Mathematical Details
-
-### Why ρ = 0.04?
-
-In the CVaR formulation:
-```
-CVaR_β = α + (1/(1-β)) * E[max(0, Loss - α)]
-```
-
-With N=500 scenarios and β=0.95:
-```
-ρ = 1/((1-0.95) * 500) = 1/(0.05 * 500) = 0.04
-```
-
-This ensures the objective correctly computes the CVaR.
-
-### Scenario Approach Risk Bounds
-
-Given:
-- N = 500 scenarios
-- d = 9 decision variables
-- k = complexity (active constraints)
-- β = 0.95 confidence level
-
-The scenario approach guarantees:
-```
-P(ε ≤ ε_upper) ≥ β
-```
-
-Where ε is the true probability of constraint violation.
