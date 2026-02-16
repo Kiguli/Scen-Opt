@@ -1,0 +1,19 @@
+# Economic Dispatch with Renewable Uncertainty (LP)
+# 3 generators: Gas1 (400MW), Gas2 (300MW), Coal (500MW)
+# 24-hour horizon, 200MW wind + 150MW solar
+#
+# Augmented formulation: x_aug = [P; zeta] in R^120
+#   P[0:72]     = generator dispatch schedule (3 generators x 24 hours)
+#   zeta[0:48]  = shared slack variables (power balance violations)
+#
+# Uncertainty (48D):
+#   delta[0:24]  = hourly wind generation (Weibull distribution)
+#   delta[24:48] = hourly solar generation (Beta distribution)
+#
+# Scenario constraints (48): power balance upper/lower bounds at each hour
+# Hard constraints (330): capacity limits, minimum output, ramp rates, zeta >= 0
+# Objective: min c_aug' x_aug  where c_aug = [gen_cost; rho * 1_48]
+
+rho = 100
+tau = 0
+confidence = 0.99

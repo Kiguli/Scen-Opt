@@ -1,0 +1,24 @@
+# Pension Fund CVaR Portfolio Optimization (LP)
+# 8 ETFs: SPY, AGG, VNQ, GLD, EFA, TLT, VWO, LQD
+#
+# Augmented formulation: x_aug = [w; alpha; zeta] in R^13
+#   w[0:8]    = portfolio weights
+#   alpha     = VaR threshold
+#   zeta[0:4] = shared slack variables (CVaR constraint violations)
+#
+# Uncertainty (12D):
+#   delta[0:8]  = asset returns (bootstrapped from Yahoo Finance)
+#   delta[8]    = market stress indicator
+#   delta[9]    = credit spread shock
+#   delta[10]   = interest rate shock
+#   delta[11]   = volatility scaling factor
+#
+# Scenario constraints (4): CVaR loss, credit spread, rate duration, equity correlation
+# Hard constraints (27): position limits 5-30%, sum(w)=1, equity 30-60%,
+#                         fixed income >= 25%, alpha bounds, zeta >= 0
+# Objective: min alpha + rho * sum(zeta)  (approximates CVaR at 95% level)
+# rho = 1/((1-0.95)*N) = 0.04 for N=500
+
+rho = 0.040000
+tau = 0
+confidence = 0.99

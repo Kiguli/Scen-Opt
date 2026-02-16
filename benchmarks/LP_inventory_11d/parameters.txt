@@ -1,0 +1,19 @@
+# Fresh Produce Distribution Benchmark (LP)
+# 5 products: Strawberries, Tomatoes, Lettuce, Avocados, Bell Peppers
+#
+# Augmented formulation: x_aug = [q; zeta] in R^11
+#   q[0:5]    = order quantities (cases per day)
+#   zeta[0:6] = shared slack variables (service + capacity violations)
+#
+# Uncertainty (15D):
+#   delta[0:5]   = yields (correlated, product-specific spoilage)
+#   delta[5:10]  = demands (correlated, regional patterns)
+#   delta[10:15] = space efficiency factors (packing variability)
+#
+# Scenario constraints (6): service level per product + warehouse capacity
+# Hard constraints (17): non-negativity, supplier limits, budget $12000, zeta >= 0
+# Objective: min c_aug' x_aug  where c_aug = [cost_per_case; rho * 1_6]
+
+rho = 100.0
+tau = 0
+confidence = 0.99
