@@ -18,10 +18,10 @@ function updateSDPButtons() {
             label = `\\(F_{${i}}(\\delta)\\)`;
         } else if (currentMatrix === 'sdp-F') {
             label = `\\(E_{${i}}\\)`;
-        } else if (currentMatrix === 'sdp2-A_a') {
-            label = `\\(G_{${i}}\\)`;
-        } else if (currentMatrix === 'sdp2-A_da') {
-            label = `\\(A_{${i}}(\\delta)\\)`;
+        // NOTE: A_da/A_a branches for SDP2 (standard form) were removed.
+        // The SDP modal infrastructure (openSDPModal, openSDPMatrixEditor, etc.) retains
+        // A_da/A_a/b_da/b_a handling as it is shared plumbing — now unreachable from the UI
+        // but harmless to keep.
         } else {
             label = `Matrix ${i}`;
         }
@@ -525,8 +525,6 @@ function solve() {
         formId = 'qp-form';
     } else if (activeTab === 'sdp-tab') {
         formId = 'sdp-form';
-    } else if (activeTab === 'sdp2-tab') {
-        formId = 'sdp2-form';
     }
 
     const activeForm = document.getElementById(formId);
@@ -952,36 +950,6 @@ function updateLatexText(tab) {
             latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}x_jF_j(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
             latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{n}x_jE_j \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
-        }
-    } else if (tab === 'sdp2') {
-        if (option === 'robust') {
-            latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX)';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0, \\quad j=1,\\ldots, \\mathfrak{m}';
-            latexText3 = 'X\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
-        } else if (option === 'robust-regularization') {
-            latexText1 = '\\displaystyle\\min_{X} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p}';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = 0, \\quad j=1,\\ldots, \\mathfrak{m}';
-            latexText3 = 'X\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
-        } else if (option === 'robust-relaxation') {
-            latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i, \\quad j=1,\\ldots, \\mathfrak{m}';
-            latexText3 = 'X\\geq 0, \\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-        } else if (option === 'robust-regularization-relaxation') {
-            latexText1 = '\\displaystyle\\min_{X,\\zeta_i} \\quad\\textbf{tr}(CX) + \\tau\\Vert X - \\bar{X}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = '\\textbf{tr}(A_j(\\delta_i)X) + b_j(\\delta_i) = \\zeta_i, \\quad j=1,\\ldots, \\mathfrak{m}';
-            latexText3 = 'X\\geq 0, \\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = '\\textbf{tr}(G_kX) + h_k = 0, \\quad k=1,\\ldots, \\mathfrak{n}';
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';

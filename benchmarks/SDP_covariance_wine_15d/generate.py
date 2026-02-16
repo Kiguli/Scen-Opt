@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate robust covariance estimation data from UCI Wine dataset for SDP1 formulation.
+Generate robust covariance estimation data from UCI Wine dataset for SDP formulation.
 
 Each scenario draws a random subsample of wines and computes its sample covariance.
 The SDP finds a PSD covariance matrix Sigma that dominates all subsample covariances:
   Sigma >= S_sub  (in PSD sense) for all subsamples
 
-SDP1 formulation (robust, rho=0):
+SDP formulation (robust, rho=0):
   15 scalar decision variables x (entries of 5x5 symmetric Sigma)
   Scenario LMI (5x5): S_sub(delta) - Sigma << 0  (covariance domination)
   Hard LMI (5x5): -Sigma << 0  (enforces Sigma >> 0)

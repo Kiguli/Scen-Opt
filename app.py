@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 from src.LP import solve_lp
 from src.QP import solve_qp
-from src.SDP import solve_sdp1, solve_sdp2
+from src.SDP import solve_sdp
 from src.Risk import quantify_risk
 from src.Miscellaneous import get_solvers
 import ast
@@ -109,14 +109,8 @@ def solve():
             raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
     if request.form.get('A_da'):
         A_da = generate_tensor_function(request.form.get('A_da'))
-    else:
-        if (active_tab == 'sdp2-tab'):
-            raise ValueError("\\(A_j(\\delta)\\) is ill-defined")
     if request.form.get('b_da'):
         b_da = generate_tensor_function(request.form.get('b_da'))
-    else:
-        if (active_tab == 'sdp2-tab'):
-            raise ValueError("\\(b_j(\\delta)\\) is ill-defined")
 
     A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
     b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
@@ -171,11 +165,8 @@ def solve():
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_qp(
                         scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp-tab':
-                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp1(
+                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp(
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
-                elif active_tab == 'sdp2-tab':
-                    optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp2(
-                        scenarios, C, A_da, b_da, A_a, b_a, tau, theta_bar, rho, p, solver)
 
                 risk = np.array(quantify_risk(complexity, N, conf))
                 e = "None"

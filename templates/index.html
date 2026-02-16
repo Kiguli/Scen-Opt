@@ -26,11 +26,7 @@
         </li>
         <li class="nav-item">
             <a class="nav-link" id="sdp-tab" data-toggle="tab" href="#sdp" role="tab" aria-controls="sdp"
-               aria-selected="false">SDP (inequality form)</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" id="sdp2-tab" data-toggle="tab" href="#sdp2" role="tab" aria-controls="sdp2"
-               aria-selected="false">SDP (standard form)</a>
+               aria-selected="false">SDP</a>
         </li>
     </ul>
     <div class="tab-content" id="myTabContent">
@@ -290,7 +286,7 @@
         <div class="tab-pane fade" id="sdp" role="tabpanel" aria-labelledby="sdp-tab">
             <div class="card mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">Semidefinite Program (Inequality Form)</h5>
+                    <h5 class="card-title">Semidefinite Program</h5>
                     <form id="sdp-form" action="/solve" method="post">
                         <div class="form-group">
                             <label for="sdp-options">Select Option:</label>
@@ -395,131 +391,6 @@
                             </div>
                         </div>
                         <input type="hidden" name="active_tab" value="sdp-tab">
-                    </form>
-                </div>
-            </div>
-        </div>
-        <div class="tab-pane fade" id="sdp2" role="tabpanel" aria-labelledby="sdp2-tab">
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h5 class="card-title">Semidefinite Program (Standard Form)</h5>
-                    <form id="sdp2-form" action="/solve" method="post">
-                        <div class="form-group">
-                            <label for="sdp2-options">Select Option:</label>
-                            <select id="sdp2-options" class="form-control" name="option"
-                                    onchange="updateLatexText('sdp2')">
-                                <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
-                                    Robust
-                                </option>
-                                <option value="robust-regularization" {% if request.form.option=='robust-regularization'
-                                        %}selected{% endif %}>Robust + Regularization
-                                </option>
-                                <option value="robust-relaxation" {% if request.form.option=='robust-relaxation'
-                                        %}selected{% endif %}>Robust + Relaxation
-                                </option>
-                                <option value="robust-regularization-relaxation" {% if
-                                        request.form.option=='robust-regularization-relaxation' %}selected{% endif %}>
-                                    Robust + Regularization + Relaxation
-                                </option>
-                            </select>
-                        </div>
-                        <div id="sdp2-latex" class="form-group">
-                            <div class="text-center">
-                                <p>\(\displaystyle\min_{X} \quad\textbf{tr}(CX)\)</p>
-                                <p>subject to:</p>
-                                <p>\(\textbf{tr}(A_j(\delta_i)X) + b_j(\delta_i) = 0, \quad j=1,\ldots,
-                                    \mathfrak{m}\)</p>
-                                <p>\(\textbf{tr}(G_kX) + h_k = 0, \quad k=1,\ldots, \mathfrak{n}\)</p>
-                                <p> where \(X\geq 0\) and \(i=1,\ldots,N.\)</p>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-C">\(C\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp2','C')">Edit \(C\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-C" name="C" data-shared="true"
-                                           value="{{ request.form.C }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-A_da">\(A_{1,\ldots,\mathfrak{m}}(\delta)\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'A_da')">Edit
-                                        \(A_{1,\ldots,\mathfrak{m}}(\delta)\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-A_da" name="A_da" data-shared="true"
-                                           value="{{ request.form.A_da }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-A_a">\(G_{1,\ldots,\mathfrak{n}}\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'A_a')">Edit \(G_{1,\ldots,\mathfrak{n}}\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-A_a" name="A_a" data-shared="true"
-                                           value="{{ request.form.A_a }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-b_da">\(b_{1,\ldots,\mathfrak{m}}(\delta)\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'b_da')">Edit
-                                        \(b_{1,\ldots,\mathfrak{m}}(\delta)\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-b_da" name="b_da" data-shared="true"
-                                           value="{{ request.form.b_da }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="sdp2-b_a">\(h_{1,\ldots,\mathfrak{n}}\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openSDPModal('sdp2', 'b_a')">Edit \(h_{1,\ldots,\mathfrak{n}}\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-b_a" name="b_a" data-shared="true"
-                                           value="{{ request.form.b_a }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group" id="sdp2-tau-group" style="display: none;">
-                                    <label for="sdp2-tau">\(\tau \geq 0\):</label>
-                                    <input type="text" id="sdp2-tau" class="form-control" name="tau" data-shared="true"
-                                           value="{{ request.form.tau }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group" id="sdp2-theta-bar-group" style="display: none;">
-                                    <label for="sdp2-Theta-bar">\(\bar{X}\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
-                                            onclick="openMatrixModal('sdp2','Theta-bar')">Edit \(\bar{X}\)
-                                    </button>
-                                    <input type="hidden" id="sdp2-Theta-bar" class="form-control" name="Theta-bar"
-                                           data-shared="true"
-                                           value="{{ request.form.theta_bar }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group" id="sdp2-p-group" style="display: none;">
-                                    <label for="sdp2-p">\(p\):</label>
-                                    <input type="text" id="sdp2-p" class="form-control" name="p" data-shared="true"
-                                           value="{{ request.form.p }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group" id="sdp2-rho-group" style="display: none;">
-                                    <label for="sdp2-rho">\(\rho \geq 0\):</label>
-                                    <input type="text" id="sdp2-rho" class="form-control" name="rho" data-shared="true"
-                                           value="{{ request.form.rho }}">
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="active_tab" value="sdp2-tab">
                     </form>
                 </div>
             </div>

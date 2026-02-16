@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Solve the Robust Covariance Estimation benchmark using the scenario approach SDP1 solver.
+Solve the Robust Covariance Estimation benchmark using the scenario approach SDP solver.
 
 Robust formulation (rho=0): the estimated covariance Sigma must dominate every
 subsample covariance in the PSD sense: Sigma >= S_sub for all scenarios.
 The scenario approach guarantees that with high probability, Sigma will also
 dominate the covariance of a new random subsample.
 
-SDP1 formulation:
+SDP formulation:
   Decision: x in R^15 (entries of 5x5 symmetric Sigma)
   Scenario LMI (5x5): S_sub(delta) - Sigma << 0  (covariance domination)
   Hard LMI (5x5): -Sigma << 0  (enforces Sigma >> 0)
@@ -24,7 +24,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.SDP import solve_sdp1
+from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
 
@@ -114,7 +114,7 @@ def main():
     print("Solving SDP with MOSEK...")
 
     try:
-        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
             deltas=scenarios,
             F_d=F_d,
             E=E,
@@ -132,7 +132,7 @@ def main():
         print(f"MOSEK failed: {e}")
         print("Attempting with SCS solver...")
         try:
-            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
                 deltas=scenarios,
                 F_d=F_d,
                 E=E,

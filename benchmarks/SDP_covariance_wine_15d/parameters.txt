@@ -1,4 +1,4 @@
-# Robust Covariance Estimation via SDP (SDP1)
+# Robust Covariance Estimation via SDP
 # UCI Wine dataset (5 features, 178 samples)
 #
 # Decision variables: 15 (entries of 5x5 symmetric Sigma)

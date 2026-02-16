@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate minimum enclosing ellipsoid data from Breast Cancer Wisconsin dataset for SDP1.
+Generate minimum enclosing ellipsoid data from Breast Cancer Wisconsin dataset for SDP.
 
 Each scenario is a randomly drawn data point. The SDP finds the tightest PSD shape
 matrix P such that all sampled points lie inside the ellipsoid {x : (x-c)'P(x-c) <= 1}.
 The scenario approach guarantees containment of future random data points.
 
-SDP1 formulation (robust, rho=0):
+SDP formulation (robust, rho=0):
   15 scalar decision variables x (entries of 5x5 symmetric P)
   Scenario LMI (1x1): (x_i - c)' P (x_i - c) - 1 <= 0  (point containment)
   Hard LMI (5x5): -P << 0  (enforces P >> 0)

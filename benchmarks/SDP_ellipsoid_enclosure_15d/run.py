@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Solve the Minimum Enclosing Ellipsoid benchmark using the scenario approach SDP1 solver.
+Solve the Minimum Enclosing Ellipsoid benchmark using the scenario approach SDP solver.
 
 Robust formulation (rho=0): every sampled data point must lie inside the ellipsoid.
 The scenario approach provides probabilistic guarantees that unseen data points
 from the same distribution will also be contained.
 
-SDP1 formulation:
+SDP formulation:
   Decision: x in R^15 (entries of 5x5 symmetric shape matrix P)
   Scenario LMI (1x1): (x_i - c)' P (x_i - c) - 1 <= 0  (point containment)
   Hard LMI (5x5): -P << 0  (enforces P >> 0)
@@ -23,7 +23,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.SDP import solve_sdp1
+from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
 
@@ -113,7 +113,7 @@ def main():
     print("Solving SDP with MOSEK...")
 
     try:
-        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
             deltas=scenarios,
             F_d=F_d,
             E=E,
@@ -131,7 +131,7 @@ def main():
         print(f"MOSEK failed: {e}")
         print("Attempting with SCS solver...")
         try:
-            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
                 deltas=scenarios,
                 F_d=F_d,
                 E=E,

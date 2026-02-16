@@ -16,7 +16,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.SDP import solve_sdp1
+from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
 
@@ -116,7 +116,7 @@ def main():
     print("Solving SDP with MOSEK...")
 
     try:
-        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+        x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
             deltas=scenarios, F_d=F_d, E=E_mats, c=c, Q=Q,
             tau=0.0, x_ref=np.zeros(n_vars), rho=0.0,
             norm_type=2, solver='MOSEK'
@@ -126,7 +126,7 @@ def main():
         print(f"MOSEK failed: {e}")
         print("Attempting with SCS solver...")
         try:
-            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp1(
+            x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
                 deltas=scenarios, F_d=F_d, E=E_mats, c=c, Q=Q,
                 tau=0.0, x_ref=np.zeros(n_vars), rho=0.0,
                 norm_type=2, solver='SCS'
