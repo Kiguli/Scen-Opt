@@ -1,0 +1,5 @@
+mean radius
+mean texture
+mean perimeter
+mean area
+mean smoothness

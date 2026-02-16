@@ -1,0 +1,11 @@
+# Minimum Enclosing Ellipsoid via SDP (SDP1)
+# Breast Cancer Wisconsin dataset (5 features, 569 samples)
+#
+# Decision variables: 15 (entries of 5x5 symmetric shape matrix P)
+# Scenario LMI: (x_i - c)' P (x_i - c) <= 1 (point containment)
+# Hard LMI: -P << 0 (P >> 0)
+# Objective: maximize trace(P) (tightest ellipsoid)
+#
+rho = 0.0
+tau = 0.0
+confidence = 0.99

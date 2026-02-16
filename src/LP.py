@@ -39,13 +39,13 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     # Variables
     x = cp.Variable((n, 1))
     if rho != 0:
-        zeta = cp.Variable((m_scenario, 1), nonneg=True)  # Adjust size based on constraints
+        zeta = cp.Variable(N, nonneg=True)  # One slack per scenario
     else:
-        zeta = np.zeros((m_scenario, 1))
+        zeta = np.zeros(N)
 
     constraints = []
     for i in range(N):
-        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta)  # Add each row separately
+        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta[i])  # Per-scenario slack
 
     if not (G.size == 0 or h.size == 0):
         non_risk_constraints = G @ x + h <= 0
@@ -68,9 +68,8 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
 
     if rho != 0.0:
         zeta_out = zeta.value
-        #print(zeta)
     else:
-        zeta_out = np.zeros((m_scenario, 1))
+        zeta_out = np.zeros(N)
 
     cost_out = prob.value
     print(cost_out)

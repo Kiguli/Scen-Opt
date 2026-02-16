@@ -1,0 +1,15 @@
+# Prostate LDR Brachytherapy Benchmark (TROTS Dataset)
+# Robust optimization under catheter placement uncertainty
+#
+# Data: TROTS Prostate_BT_01 (Breedveld et al.)
+# Beamlets: 50 (sampled from 55 channels)
+# Voxels: 100 (prostate: 20, rectum: 30, bladder: 30)
+# Prescribed dose: 145.0 Gy
+# Min tumor dose: 137.75 Gy (95% of prescription)
+# Max rectum dose: 100.0 Gy
+# Max bladder dose: 120.0 Gy
+# Catheter shifts: [-5, -2.5, 0, 2.5, 5] mm
+#
+rho = 1.0
+tau = 0.1
+confidence = 0.99

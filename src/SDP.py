@@ -47,9 +47,9 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
     # Variables
     x = cp.Variable(n)
     if rho != 0:
-        zeta = cp.Variable((m, m), nonneg=True)  # Slack variables
+        zeta = cp.Variable(N, nonneg=True)  # One slack per scenario
     else:
-        zeta = np.zeros((m, m))
+        zeta = np.zeros(N)
 
     constraints = []
     for i in range(N):
@@ -64,7 +64,7 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
                 xk = x[int(k)-1]
                 term = xk * Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
-        constraints.append(expr << zeta)
+        constraints.append(expr << zeta[i] * np.eye(m))  # Per-scenario scalar slack
 
     if (E):
         expr = None
@@ -98,9 +98,8 @@ def solve_sdp1(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, no
 
     if rho != 0.0:
         zeta_out = zeta.value
-        # print(s)
     else:
-        zeta_out = np.zeros((m, 1))
+        zeta_out = np.zeros(N)
 
     cost_out = prob.value
 
@@ -141,7 +140,6 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     assert np.all(np.linalg.eigvals(C) >= 0), "C needs to be positive semi-definite and symmetric"
     assert (C == C.T).all(), "C needs to be positive semi-definite and symmetric"
     n = C.shape[1]
-    m = C.shape[0]
 
     try:
         num_of_deltas = deltas.shape[1]  # Number of deltas per row
@@ -158,16 +156,15 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
     constraints.append(X >> 0)  # X must be positive semidefinite
 
     if rho != 0:
-        zeta = cp.Variable((m, 1), nonneg=True)  # Slack variables
+        zeta = cp.Variable(N, nonneg=True)  # One slack per scenario
     else:
-        zeta = np.zeros((m, 1))
+        zeta = np.zeros(N)
 
     for i in range(N):
         A_dict = A_d(deltas[i])  # Dictionary of submatrices for this delta
-        #TODO: assert A_d symmetric
         b_dict = b_d(deltas[i])  # Dictionary of sub-vectors for this delta
         for key in A_dict.keys():
-            constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == zeta)
+            constraints.append(cp.trace(A_dict[key] @ X) + b_dict[key] == zeta[i])  # Per-scenario slack
 
     if G and h:
         non_risk_constraints = []
@@ -175,7 +172,7 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
             #TODO: assert G symmetric
             non_risk_constraints += [cp.trace(G[key] @ X) + h[key] == 0]
 
-        constraints.append(non_risk_constraints)  # hard constraints
+        constraints.extend(non_risk_constraints)  # hard constraints
 
     else:
         non_risk_constraints = []
@@ -196,9 +193,8 @@ def solve_sdp2(deltas, C, A_d, b_d, G, h, tau=0.0, X_ref=np.array([0.0]), rho=0.
 
     if rho != 0.0:
         zeta_out = zeta.value
-        # print(zeta)
     else:
-        zeta_out = np.zeros((m, 1))
+        zeta_out = np.zeros(N)
 
     cost_out = prob.value
 

@@ -1,0 +1,11 @@
+# Robust Covariance Estimation via SDP (SDP1)
+# UCI Wine dataset (5 features, 178 samples)
+#
+# Decision variables: 15 (entries of 5x5 symmetric Sigma)
+# Scenario LMI: S_sub - Sigma << 0 (covariance domination)
+# Hard LMI: -Sigma << 0 (Sigma >> 0)
+# Subsample size: 50 wines per scenario
+#
+rho = 0.0
+tau = 0.0
+confidence = 0.99

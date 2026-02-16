@@ -136,23 +136,49 @@ def main():
     print(f"  rho = {rho}, tau = {tau}")
     print()
 
-    # ===== SOLVE USING solve_lp =====
-    print("Solving LP with MOSEK...")
+    # ===== REFORMULATE: embed shared slack into decision variable =====
+    # Equivalent to old shared-ζ relaxation: min c'x + ρ·1'ζ  s.t. A(δ_i)x + b(δ_i) ≤ ζ, ζ ≥ 0
+    # Augment x̃ = [x; ζ] and call solver with ρ=0.
+    A_d_orig = A_d
+    b_d_orig = b_d
+    m_scenario = A_d_orig(scenarios[0]).shape[0]
+
+    c_aug = np.vstack([c, rho * np.ones((m_scenario, 1))])
+
+    def A_d_aug(delta):
+        return np.hstack([A_d_orig(delta), -np.eye(m_scenario)])
+
+    def b_d_aug(delta):
+        return b_d_orig(delta)
+
+    if not (G.size == 0 or h.size == 0):
+        G_aug = np.block([
+            [G, np.zeros((G.shape[0], m_scenario))],
+            [np.zeros((m_scenario, n_vars)), -np.eye(m_scenario)]
+        ])
+        h_aug = np.vstack([h, np.zeros((m_scenario, 1))])
+    else:
+        G_aug = np.hstack([np.zeros((m_scenario, n_vars)), -np.eye(m_scenario)])
+        h_aug = np.zeros((m_scenario, 1))
+
+    print("Solving LP with MOSEK (shared-slack reformulation)...")
 
     try:
-        x, zeta, cost, N_out, k, constraints, degeneracy = solve_lp(
+        x_full, _, cost, N_out, k, constraints, degeneracy = solve_lp(
             deltas=scenarios,
-            A_d=A_d,
-            b_d=b_d,
-            G=G,
-            h=h,
-            c=c,
-            tau=tau,
-            x_ref=np.zeros((n_vars, 1)),
-            rho=rho,
+            A_d=A_d_aug,
+            b_d=b_d_aug,
+            G=G_aug,
+            h=h_aug,
+            c=c_aug,
+            tau=0.0,
+            x_ref=np.zeros((n_vars + m_scenario, 1)),
+            rho=0.0,
             norm_type=2,
             solver='MOSEK'
         )
+        x = x_full[:n_vars]
+        zeta = x_full[n_vars:]
         status = "SUCCESS"
         print(f"Solved successfully")
 

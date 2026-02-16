@@ -1,0 +1,9 @@
+n_tumor = 20
+n_oar1 = 30
+n_oar2 = 30
+n_normal = 20
+n_beamlets = 50
+dose_prescribed = 145.0
+dose_min_tumor = 137.75
+dose_max_oar1 = 100.0
+dose_max_oar2 = 120.0
