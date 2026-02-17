@@ -74,3 +74,39 @@ python run.py
 # Generate paper figure
 python plot.py
 ```
+
+## Web Interface Usage
+
+### One-Shot Method (Recommended)
+
+1. Start the web server: `python3 app.py`
+2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/benchmark.json`
+4. Upload `data/scenarios.csv` in the Scenarios box
+5. Set solver to **MOSEK** and press **Solve**
+
+### Manual Method
+
+1. Select the **SDP** tab, formulation: **Robust**
+2. Upload matrices using one of these approaches:
+
+   **Option A — One-shot LMI upload:**
+   - Click **Edit F(delta)** -> upload `data/benchmark.json` (the F_d section) as a JSON file, or enter the F_d dict
+   - Click **Edit E** -> upload the E matrices similarly
+
+   **Option B — Individual matrix entry:**
+   - Click **Edit F(delta)** -> set n = 6 -> click each F_i button and upload `data/F_0.csv` through `data/F_6.csv`
+   - Click **Edit E** -> set n = 6 -> click each E_i button and upload `data/E_0.csv` through `data/E_6.csv`
+
+3. Upload or enter:
+   - **c**: `data/c.csv`
+   - **Q**: `data/Q.csv`
+4. Set parameters: rho = 0.0, tau = 0, confidence (beta) = 0.01
+5. Upload `data/scenarios.csv` in the Scenarios box
+6. Press **Solve**
+
+### Expected Results
+
+- Optimal cost: 0.032858958578525506
+- Complexity k: 1
+- Risk bounds: [0.0, 0.01956555154745001]

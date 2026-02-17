@@ -114,4 +114,28 @@ with open(os.path.join(data_dir, 'feature_names.txt'), 'w') as f:
 cov_full = np.cov(data, rowvar=False)
 np.savetxt(os.path.join(data_dir, 'cov_full.csv'), cov_full, delimiter=',')
 
+# F_d expression CSVs for scenario LMI: (x_i - c)' P (x_i - c) - 1 <= 0
+# F_0: constant [[-1.0]]
+with open(os.path.join(data_dir, 'F_0.csv'), 'w') as f:
+    f.write('-1.0\n')
+
+# F_1 through F_15: quadratic form (delta - center)' B_k (delta - center)
+def float_str(v):
+    """Format float for expression string, wrapping negatives in parens."""
+    s = repr(float(v))
+    return f'({s})' if s.startswith('-') else s
+
+for k, (a, b) in enumerate(free_entries):
+    if a == b:
+        c_a = float_str(center[a])
+        expr = f'(delta[{a}] - {c_a})**2'
+    else:
+        c_a = float_str(center[a])
+        c_b = float_str(center[b])
+        expr = f'2*(delta[{a}] - {c_a})*(delta[{b}] - {c_b})'
+    with open(os.path.join(data_dir, f'F_{k+1}.csv'), 'w') as f:
+        f.write(expr + '\n')
+
 print(f"\nSaved data files to: {data_dir}")
+print(f"  F_0.csv: 1x1 constant matrix [[-1.0]]")
+print(f"  F_1.csv-F_{n_vars}.csv: 1x1 quadratic form expressions")

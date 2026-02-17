@@ -29,6 +29,30 @@ from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
 
 
+def parse_expression_matrix(filepath):
+    """Parse a CSV file containing expressions with delta[i] terms."""
+    with open(filepath, 'r') as f:
+        lines = f.read().strip().split('\n')
+
+    expr_matrix = []
+    for line in lines:
+        if line.strip():
+            row = [cell.strip() for cell in line.split(',')]
+            expr_matrix.append(row)
+
+    def matrix_function(delta):
+        result = []
+        for row in expr_matrix:
+            result_row = []
+            for expr in row:
+                val = eval(expr, {"delta": delta, "math": __import__('math')})
+                result_row.append(val)
+            result.append(result_row)
+        return np.array(result)
+
+    return matrix_function
+
+
 def load_matrix(filepath):
     with open(filepath, 'r') as f:
         lines = f.read().strip().split('\n')
@@ -70,7 +94,6 @@ def main():
     Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
     c = load_vector(os.path.join(data_dir, 'c.csv'))
     cov_full = load_matrix(os.path.join(data_dir, 'cov_full.csv'))
-    basis_matrices = np.load(os.path.join(data_dir, 'basis_matrices.npy'))
     free_entries = load_matrix(os.path.join(data_dir, 'free_entries.csv')).astype(int)
 
     with open(os.path.join(data_dir, 'feature_names.txt'), 'r') as f:
@@ -78,7 +101,12 @@ def main():
 
     n_vars = len(c)
     N = len(scenarios)
-    p = basis_matrices.shape[1]  # matrix dimension (5x5)
+    p = int(free_entries.max()) + 1  # matrix dimension (5x5)
+
+    # Load F_d expression matrices (scenario LMI)
+    F_funcs = {}
+    for i in range(n_vars + 1):
+        F_funcs[str(i)] = parse_expression_matrix(os.path.join(data_dir, f'F_{i}.csv'))
 
     # Load E matrices (hard constraint: -Sigma << 0)
     E = {}
@@ -96,19 +124,9 @@ def main():
     print(f"  Formulation: Robust (rho=0)")
     print()
 
-    # Build F_d function for scenario LMI
-    # Constraint: S_sub(delta) - Sigma << 0
-    # F_0(delta) = S_sub(delta), F_k = -B_k
+    # Build F_d function from expression CSVs
     def F_d(delta):
-        # Reconstruct S_sub from flattened upper triangle
-        S_sub = np.zeros((p, p))
-        for k, (i, j) in enumerate(free_entries):
-            S_sub[i, j] = delta[k]
-            S_sub[j, i] = delta[k]
-        result = {'0': S_sub}
-        for k in range(n_vars):
-            result[str(k + 1)] = -basis_matrices[k]
-        return result
+        return {key: func(delta) for key, func in F_funcs.items()}
 
     # Solve
     print("Solving SDP with MOSEK...")
@@ -153,10 +171,14 @@ def main():
     # Risk bounds
     eps_lower, eps_upper = quantify_risk(k, N, beta)
 
-    # Reconstruct Sigma from x
+    # Reconstruct Sigma from x using free_entries
     Sigma = np.zeros((p, p))
-    for idx in range(n_vars):
-        Sigma += x[idx] * basis_matrices[idx]
+    for idx, (i, j) in enumerate(free_entries):
+        if i == j:
+            Sigma[i, i] = x[idx]
+        else:
+            Sigma[i, j] = x[idx]
+            Sigma[j, i] = x[idx]
 
     # Check PSD
     eigvals = np.linalg.eigvalsh(Sigma)

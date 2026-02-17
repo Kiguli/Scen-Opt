@@ -71,3 +71,33 @@ python run.py
 # Generate paper figure
 python plot.py
 ```
+
+## Web Interface Usage
+
+### One-Shot Method (Recommended)
+
+1. Start the web server: `python3 app.py`
+2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
+3. Upload `./benchmark.json`
+4. Upload `./scenarios.csv` in the Scenarios box
+5. Set solver to **MOSEK** and press **Solve**
+
+### Manual Method
+
+1. Select the **QP** tab, formulation: **Robust + Regularization**
+2. Upload or enter each matrix:
+   - **A(delta)**: `./A_d.csv`
+   - **b(delta)**: `./b_d.csv`
+   - **c**: `./c.csv`
+   - **G**: `./G.csv`
+   - **h**: `./h.csv`
+   - **Q**: `./Q.csv`
+3. Set parameters: rho = 0, tau = 0.1, confidence (beta) = 0.01
+4. Upload `./scenarios.csv` in the Scenarios box
+5. Press **Solve**
+
+### Expected Results
+
+- Optimal cost: 4698.836116109508
+- Complexity k: 5
+- Risk bounds: [0.000348460115492344, 0.08596500383573583]

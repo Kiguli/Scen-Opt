@@ -960,3 +960,103 @@ function updateLatexText(tab) {
     document.getElementById(`${tab}-latex`).innerHTML = `<div class="text-center"><p>\\(${latexText1}\\)</p><p>subject to:</p><p>\\(${latexText4}\\)</p><p>\\(${latexText2}\\)</p><p>where \\(${latexText3}\\)</p></div>`;
     MathJax.typeset();
 }
+
+function loadProblemJSON() {
+    const fileInput = document.getElementById('detect-program-file');
+    const textarea = document.getElementById('detect-program-text');
+
+    function processJSON(content) {
+        let data;
+        try {
+            data = JSON.parse(content);
+        } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+            return;
+        }
+
+        const type = (data.type || '').toUpperCase();
+        if (!['LP', 'QP', 'SDP'].includes(type)) {
+            alert('JSON must include a "type" field with value "LP", "QP", or "SDP".');
+            return;
+        }
+
+        // Switch to the correct tab
+        const tabId = type.toLowerCase() + '-tab';
+        document.getElementById(tabId).click();
+
+        // Determine the formulation option based on rho/tau
+        const hasRho = data.rho !== undefined && parseFloat(data.rho) > 0;
+        const hasTau = data.tau !== undefined && parseFloat(data.tau) > 0;
+        let option = 'robust';
+        if (hasRho && hasTau) option = 'robust-regularization-relaxation';
+        else if (hasRho) option = 'robust-relaxation';
+        else if (hasTau) option = 'robust-regularization';
+
+        const prefix = type.toLowerCase();
+        const optionSelect = document.getElementById(prefix + '-options');
+        if (optionSelect) {
+            optionSelect.value = option;
+            updateLatexText(prefix);
+        }
+
+        if (type === 'LP' || type === 'QP') {
+            // Set matrices: A_d, b_d, G(=A), h(=b), c
+            if (data.A_d) document.getElementById(prefix + '-A_d').value = JSON.stringify(data.A_d);
+            if (data.b_d) document.getElementById(prefix + '-b_d').value = JSON.stringify(data.b_d);
+            if (data.G) document.getElementById(prefix + '-A').value = JSON.stringify(data.G);
+            if (data.h) document.getElementById(prefix + '-b').value = JSON.stringify(data.h);
+            if (data.c) document.getElementById(prefix + '-c').value = JSON.stringify(data.c);
+            if (type === 'QP' && data.Q) {
+                document.getElementById('qp-Q').value = JSON.stringify(data.Q);
+            }
+        } else if (type === 'SDP') {
+            // F_d is a dict of expression matrices keyed by "0","1",...
+            if (data.F_d) document.getElementById('sdp-F_d').value = JSON.stringify(data.F_d);
+            // E is the hard constraint dict
+            if (data.E) document.getElementById('sdp-F').value = JSON.stringify(data.E);
+            if (data.c) document.getElementById('sdp-c').value = JSON.stringify(data.c);
+            if (data.Q) document.getElementById('sdp-Q').value = JSON.stringify(data.Q);
+        }
+
+        // Set parameters
+        if (data.rho !== undefined) {
+            const rhoInput = document.getElementById(prefix + '-rho');
+            if (rhoInput) rhoInput.value = data.rho;
+        }
+        if (data.tau !== undefined) {
+            const tauInput = document.getElementById(prefix + '-tau');
+            if (tauInput) tauInput.value = data.tau;
+        }
+        if (data.confidence !== undefined) {
+            document.getElementById('confidence').value = data.confidence;
+        }
+        if (data.p !== undefined) {
+            const pInput = document.getElementById(prefix + '-p');
+            if (pInput) pInput.value = data.p;
+        }
+        if (data.x_ref !== undefined) {
+            const thetaInput = document.getElementById(prefix + '-theta-bar');
+            if (thetaInput) thetaInput.value = JSON.stringify(data.x_ref);
+        }
+
+        // Close modal and notify
+        $('#detectProgramModal').modal('hide');
+        // Clear inputs for next use
+        fileInput.value = '';
+        textarea.value = '';
+        alert(type + ' problem loaded successfully. Upload scenarios and press Solve.');
+    }
+
+    // File takes priority over textarea
+    if (fileInput && fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            processJSON(e.target.result);
+        };
+        reader.readAsText(fileInput.files[0]);
+    } else if (textarea.value.trim()) {
+        processJSON(textarea.value.trim());
+    } else {
+        alert('Please upload a JSON file or paste JSON content.');
+    }
+}

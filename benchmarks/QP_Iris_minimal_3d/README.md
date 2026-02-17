@@ -48,3 +48,31 @@ python run.py
 # Generate paper figure
 python plot.py
 ```
+
+## Web Interface Usage
+
+### One-Shot Method (Recommended)
+
+1. Start the web server: `python3 app.py`
+2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/benchmark.json`
+4. Upload `data/scenarios.csv` in the Scenarios box
+5. Set solver to **MOSEK** and press **Solve**
+
+### Manual Method
+
+1. Select the **QP** tab, formulation: **Robust**
+2. Upload or enter each matrix:
+   - **A(delta)**: `data/A_d.csv`
+   - **b(delta)**: `data/b_d.csv`
+   - **c**: `data/c.csv`
+   - **Q**: `data/Q.csv`
+3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
+4. Upload `data/scenarios.csv` in the Scenarios box
+5. Press **Solve**
+
+### Expected Results
+
+- Optimal cost: 1.176470626281622
+- Complexity k: 2
+- Risk bounds: [0.0, 0.14300981911209715]

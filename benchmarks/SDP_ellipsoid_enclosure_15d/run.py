@@ -28,6 +28,30 @@ from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
 
 
+def parse_expression_matrix(filepath):
+    """Parse a CSV file containing expressions with delta[i] terms."""
+    with open(filepath, 'r') as f:
+        lines = f.read().strip().split('\n')
+
+    expr_matrix = []
+    for line in lines:
+        if line.strip():
+            row = [cell.strip() for cell in line.split(',')]
+            expr_matrix.append(row)
+
+    def matrix_function(delta):
+        result = []
+        for row in expr_matrix:
+            result_row = []
+            for expr in row:
+                val = eval(expr, {"delta": delta, "math": __import__('math')})
+                result_row.append(val)
+            result.append(result_row)
+        return np.array(result)
+
+    return matrix_function
+
+
 def load_matrix(filepath):
     with open(filepath, 'r') as f:
         lines = f.read().strip().split('\n')
@@ -66,12 +90,10 @@ def main():
     # Load data
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
-    coeffs = load_matrix(os.path.join(data_dir, 'coeffs.csv'))
     center = load_vector(os.path.join(data_dir, 'center.csv'))
     Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
     c = load_vector(os.path.join(data_dir, 'c.csv'))
     data_all = load_matrix(os.path.join(data_dir, 'data_standardized.csv'))
-    basis_matrices = np.load(os.path.join(data_dir, 'basis_matrices.npy'))
     free_entries = load_matrix(os.path.join(data_dir, 'free_entries.csv')).astype(int)
 
     with open(os.path.join(data_dir, 'feature_names.txt'), 'r') as f:
@@ -79,7 +101,12 @@ def main():
 
     n_vars = len(c)
     N = len(scenarios)
-    p = basis_matrices.shape[1]  # matrix dimension (5x5)
+    p = int(free_entries.max()) + 1  # matrix dimension (5x5)
+
+    # Load F_d expression matrices (scenario LMI)
+    F_funcs = {}
+    for i in range(n_vars + 1):
+        F_funcs[str(i)] = parse_expression_matrix(os.path.join(data_dir, f'F_{i}.csv'))
 
     # Load E matrices (hard constraint: -P << 0)
     E = {}
@@ -97,17 +124,9 @@ def main():
     print(f"  Formulation: Robust (rho=0)")
     print()
 
-    # Build F_d function for scenario LMI
-    # Constraint: (x_i - c)' P (x_i - c) - 1 <= 0
-    # F_0(delta) = [[-1]], F_k(delta) = [[coeff_k(delta)]]
-    # where coeff_k = (delta - center)' B_k (delta - center)
+    # Build F_d function from expression CSVs
     def F_d(delta):
-        v = delta - center
-        result = {'0': np.array([[-1.0]])}
-        for k in range(n_vars):
-            coeff_k = v @ basis_matrices[k] @ v
-            result[str(k + 1)] = np.array([[coeff_k]])
-        return result
+        return {key: func(delta) for key, func in F_funcs.items()}
 
     # Solve
     print("Solving SDP with MOSEK...")
@@ -152,10 +171,14 @@ def main():
     # Risk bounds
     eps_lower, eps_upper = quantify_risk(k, N, beta)
 
-    # Reconstruct P from x
+    # Reconstruct P from x using free_entries
     P = np.zeros((p, p))
-    for idx in range(n_vars):
-        P += x[idx] * basis_matrices[idx]
+    for idx, (i, j) in enumerate(free_entries):
+        if i == j:
+            P[i, i] = x[idx]
+        else:
+            P[i, j] = x[idx]
+            P[j, i] = x[idx]
 
     # Check PSD and properties
     eigvals = np.linalg.eigvalsh(P)

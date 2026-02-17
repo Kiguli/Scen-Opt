@@ -14,6 +14,8 @@
 # Hard constraints (330): capacity limits, minimum output, ramp rates, zeta >= 0
 # Objective: min c_aug' x_aug  where c_aug = [gen_cost; rho * 1_48]
 
-rho = 100
+# Solver parameters (rho=0 because slack is embedded in augmented formulation)
+# The penalty coefficient rho=100 is embedded in c_aug, not passed to the solver
+rho = 0
 tau = 0
 confidence = 0.99

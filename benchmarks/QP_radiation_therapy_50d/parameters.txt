@@ -10,6 +10,6 @@
 # Max bladder dose: 120.0 Gy
 # Catheter shifts: [-5, -2.5, 0, 2.5, 5] mm
 #
-rho = 1.0
+rho = 0
 tau = 0.1
 confidence = 0.99

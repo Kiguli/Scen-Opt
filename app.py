@@ -34,8 +34,10 @@ def solve():
         elif filename.endswith('.csv') or filename.endswith('.txt'):
             content = file.read().decode('utf-8')
             scenarios = np.array([[float(cell) for cell in row.split(',')] for row in content.strip().split('\n')])
+        elif filename.endswith('.npy'):
+            scenarios = np.load(file)
         else:
-            raise TypeError("Unsupported file format. Please upload a JSON, CSV, or TXT file.")
+            raise TypeError("Unsupported file format. Please upload a JSON, CSV, TXT, or NPY file.")
 
     # creates a matrix function for A(delta) and b(delta)
     def generate_matrix_function(expr_matrix_str):

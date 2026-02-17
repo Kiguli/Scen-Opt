@@ -111,4 +111,24 @@ with open(os.path.join(data_dir, 'feature_names.txt'), 'w') as f:
     for name in feature_names:
         f.write(name + '\n')
 
+# F_d expression CSVs for scenario LMI: S_sub(delta) - Sigma << 0
+# F_0: S_sub(delta) — 5x5 symmetric with delta[k] at each entry
+entry_map = {}
+for k, (i, j) in enumerate(free_entries):
+    entry_map[(i, j)] = k
+    entry_map[(j, i)] = k  # symmetric
+
+with open(os.path.join(data_dir, 'F_0.csv'), 'w') as f:
+    for i in range(p):
+        row = []
+        for j in range(p):
+            row.append(f'delta[{entry_map[(i, j)]}]')
+        f.write(','.join(row) + '\n')
+
+# F_1 through F_15: -B_k (constant numeric matrices)
+for k in range(n_vars):
+    np.savetxt(os.path.join(data_dir, f'F_{k+1}.csv'), -basis_matrices[k], delimiter=',')
+
 print(f"\nSaved data files to: {data_dir}")
+print(f"  F_0.csv: 5x5 expression matrix (delta[k] entries)")
+print(f"  F_1.csv-F_{n_vars}.csv: 5x5 numeric matrices (-B_k)")
