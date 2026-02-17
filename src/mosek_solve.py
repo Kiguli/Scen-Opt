@@ -42,6 +42,11 @@ def _safe_tolist(v):
 
 
 def main():
+    # Redirect stdout → stderr so that stray print() calls from solver
+    # code (LP.py, Miscellaneous.py, etc.) don't corrupt the JSON output.
+    real_stdout = sys.stdout
+    sys.stdout = sys.stderr
+
     input_data = json.loads(sys.stdin.read())
     form = input_data["form"]
     scenarios_raw = input_data.get("scenarios")
@@ -180,12 +185,14 @@ def main():
         "risk_time": risk_time_list,
     }
 
-    json.dump(result, sys.stdout, default=_safe_tolist)
+    json.dump(result, real_stdout, default=_safe_tolist)
 
 
 if __name__ == "__main__":
+    real_stdout = sys.stdout
     try:
         main()
     except Exception as exc:
-        json.dump({"error": str(exc)}, sys.stdout)
+        sys.stdout = real_stdout
+        json.dump({"error": str(exc)}, real_stdout)
         sys.exit(0)
