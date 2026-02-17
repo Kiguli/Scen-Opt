@@ -3,7 +3,6 @@ import numpy as np
 import json as json_module
 import io
 import os
-import tempfile
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
@@ -102,25 +101,24 @@ def parse_file():
 
 @app.route('/solve', methods=['POST'])
 def solve():
-    # Handle MOSEK license upload (temporary, not stored)
+    # Handle MOSEK license upload: write to MOSEK's default search path
+    # (~/.mosek/mosek.lic) for the duration of the solve, then remove it.
+    # MOSEK 11 caches MOSEKLM_LICENSE_FILE at import time, so env vars set
+    # after import have no effect. Writing to the default path works instead.
     mosek_license_path = None
-    original_mosek_env = os.environ.get("MOSEKLM_LICENSE_FILE")
 
     try:
-        print(f"[MOSEK DEBUG] request.files keys: {list(request.files.keys())}")
-        print(f"[MOSEK DEBUG] solver: {request.form.get('solver')}")
         if 'mosek_license' in request.files and request.files['mosek_license'].filename != '':
             license_file = request.files['mosek_license']
-            fd, mosek_license_path = tempfile.mkstemp(suffix='.lic')
-            os.close(fd)
+            mosek_dir = os.path.expanduser('~/mosek')
+            os.makedirs(mosek_dir, exist_ok=True)
+            mosek_license_path = os.path.join(mosek_dir, 'mosek.lic')
             license_file.save(mosek_license_path)
             file_size = os.path.getsize(mosek_license_path)
-            print(f"MOSEK license saved to {mosek_license_path} ({file_size} bytes)")
             if file_size == 0:
                 os.unlink(mosek_license_path)
                 mosek_license_path = None
                 return jsonify({"error": "Uploaded MOSEK license file is empty."}), 400
-            os.environ["MOSEKLM_LICENSE_FILE"] = mosek_license_path
 
         return _solve_inner()
     finally:
@@ -129,10 +127,6 @@ def solve():
                 os.unlink(mosek_license_path)
             except OSError:
                 pass
-            if original_mosek_env is not None:
-                os.environ["MOSEKLM_LICENSE_FILE"] = original_mosek_env
-            elif "MOSEKLM_LICENSE_FILE" in os.environ:
-                del os.environ["MOSEKLM_LICENSE_FILE"]
 
 
 def _solve_inner():
