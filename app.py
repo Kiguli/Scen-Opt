@@ -109,10 +109,15 @@ def solve():
     try:
         if 'mosek_license' in request.files and request.files['mosek_license'].filename != '':
             license_file = request.files['mosek_license']
-            temp = tempfile.NamedTemporaryFile(delete=False, suffix='.lic')
-            temp.write(license_file.stream.read())
-            temp.close()
-            mosek_license_path = temp.name
+            fd, mosek_license_path = tempfile.mkstemp(suffix='.lic')
+            os.close(fd)
+            license_file.save(mosek_license_path)
+            file_size = os.path.getsize(mosek_license_path)
+            print(f"MOSEK license saved to {mosek_license_path} ({file_size} bytes)")
+            if file_size == 0:
+                os.unlink(mosek_license_path)
+                mosek_license_path = None
+                return jsonify({"error": "Uploaded MOSEK license file is empty."}), 400
             os.environ["MOSEKLM_LICENSE_FILE"] = mosek_license_path
 
         return _solve_inner()
