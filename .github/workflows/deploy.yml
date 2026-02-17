@@ -49,19 +49,13 @@ jobs:
             cd ..
             source venv/bin/activate
 
-            # Verify Python version
-            python_version=$(python -V 2>&1 | cut -d' ' -f2)
-            if [[ ! "$python_version" =~ ^3\.12\.7 ]]; then
-              echo "Warning: Python version is $python_version, expected 3.12.7"
-              echo "Please update Python using pyenv: pyenv install 3.12.7"
-            fi
-
             cd current
             pip install -r requirements.txt
           EOF
 
-      - name: Reload NGINX
+      - name: Restart services
         run: |
           ssh target << 'EOF'
+            sudo systemctl restart scen-o-con
             sudo nginx -s reload
           EOF
