@@ -293,6 +293,9 @@ def _solve_inner():
                 risk = np.array(quantify_risk(complexity, N, conf))
             except Exception as error:
                 e = str(error)
+                # Shorten verbose MOSEK license errors
+                if 'license' in e.lower() and ('mosek' in e.lower() or 'rescode' in e.lower()):
+                    e = "MOSEK license cannot be located or is incorrect."
                 print(e)
 
             # Append results for this run
