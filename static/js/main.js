@@ -547,8 +547,21 @@ function executeSolve(mosekLicenseFile) {
         method: activeForm.method,
         body: formData
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error('Server error (' + response.status + '): ' + text);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            // Check for top-level error from server
+            if (data.error) {
+                document.getElementById('result-box').innerHTML =
+                    '<div class="alert alert-danger"><strong>Error:</strong> ' + data.error + '</div>';
+                return;
+            }
             const resultBox = document.getElementById('result-box');
             resultBox.innerHTML = `
     <div class="result-container">
@@ -778,7 +791,11 @@ function executeSolve(mosekLicenseFile) {
             rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
             MathJax.typesetPromise();
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('result-box').innerHTML =
+                '<div class="alert alert-danger"><strong>Error:</strong> ' + error.message + '</div>';
+        });
 }
 
 function generateResultTable(data) {
@@ -1121,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial filter on page load
     filterSolvers();
 
-    // MOSEK license modal confirm button
+    // MOSEK license modal: upload & solve
     document.getElementById('mosek-license-confirm').addEventListener('click', function() {
         const fileInput = document.getElementById('mosek-license-file');
         if (!fileInput.files.length) {
@@ -1132,5 +1149,12 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#mosekLicenseModal').modal('hide');
         fileInput.value = '';
         executeSolve(licenseFile);
+    });
+
+    // MOSEK license modal: skip (local license installed)
+    document.getElementById('mosek-license-skip').addEventListener('click', function() {
+        document.getElementById('mosek-license-file').value = '';
+        $('#mosekLicenseModal').modal('hide');
+        executeSolve(null);
     });
 });

@@ -268,6 +268,16 @@ def _solve_inner():
             rho = rhos[i]
             solver = form_data.get('solver', 'CLARABEL')
 
+            optimal_x = np.array([])
+            optimal_s = np.array([])
+            optimal_cost = None
+            N = 0
+            complexity = []
+            constraints = []
+            degeneracy = False
+            risk = np.array([])
+            e = "None"
+
             try:
                 if active_tab == 'lp-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
@@ -281,31 +291,22 @@ def _solve_inner():
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
 
                 risk = np.array(quantify_risk(complexity, N, conf))
-                e = "None"
             except Exception as error:
                 e = str(error)
                 print(e)
-                e_list.append(e)
-                risk = np.array([])
-                N, complexity, constraints, degeneracy = 0, [], [], False
 
             # Append results for this run
-            try:
-                optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
-                optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
-                optimal_cost_list.append(optimal_cost)
-                N_list.append(N)
-                active_list.append(complexity)
-                e_list.append(e)
-                constraints_list.append(len(constraints))
-                risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
-                degeneracy_list.append(degeneracy)
-                rho_list.append(rho)
-                tau_list.append(tau)
-            except Exception as error:
-                print(error)
-                # e = str(error)
-                # e_list.append(e)
+            optimal_x_list.append(optimal_x.tolist() if hasattr(optimal_x, 'tolist') else optimal_x)
+            optimal_s_list.append(optimal_s.tolist() if hasattr(optimal_s, 'tolist') else optimal_s)
+            optimal_cost_list.append(optimal_cost)
+            N_list.append(N)
+            active_list.append(complexity)
+            e_list.append(e)
+            constraints_list.append(len(constraints))
+            risk_list.append(risk.tolist() if hasattr(risk, 'tolist') else risk)
+            degeneracy_list.append(degeneracy)
+            rho_list.append(rho)
+            tau_list.append(tau)
 
     print(tau_list)
     print(rho_list)
