@@ -6,12 +6,12 @@ The tool is implemented as a Python Flask web application with a modern JavaScri
 
 ## Installation
 
-**Prerequisites:** Python 3.10+ and pip.
+**Prerequisites:** Python 3.12+ and pip.
 
 ```bash
 # Clone the repository
-git clone https://github.com/Kiguli/ScenarioApproachTool.git
-cd ScenarioApproachTool
+git clone https://github.com/Kiguli/Scen-O-Con.git
+cd Scen-O-Con
 
 # Install dependencies
 pip install -r requirements.txt
@@ -174,7 +174,7 @@ python plot.py
 ## Project Structure
 
 ```
-ScenarioApproachTool/
+Scen-O-Con/
 ├── app.py                  Flask application (routes, matrix parsing, solver dispatch)
 ├── requirements.txt        Python dependencies
 ├── src/
