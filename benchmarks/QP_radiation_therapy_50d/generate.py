@@ -379,47 +379,49 @@ def build_scenario_constraints(D_nominal, scenarios, seed=42):
 
 
 def save_benchmark_files(scenarios, Q, c, G, h, a_d_rows, b_d_rows, D_nominal):
-    """Save all benchmark files to the current directory."""
+    """Save all benchmark files to the data/ directory."""
     benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(benchmark_dir, 'data')
+    os.makedirs(data_dir, exist_ok=True)
 
     pd.DataFrame(scenarios).to_csv(
-        os.path.join(benchmark_dir, 'scenarios.csv'), header=False, index=False)
+        os.path.join(data_dir, 'scenarios.csv'), header=False, index=False)
     print(f"Saved scenarios.csv: {len(scenarios)} scenarios")
 
-    with open(os.path.join(benchmark_dir, 'A_d.csv'), 'w') as f:
+    with open(os.path.join(data_dir, 'A_d.csv'), 'w') as f:
         for row in a_d_rows:
             f.write(row + '\n')
     print(f"Saved A_d.csv: {len(a_d_rows)} constraint rows")
 
-    with open(os.path.join(benchmark_dir, 'b_d.csv'), 'w') as f:
+    with open(os.path.join(data_dir, 'b_d.csv'), 'w') as f:
         for row in b_d_rows:
             f.write(row + '\n')
     print("Saved b_d.csv")
 
     pd.DataFrame(Q).to_csv(
-        os.path.join(benchmark_dir, 'Q.csv'), header=False, index=False)
+        os.path.join(data_dir, 'Q.csv'), header=False, index=False)
     print(f"Saved Q.csv: {Q.shape[0]}x{Q.shape[1]}")
 
-    with open(os.path.join(benchmark_dir, 'c.csv'), 'w') as f:
+    with open(os.path.join(data_dir, 'c.csv'), 'w') as f:
         for val in c:
             f.write(f'{val}\n')
     print("Saved c.csv")
 
     pd.DataFrame(G).to_csv(
-        os.path.join(benchmark_dir, 'G.csv'), header=False, index=False)
+        os.path.join(data_dir, 'G.csv'), header=False, index=False)
     print(f"Saved G.csv: {G.shape[0]} hard constraints")
 
-    with open(os.path.join(benchmark_dir, 'h.csv'), 'w') as f:
+    with open(os.path.join(data_dir, 'h.csv'), 'w') as f:
         for val in h:
             f.write(f'{val}\n')
     print("Saved h.csv")
 
     pd.DataFrame(D_nominal).to_csv(
-        os.path.join(benchmark_dir, 'D_nominal.csv'), header=False, index=False)
+        os.path.join(data_dir, 'D_nominal.csv'), header=False, index=False)
     print(f"Saved D_nominal.csv: {D_nominal.shape[0]}x{D_nominal.shape[1]}")
 
     # Anatomy info
-    with open(os.path.join(benchmark_dir, 'anatomy.txt'), 'w') as f:
+    with open(os.path.join(data_dir, 'anatomy.txt'), 'w') as f:
         f.write(f'n_tumor = {N_TUMOR}\n')
         f.write(f'n_oar1 = {N_OAR1}\n')
         f.write(f'n_oar2 = {N_OAR2}\n')

@@ -35,11 +35,13 @@ LP_growth_bound_12d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── A_d.csv         Scenario-dependent constraint matrix (3 × 12 expressions)
-│   ├── b_d.csv         Scenario-dependent RHS (3 × 1 expressions)
-│   ├── c.csv           Objective vector (12 × 1)
-│   ├── G.csv           Hard constraint matrix (6 × 12)
-│   ├── h.csv           Hard constraint RHS (6 × 1)
+│   ├── benchmark.json         One-shot program definition (JSON)
+│   ├── benchmark.mat          One-shot program definition (MATLAB)
+│   ├── A_d.csv                Scenario-dependent constraint matrix (3 × 12 expressions)
+│   ├── b_d.csv                Scenario-dependent RHS (3 × 1 expressions)
+│   ├── c.csv                  Objective vector (12 × 1)
+│   ├── G.csv                  Hard constraint matrix (6 × 12)
+│   ├── h.csv                  Hard constraint RHS (6 × 1)
 │   ├── growth_bound.csv       Full dataset (3127 × 6)
 │   └── growth_bound_mini.csv  Mini dataset (99 × 6)
 └── results/
@@ -69,7 +71,7 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json`
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

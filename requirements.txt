@@ -13,9 +13,11 @@ MarkupSafe==3.0.2
 ml_dtypes==0.5.3
 Mosek==11.0.28
 numpy==2.2.6
+openpyxl==3.1.5
 opt_einsum==3.4.0
 osqp==1.0.4
 pandas==2.3.2
+pyarrow==23.0.1
 pycparser==2.23
 python-dateutil==2.9.0.post0
 pytz==2025.2

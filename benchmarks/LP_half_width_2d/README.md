@@ -27,6 +27,8 @@ LP_half_width_2d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
+│   ├── benchmark.json  One-shot program definition (JSON)
+│   ├── benchmark.mat   One-shot program definition (MATLAB)
 │   ├── A_d.csv         Scenario-dependent constraint matrix (2 × 2)
 │   ├── b_d.csv         Scenario-dependent RHS (2 × 1)
 │   ├── c.csv           Objective vector (2 × 1)
@@ -54,7 +56,7 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json`
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

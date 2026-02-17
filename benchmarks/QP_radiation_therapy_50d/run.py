@@ -163,28 +163,29 @@ def main():
     print()
 
     benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(benchmark_dir, 'data')
     results_dir = os.path.join(benchmark_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
 
     # Load data
     print("Loading data files...")
-    scenarios = load_file(os.path.join(benchmark_dir, 'scenarios.csv'))
-    Q = load_matrix(os.path.join(benchmark_dir, 'Q.csv'))
-    c = load_vector(os.path.join(benchmark_dir, 'c.csv'))
-    G = load_matrix(os.path.join(benchmark_dir, 'G.csv'))
-    h = load_vector(os.path.join(benchmark_dir, 'h.csv'))
+    scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
+    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
+    c = load_vector(os.path.join(data_dir, 'c.csv'))
+    G = load_matrix(os.path.join(data_dir, 'G.csv'))
+    h = load_vector(os.path.join(data_dir, 'h.csv'))
 
     print("Compiling constraint expressions...")
-    A_d = compile_expression_matrix(os.path.join(benchmark_dir, 'A_d.csv'))
-    b_d = compile_expression_vector(os.path.join(benchmark_dir, 'b_d.csv'))
+    A_d = compile_expression_matrix(os.path.join(data_dir, 'A_d.csv'))
+    b_d = compile_expression_vector(os.path.join(data_dir, 'b_d.csv'))
 
     try:
-        D_nominal = load_matrix(os.path.join(benchmark_dir, 'D_nominal.csv'))
+        D_nominal = load_matrix(os.path.join(data_dir, 'D_nominal.csv'))
     except Exception:
         D_nominal = None
 
     params = load_parameters(os.path.join(benchmark_dir, 'parameters.txt'))
-    anatomy = load_anatomy(os.path.join(benchmark_dir, 'anatomy.txt'))
+    anatomy = load_anatomy(os.path.join(data_dir, 'anatomy.txt'))
 
     n_beamlets = int(anatomy.get('n_beamlets', c.shape[0]))
     n_tumor = int(anatomy.get('n_tumor', 20))

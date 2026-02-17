@@ -50,6 +50,8 @@ Quadratic_Stability_6d/
 ├── run.py              Solve the SDP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
+│   ├── benchmark.json         One-shot program definition (JSON)
+│   ├── benchmark.mat          One-shot program definition (MATLAB)
 │   ├── F_0.csv ... F_6.csv   Scenario-dependent LMI matrices
 │   ├── E_0.csv ... E_6.csv   Hard constraint (P >= 0.01*I) matrices
 │   ├── c.csv                  Linear objective vector (trace)
@@ -81,7 +83,7 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json`
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

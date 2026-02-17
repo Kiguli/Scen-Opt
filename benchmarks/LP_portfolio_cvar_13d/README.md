@@ -39,6 +39,8 @@ LP_portfolio_cvar_13d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
+│   ├── benchmark.json  One-shot program definition (JSON)
+│   ├── benchmark.mat   One-shot program definition (MATLAB)
 │   ├── A_d.csv         Augmented scenario constraint matrix (4 x 13)
 │   ├── b_d.csv         Scenario-dependent RHS vector (4 x 1, all zeros)
 │   ├── c.csv           Augmented objective vector (13 x 1, includes rho)
@@ -74,7 +76,7 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json`
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

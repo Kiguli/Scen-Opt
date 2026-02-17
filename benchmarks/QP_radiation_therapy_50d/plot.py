@@ -27,6 +27,7 @@ mpl.rcParams.update({
 
 # Load results
 benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(benchmark_dir, 'data')
 results_dir = os.path.join(benchmark_dir, 'results')
 
 with open(os.path.join(results_dir, 'metrics.json')) as f:
@@ -34,7 +35,7 @@ with open(os.path.join(results_dir, 'metrics.json')) as f:
 
 # Load anatomy
 anatomy = {}
-with open(os.path.join(benchmark_dir, 'anatomy.txt'), 'r') as f:
+with open(os.path.join(data_dir, 'anatomy.txt'), 'r') as f:
     for line in f:
         line = line.strip()
         if '=' in line and not line.startswith('#'):
@@ -57,7 +58,7 @@ beta = 1.0 - params.get('confidence', 0.99)
 
 # Load dose matrix and compute doses
 import pandas as pd
-D_nominal = pd.read_csv(os.path.join(benchmark_dir, 'D_nominal.csv'), header=None).values
+D_nominal = pd.read_csv(os.path.join(data_dir, 'D_nominal.csv'), header=None).values
 intensities = np.array(metrics['intensities'])
 doses = D_nominal @ intensities
 

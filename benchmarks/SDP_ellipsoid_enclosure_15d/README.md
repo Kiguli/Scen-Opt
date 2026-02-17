@@ -34,6 +34,8 @@ SDP_ellipsoid_enclosure_15d/
 ├── run.py              Solve the SDP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
+│   ├── benchmark.json             One-shot program definition (JSON)
+│   ├── benchmark.mat              One-shot program definition (MATLAB)
 │   ├── scenarios.csv              200 x 5 data point scenarios
 │   ├── basis_matrices.npy         15 x 5 x 5 symmetric basis matrices Pi_k
 │   ├── free_entries.csv           Mapping of free entries in symmetric matrix
@@ -71,7 +73,7 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json`
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

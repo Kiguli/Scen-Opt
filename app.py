@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
+import json as json_module
+import io
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
@@ -17,6 +19,85 @@ def index():
     return render_template('index.html', solvers=solvers, active_tab=active_tab)
 
 
+def parse_uploaded_file(file):
+    """Parse an uploaded file into a Python object (list/dict/array).
+    Supports JSON, CSV, TXT, NPY, NPZ, MAT, Excel, and Parquet."""
+    filename = file.filename.lower()
+    if filename.endswith('.json'):
+        return json_module.load(file)
+    elif filename.endswith('.csv') or filename.endswith('.txt') or filename.endswith('.tsv'):
+        content = file.read().decode('utf-8')
+        sep = '\t' if filename.endswith('.tsv') else ','
+        rows = content.strip().split('\n')
+        return [row.split(sep) for row in rows]
+    elif filename.endswith('.npy'):
+        return np.load(file).tolist()
+    elif filename.endswith('.npz'):
+        data = np.load(file)
+        keys = list(data.keys())
+        return data[keys[0]].tolist()
+    elif filename.endswith('.mat'):
+        import scipy.io
+        file_bytes = io.BytesIO(file.read())
+        mat = scipy.io.loadmat(file_bytes, squeeze_me=True)
+
+        def mat_to_python(v):
+            """Recursively convert MATLAB values to Python types."""
+            if isinstance(v, np.ndarray):
+                # Struct array → dict (strip 'M' prefix from keys used for numeric MATLAB field names)
+                if v.dtype.names is not None:
+                    sub = {}
+                    for name in v.dtype.names:
+                        key = name[1:] if name.startswith('M') and name[1:].isdigit() else name
+                        field = v[name].item() if v[name].ndim == 0 else v[name]
+                        sub[key] = mat_to_python(field)
+                    return sub
+                # 1D object arrays that were column vectors → restore to 2D
+                if v.ndim == 1 and v.dtype == object:
+                    return [[str(x)] for x in v.tolist()]
+                return v.tolist()
+            elif isinstance(v, (np.integer, np.floating)):
+                return float(v)
+            elif isinstance(v, str):
+                return v
+            return v
+
+        result = {}
+        for k, v in mat.items():
+            if k.startswith('__'):
+                continue
+            result[k] = mat_to_python(v)
+        return result
+    elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+        import pandas as pd
+        file_bytes = io.BytesIO(file.read())
+        df = pd.read_excel(file_bytes, header=None)
+        return df.values.tolist()
+    elif filename.endswith('.parquet'):
+        import pandas as pd
+        file_bytes = io.BytesIO(file.read())
+        df = pd.read_parquet(file_bytes)
+        return df.values.tolist()
+    else:
+        raise TypeError(f"Unsupported file format: {filename}")
+
+
+@app.route('/parse-file', methods=['POST'])
+def parse_file():
+    """Parse an uploaded file and return its content as JSON.
+    Used by frontend modals to handle binary file formats."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    try:
+        result = parse_uploaded_file(file)
+        return jsonify({"data": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
 @app.route('/solve', methods=['POST'])
 def solve():
     option = request.form.get('option')
@@ -26,18 +107,18 @@ def solve():
     scenarios = None
     if 'file' in request.files and request.files['file'].filename != '':
         file = request.files['file']
-        # Example: read CSV or TXT as text, JSON as dict/list
         filename = file.filename.lower()
-        if filename.endswith('.json'):
-            import json
-            scenarios = json.load(file)
-        elif filename.endswith('.csv') or filename.endswith('.txt'):
-            content = file.read().decode('utf-8')
-            scenarios = np.array([[float(cell) for cell in row.split(',')] for row in content.strip().split('\n')])
-        elif filename.endswith('.npy'):
-            scenarios = np.load(file)
+        parsed = parse_uploaded_file(file)
+        if isinstance(parsed, dict):
+            # MAT files return a dict; use the first array-like value
+            for k, v in parsed.items():
+                if isinstance(v, list) and len(v) > 0:
+                    scenarios = np.array(v, dtype=float)
+                    break
+            if scenarios is None:
+                raise TypeError("MAT file does not contain a recognizable scenario matrix.")
         else:
-            raise TypeError("Unsupported file format. Please upload a JSON, CSV, TXT, or NPY file.")
+            scenarios = np.array(parsed, dtype=float)
 
     # creates a matrix function for A(delta) and b(delta)
     def generate_matrix_function(expr_matrix_str):

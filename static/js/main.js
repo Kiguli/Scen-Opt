@@ -335,95 +335,103 @@ function updateMatrixGrid(values = null) {
     }
 }
 
-function saveCollection() {
-    // This function saves the current matrix collection for SDP problems.
-    // It supports uploading matrix data from a file (JSON, CSV, TXT) or saving manually entered data.
+function applyCollectionValues(fileValues) {
+    if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
+        window.sdpMatrixCollection1 = fileValues;
+        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection1);
+    } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
+        window.sdpMatrixCollection2 = fileValues;
+        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
+    } else if (currentMatrix.endsWith('b_da')) {
+        window.sdpMatrixCollection3 = fileValues;
+        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection3);
+    } else if (currentMatrix.endsWith('b_a')) {
+        window.sdpMatrixCollection4 = fileValues;
+        document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
+    }
+    $('#SDPModal').modal('hide');
+}
 
-    // Get the file input element for uploading matrix data
+function saveCollection() {
     const fileInput = document.getElementById('SDP-file');
 
-    // Check if a file is uploaded
     if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0]; // Get the uploaded file
-        const reader = new FileReader(); // Create a FileReader to read the file
+        const file = fileInput.files[0];
+        const ext = file.name.split('.').pop().toLowerCase();
 
-        // Define what happens when the file is read
-        reader.onload = function (event) {
-            try {
-                // Determine the file extension to handle different formats
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                let fileValues;
-
-                // Parse JSON files directly
-                if (fileExtension === 'json') {
-                    fileValues = JSON.parse(event.target.result);
-                    // Parse CSV or TXT files by splitting into rows and columns
-                } else if (fileExtension === 'csv' || fileExtension === 'txt') {
-                    const text = event.target.result;
-                    const rows = text.trim().split('\n');
-                    fileValues = rows.map(row => row.split(',').map(cell => cell.trim()));
-                } else {
-                    // Unsupported file type
-                    throw new Error('Unsupported file type');
+        if (BINARY_FORMATS.includes(ext)) {
+            parseBinaryFile(file)
+                .then(fileValues => applyCollectionValues(fileValues))
+                .catch(error => alert('Error parsing file: ' + error.message));
+        } else {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                try {
+                    const fileValues = parseTextFile(file, event.target.result);
+                    applyCollectionValues(fileValues);
+                } catch (error) {
+                    alert('Invalid file format: ' + error.message);
                 }
-
-                if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-                    // Overwrite the matrix collection for the selected tab with the uploaded data
-                    window.sdpMatrixCollection1 = fileValues;
-                } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-                    // Overwrite the matrix collection for the selected tab with the uploaded data
-                    window.sdpMatrixCollection2 = fileValues;
-                } else if (currentMatrix.endsWith('b_da')) {
-                    // Overwrite the matrix collection for the selected tab with the uploaded data
-                    window.sdpMatrixCollection3 = fileValues;
-                } else if (currentMatrix.endsWith('b_a')) {
-                    // Overwrite the matrix collection for the selected tab with the uploaded data
-                    window.sdpMatrixCollection4 = fileValues;
-                }
-
-
-            } catch (error) {
-                // Show an error if the file format is invalid
-                alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
-                return;
-            }
-            // Update the hidden input with the new matrix collection and close the modal
-
-
-            if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-                // Overwrite the matrix collection for the selected tab with the uploaded data
-                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection1);
-            } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-                // Overwrite the matrix collection for the selected tab with the uploaded data
-                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
-            } else if (currentMatrix.endsWith('b_da')) {
-                // Overwrite the matrix collection for the selected tab with the uploaded data
-                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection3);
-            } else if (currentMatrix.endsWith('b_a')) {
-                // Overwrite the matrix collection for the selected tab with the uploaded data
-                document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
-            }
-            $('#SDPModal').modal('hide');
-        };
-        // Start reading the file as text
-        reader.readAsText(file);
-    } else {
-        // If no file is uploaded, just save the current matrix collection to the hidden input and close the modal
-        if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-            // Overwrite the matrix collection for the selected tab with the uploaded data
-            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection1);
-        } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-            // Overwrite the matrix collection for the selected tab with the uploaded data
-            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
-        } else if (currentMatrix.endsWith('b_da')) {
-            // Overwrite the matrix collection for the selected tab with the uploaded data
-            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection3);
-        } else if (currentMatrix.endsWith('b_a')) {
-            // Overwrite the matrix collection for the selected tab with the uploaded data
-            document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
+            };
+            reader.readAsText(file);
         }
-        $('#SDPModal').modal('hide');
+    } else {
+        applyCollectionValues(undefined);
     }
+}
+
+// Text-based formats that can be parsed client-side
+const TEXT_FORMATS = ['json', 'csv', 'txt', 'tsv'];
+// Binary formats that need server-side parsing via /parse-file
+const BINARY_FORMATS = ['npy', 'npz', 'mat', 'xlsx', 'xls', 'parquet'];
+const ALL_MATRIX_FORMATS = TEXT_FORMATS.concat(BINARY_FORMATS);
+
+function parseTextFile(file, text) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'json') {
+        return JSON.parse(text);
+    } else if (ext === 'csv' || ext === 'txt') {
+        const rows = text.trim().split('\n');
+        return rows.map(row => row.split(',').map(cell => cell.trim()));
+    } else if (ext === 'tsv') {
+        const rows = text.trim().split('\n');
+        return rows.map(row => row.split('\t').map(cell => cell.trim()));
+    }
+    throw new Error('Unsupported text format: ' + ext);
+}
+
+function parseBinaryFile(file) {
+    // Send to backend for parsing
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch('/parse-file', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) throw new Error(result.error);
+            return result.data;
+        });
+}
+
+function applyMatrixFileValues(fileValues) {
+    // If editing from SDP modal, store in collection
+    if (window.sdpCurrentMatrixIndex !== null) {
+        if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
+            window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = fileValues;
+        } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
+            window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = fileValues;
+        } else if (currentMatrix.endsWith('b_da')) {
+            window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = fileValues;
+        } else if (currentMatrix.endsWith('b_a')) {
+            window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = fileValues;
+        }
+        window.sdpCurrentMatrixIndex = null;
+        $('#matrixModal').modal('hide');
+        document.getElementById('SDP-file').value = '';
+        return;
+    }
+    document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
+    $('#matrixModal').modal('hide');
+    document.getElementById('SDP-file').value = '';
 }
 
 function saveMatrix() {
@@ -436,52 +444,26 @@ function saveMatrix() {
     // Check if a file is uploaded
     if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        const reader = new FileReader();
+        const ext = file.name.split('.').pop().toLowerCase();
 
-        reader.onload = function (event) {
-            try {
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                let fileValues;
-
-                if (fileExtension === 'json') {
-                    fileValues = JSON.parse(event.target.result);
-                } else if (fileExtension === 'csv' || fileExtension === 'txt') {
-                    const text = event.target.result;
-                    const rows = text.trim().split('\n');
-                    fileValues = rows.map(row => row.split(','));
-                } else {
-                    throw new Error('Unsupported file type');
+        if (BINARY_FORMATS.includes(ext)) {
+            // Binary file — send to server for parsing
+            parseBinaryFile(file)
+                .then(fileValues => applyMatrixFileValues(fileValues))
+                .catch(error => alert('Error parsing file: ' + error.message));
+        } else {
+            // Text file — parse client-side
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                try {
+                    const fileValues = parseTextFile(file, event.target.result);
+                    applyMatrixFileValues(fileValues);
+                } catch (error) {
+                    alert('Invalid file format: ' + error.message);
                 }
-
-                // If editing from SDP modal, store in collection
-                if (window.sdpCurrentMatrixIndex !== null) {
-
-                    // If no file is uploaded, just save the current matrix collection to the hidden input and close the modal
-                    if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-                        window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = fileValues;
-                    } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-                        window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = fileValues;
-                    } else if (currentMatrix.endsWith('b_da')) {
-                        window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = fileValues;
-                    } else if (currentMatrix.endsWith('b_a')) {
-                        window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = fileValues;
-                    }
-
-                    window.sdpCurrentMatrixIndex = null;
-                    $('#matrixModal').modal('hide');
-                    document.getElementById('SDP-file').value = '';
-                    return;
-                }
-
-                document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
-                $('#matrixModal').modal('hide');
-                document.getElementById('SDP-file').value = '';
-            } catch (error) {
-                alert('Invalid file format. Please upload a valid JSON, CSV, or TXT file.');
-            }
-        };
-
-        reader.readAsText(file); // Read the file content
+            };
+            reader.readAsText(file);
+        }
     } else {
         // Save manually entered values
         Array.from(grid.querySelectorAll('input')).forEach(input => {
@@ -799,11 +781,14 @@ function generateResultTable(data) {
         return arr !== undefined ? arr : '';
     }
 
+    // Only show zeta row when relaxation is active
+    const hasRelaxation = rhos.some(r => r > 0);
+
     // Prepare rows
     const rows = [
         {label: 'Optimal Cost', values: data.optimal_cost},
         {label: `Optimal x`, values: data.optimal_x},
-        {label: 'Optimal &zeta;', values: data.optimal_s},
+        ...(hasRelaxation ? [{label: 'Optimal &zeta;', values: data.optimal_s}] : []),
         {label: 'Relaxation Parameters &rho;', values: data.rho_},
         {label: 'Regularization Parameters &tau;', values: data.tau_},
         {label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)', values: data.conf},
@@ -828,7 +813,7 @@ function generateResultTable(data) {
 
             if (row.label === 'Optimal x' || row.label === 'Optimal &zeta;') {
                 if (Array.isArray(val)) {
-                    val = val.join('<br>');
+                    val = `<div style="max-height:150px; overflow-y:auto;">${val.join('<br>')}</div>`;
                 }
             }
 
@@ -965,14 +950,7 @@ function loadProblemJSON() {
     const fileInput = document.getElementById('detect-program-file');
     const textarea = document.getElementById('detect-program-text');
 
-    function processJSON(content) {
-        let data;
-        try {
-            data = JSON.parse(content);
-        } catch (e) {
-            alert('Invalid JSON: ' + e.message);
-            return;
-        }
+    function processData(data) {
 
         const type = (data.type || '').toUpperCase();
         if (!['LP', 'QP', 'SDP'].includes(type)) {
@@ -1049,14 +1027,39 @@ function loadProblemJSON() {
 
     // File takes priority over textarea
     if (fileInput && fileInput.files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            processJSON(e.target.result);
-        };
-        reader.readAsText(fileInput.files[0]);
+        const file = fileInput.files[0];
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (ext === 'mat') {
+            // MAT file — send to server for parsing
+            parseBinaryFile(file)
+                .then(data => processData(data))
+                .catch(error => alert('Error parsing MAT file: ' + error.message));
+        } else {
+            // JSON file — parse client-side
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let data;
+                try {
+                    data = JSON.parse(e.target.result);
+                } catch (err) {
+                    alert('Invalid JSON: ' + err.message);
+                    return;
+                }
+                processData(data);
+            };
+            reader.readAsText(file);
+        }
     } else if (textarea.value.trim()) {
-        processJSON(textarea.value.trim());
+        let data;
+        try {
+            data = JSON.parse(textarea.value.trim());
+        } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+            return;
+        }
+        processData(data);
     } else {
-        alert('Please upload a JSON file or paste JSON content.');
+        alert('Please upload a file or paste JSON content.');
     }
 }

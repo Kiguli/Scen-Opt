@@ -43,15 +43,18 @@ QP_radiation_therapy_50d/
 ├── generate.py         Generate dose matrices and scenarios from TROTS data
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
-├── anatomy.txt         Structure definitions (voxel counts, dose limits)
-├── scenarios.csv       200 x 3 catheter shift scenarios
-├── A_d.csv             Affine constraint coefficients (80 x 50, with delta expressions)
-├── b_d.csv             Constraint RHS values (80 x 1, with delta expressions)
-├── Q.csv               Quadratic objective matrix (50 x 50)
-├── c.csv               Linear objective vector (50 x 1)
-├── G.csv               Hard constraint matrix (100 x 50)
-├── h.csv               Hard constraint RHS (100 x 1)
-├── D_nominal.csv       Nominal dose-influence matrix (100 x 50)
+├── data/
+│   ├── benchmark.json  One-shot program definition (JSON)
+│   ├── benchmark.mat   One-shot program definition (MATLAB)
+│   ├── anatomy.txt     Structure definitions (voxel counts, dose limits)
+│   ├── scenarios.csv   200 x 3 catheter shift scenarios
+│   ├── A_d.csv         Affine constraint coefficients (80 x 50, with delta expressions)
+│   ├── b_d.csv         Constraint RHS values (80 x 1, with delta expressions)
+│   ├── Q.csv           Quadratic objective matrix (50 x 50)
+│   ├── c.csv           Linear objective vector (50 x 1)
+│   ├── G.csv           Hard constraint matrix (100 x 50)
+│   ├── h.csv           Hard constraint RHS (100 x 1)
+│   └── D_nominal.csv   Nominal dose-influence matrix (100 x 50)
 └── results/
     ├── metrics.json                              Solver output (cost, risk bounds, doses)
     ├── solution.csv                              Raw solution vector
@@ -78,22 +81,22 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `./benchmark.json`
-4. Upload `./scenarios.csv` in the Scenarios box
+3. Upload `data/benchmark.json` or `data/benchmark.mat`
+4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **QP** tab, formulation: **Robust + Regularization**
 2. Upload or enter each matrix:
-   - **A(delta)**: `./A_d.csv`
-   - **b(delta)**: `./b_d.csv`
-   - **c**: `./c.csv`
-   - **G**: `./G.csv`
-   - **h**: `./h.csv`
-   - **Q**: `./Q.csv`
+   - **A(delta)**: `data/A_d.csv`
+   - **b(delta)**: `data/b_d.csv`
+   - **c**: `data/c.csv`
+   - **G**: `data/G.csv`
+   - **h**: `data/h.csv`
+   - **Q**: `data/Q.csv`
 3. Set parameters: rho = 0, tau = 0.1, confidence (beta) = 0.01
-4. Upload `./scenarios.csv` in the Scenarios box
+4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
