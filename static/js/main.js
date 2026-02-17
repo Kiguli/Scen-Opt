@@ -5,6 +5,58 @@ window.sdpMatrixCollection4 = {};
 window.sdpCurrentMatrixIndex = null;
 let currentMatrix = '';
 
+// --- MOSEK License Session Caching ---
+const MOSEK_LICENSE_KEY = 'mosek_license_content';
+const MOSEK_LICENSE_NAME_KEY = 'mosek_license_filename';
+
+function cacheMosekLicense(file) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                sessionStorage.setItem(MOSEK_LICENSE_KEY, e.target.result);
+                sessionStorage.setItem(MOSEK_LICENSE_NAME_KEY, file.name);
+                updateMosekCacheIndicator();
+            } catch (err) {
+                console.warn('Could not cache MOSEK license:', err);
+            }
+            resolve();
+        };
+        reader.onerror = function() {
+            console.warn('Could not read MOSEK license file for caching');
+            resolve();
+        };
+        reader.readAsText(file);
+    });
+}
+
+function getCachedMosekLicense() {
+    var content = sessionStorage.getItem(MOSEK_LICENSE_KEY);
+    var name = sessionStorage.getItem(MOSEK_LICENSE_NAME_KEY) || 'mosek.lic';
+    if (!content) return null;
+    var blob = new Blob([content], { type: 'application/octet-stream' });
+    return new File([blob], name, { type: 'application/octet-stream' });
+}
+
+function clearMosekLicenseCache() {
+    sessionStorage.removeItem(MOSEK_LICENSE_KEY);
+    sessionStorage.removeItem(MOSEK_LICENSE_NAME_KEY);
+    updateMosekCacheIndicator();
+}
+
+function updateMosekCacheIndicator() {
+    var indicator = document.getElementById('mosek-cache-indicator');
+    if (!indicator) return;
+    var content = sessionStorage.getItem(MOSEK_LICENSE_KEY);
+    if (content) {
+        var name = sessionStorage.getItem(MOSEK_LICENSE_NAME_KEY) || 'mosek.lic';
+        indicator.style.display = 'block';
+        indicator.querySelector('.mosek-cache-filename').textContent = name;
+    } else {
+        indicator.style.display = 'none';
+    }
+}
+
 function updateSDPButtons() {
     const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
     const container = document.getElementById('SDP-matrix-buttons');
@@ -501,8 +553,13 @@ function saveMatrix() {
 function solve() {
     const selectedSolver = document.getElementById('solver').value;
 
-    // If MOSEK is selected, show the license modal first
     if (selectedSolver === 'MOSEK') {
+        // Use cached license if available, otherwise show the modal
+        var cachedLicense = getCachedMosekLicense();
+        if (cachedLicense) {
+            executeSolve(cachedLicense);
+            return;
+        }
         $('#mosekLicenseModal').modal('show');
         return;
     }
@@ -831,6 +888,8 @@ function generateResultTable(data) {
         {label: 'Complexity (support list size)', values: data.active_con},
         {label: 'Number of data samples', values: data.num_deltas},
         {label: 'Total Constraints', values: data.tot_con},
+        {label: 'Optimization Time (s)', values: data.solve_time},
+        {label: 'Risk Computation Time (s)', values: data.risk_time},
         {label: '<i>Error</i>', values: data.errorcode}
     ];
 
@@ -1138,7 +1197,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial filter on page load
     filterSolvers();
 
-    // MOSEK license modal: upload & solve
+    // Initialize MOSEK cache indicator
+    updateMosekCacheIndicator();
+
+    // MOSEK license modal: upload & solve (cache for future use)
     document.getElementById('mosek-license-confirm').addEventListener('click', function() {
         const fileInput = document.getElementById('mosek-license-file');
         if (!fileInput.files.length) {
@@ -1148,7 +1210,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const licenseFile = fileInput.files[0];
         $('#mosekLicenseModal').modal('hide');
         fileInput.value = '';
-        executeSolve(licenseFile);
+        cacheMosekLicense(licenseFile).then(function() {
+            executeSolve(licenseFile);
+        });
     });
 
     // MOSEK license modal: skip (local license installed)

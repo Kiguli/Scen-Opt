@@ -418,6 +418,15 @@
                                         {% if solver_name == request.form.solver %}selected{% endif %}>{{ solver_name }}</option>
                                 {% endfor %}
                             </select>
+                            <div id="mosek-cache-indicator" style="display: none; margin-top: 6px;">
+                                <span class="badge badge-info">
+                                    <span class="mosek-cache-filename"></span> cached
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ml-1"
+                                        onclick="clearMosekLicenseCache()" title="Clear cached MOSEK license">
+                                    &times; Clear
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -653,8 +662,9 @@ save('benchmark.mat', 'type', 'A_d', 'b_d', 'c', ...
             </div>
             <div class="modal-body">
                 <p>MOSEK requires a license file to operate. Upload your
-                   <code>mosek.lic</code> file below. The file is used only for this
-                   solve request and is <strong>not</strong> stored on the server.</p>
+                   <code>mosek.lic</code> file below. The file is <strong>not</strong>
+                   stored on the server. Your browser will remember the license
+                   for this session so you won't need to upload it again.</p>
                 <input type="file" id="mosek-license-file" class="form-control-file" accept=".lic">
                 <hr>
                 <details>
@@ -686,6 +696,6 @@ save('benchmark.mat', 'type', 'A_d', 'b_d', 'c', ...
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}?v=3" defer></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v=5" defer></script>
 </body>
 </html>

@@ -3,12 +3,17 @@ import numpy as np
 import json as json_module
 import io
 import os
+import shutil
+import subprocess
+import sys
+import time
+import uuid
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
 from src.Risk import quantify_risk
 from src.Miscellaneous import get_solvers
-import ast
+from src.parsing import generate_matrix_function, generate_matrix, generate_tensor_function, generate_tensor
 
 app = Flask(__name__)
 
@@ -101,32 +106,73 @@ def parse_file():
 
 @app.route('/solve', methods=['POST'])
 def solve():
-    # Handle MOSEK license upload: write to MOSEK's default search path
-    # (~/.mosek/mosek.lic) for the duration of the solve, then remove it.
-    # MOSEK 11 caches MOSEKLM_LICENSE_FILE at import time, so env vars set
-    # after import have no effect. Writing to the default path works instead.
-    mosek_license_path = None
+    # Check if a MOSEK license was uploaded — if so, run the solve in a
+    # fresh subprocess so that MOSEKLM_LICENSE_FILE is read before MOSEK
+    # is imported.  Each request gets a UUID-based /tmp directory so
+    # concurrent users never conflict.
+    has_license = (
+        'mosek_license' in request.files
+        and request.files['mosek_license'].filename != ''
+    )
+
+    if not has_license:
+        return _solve_inner()
+
+    # ---- MOSEK subprocess path ----
+    request_id = str(uuid.uuid4())
+    tmp_dir = os.path.join('/tmp', f'mosek_{request_id}')
+    os.makedirs(tmp_dir, exist_ok=True)
+    license_path = os.path.join(tmp_dir, 'mosek.lic')
 
     try:
-        if 'mosek_license' in request.files and request.files['mosek_license'].filename != '':
-            license_file = request.files['mosek_license']
-            mosek_dir = os.path.expanduser('~/mosek')
-            os.makedirs(mosek_dir, exist_ok=True)
-            mosek_license_path = os.path.join(mosek_dir, 'mosek.lic')
-            license_file.save(mosek_license_path)
-            file_size = os.path.getsize(mosek_license_path)
-            if file_size == 0:
-                os.unlink(mosek_license_path)
-                mosek_license_path = None
-                return jsonify({"error": "Uploaded MOSEK license file is empty."}), 400
+        # Save uploaded license to the ephemeral /tmp directory
+        request.files['mosek_license'].save(license_path)
+        if os.path.getsize(license_path) == 0:
+            return jsonify({"error": "Uploaded MOSEK license file is empty."}), 400
 
-        return _solve_inner()
+        # Parse scenario file (if any) in-process so we can serialise it
+        scenarios_list = None
+        if 'file' in request.files and request.files['file'].filename != '':
+            parsed = parse_uploaded_file(request.files['file'])
+            if isinstance(parsed, dict):
+                for v in parsed.values():
+                    if isinstance(v, list) and len(v) > 0:
+                        scenarios_list = np.array(v, dtype=float).tolist()
+                        break
+                if scenarios_list is None:
+                    return jsonify({"error": "MAT file does not contain a recognizable scenario matrix."}), 400
+            else:
+                scenarios_list = np.array(parsed, dtype=float).tolist()
+
+        # Build JSON payload for the subprocess
+        payload = json_module.dumps({
+            "form": request.form.to_dict(),
+            "scenarios": scenarios_list,
+        })
+
+        # Run the solve in a fresh Python process with the license set
+        proc = subprocess.run(
+            [sys.executable, '-m', 'src.mosek_solve', license_path],
+            input=payload,
+            capture_output=True,
+            text=True,
+            timeout=7200,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+
+        if proc.returncode != 0:
+            stderr = proc.stderr.strip()
+            return jsonify({"error": f"MOSEK subprocess failed: {stderr}"}), 500
+
+        result = json_module.loads(proc.stdout)
+        return jsonify(result)
+
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "MOSEK solve timed out."}), 504
+    except json_module.JSONDecodeError:
+        return jsonify({"error": "MOSEK subprocess returned invalid output."}), 500
     finally:
-        if mosek_license_path:
-            try:
-                os.unlink(mosek_license_path)
-            except OSError:
-                pass
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def _solve_inner():
@@ -149,61 +195,6 @@ def _solve_inner():
                 raise TypeError("MAT file does not contain a recognizable scenario matrix.")
         else:
             scenarios = np.array(parsed, dtype=float)
-
-    # creates a matrix function for A(delta) and b(delta)
-    def generate_matrix_function(expr_matrix_str):
-        # Convert string to list of lists
-        expr_matrix = ast.literal_eval(expr_matrix_str)
-
-        def matrix_function(delta):
-            # Evaluate each expression in the matrix
-            return np.array([
-                [eval(expr, {"delta": delta, "math": __import__('math')}) for expr in row]
-                # TODO: danger using eval on a server! Delete all characters that are not numbers, [,], or "delta"??
-                for row in expr_matrix
-            ])
-
-        return matrix_function
-
-    # creates a matrix from the values of Q
-    def generate_matrix(expr_matrix_str):
-        # Convert string to list of lists
-        expr_matrix = ast.literal_eval(expr_matrix_str)
-
-        # Evaluate each expression in the matrix and return as a numpy array
-        return np.array([
-            [eval(expr, {"math": __import__('math')}) for expr in row]
-            # TODO: danger using eval on a server!
-            for row in expr_matrix
-        ])
-
-        # creates a matrix function for A(delta) and b(delta)
-
-    def generate_tensor_function(expr_matrix_str):
-        # Parse the string to a dictionary of submatrices
-        expr_dict = ast.literal_eval(expr_matrix_str)
-
-        def tensor_function(delta):
-            # Evaluate each submatrix for the given delta
-            return {
-                key: np.array([
-                    [eval(expr, {"delta": delta, "math": __import__('math')}) for expr in row]
-                    for row in expr_dict[key]
-                ])
-                for key in expr_dict
-            }
-
-        return tensor_function
-
-    def generate_tensor(expr_matrix_str):
-        # Parse the string to a dictionary
-        expr_dict = ast.literal_eval(expr_matrix_str)
-        # Evaluate each submatrix and store as numpy array
-        tensor = {
-            key: np.array([[float(cell) for cell in row] for row in expr_dict[key]])
-            for key in expr_dict
-        }
-        return tensor
 
     if request.form.get('A_d'):
         A_d = generate_matrix_function(request.form.get('A_d'))
@@ -259,6 +250,8 @@ def _solve_inner():
     degeneracy_list = []
     rho_list = []
     tau_list = []
+    solve_time_list = []
+    risk_time_list = []
 
     # update confidence based on number of tau and rho
     conf = conf / (len(taus) * len(rhos))
@@ -278,8 +271,11 @@ def _solve_inner():
             degeneracy = False
             risk = np.array([])
             e = "None"
+            solve_time = 0.0
+            risk_time = 0.0
 
             try:
+                t0 = time.perf_counter()
                 if active_tab == 'lp-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
                         scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
@@ -290,8 +286,11 @@ def _solve_inner():
                 elif active_tab == 'sdp-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp(
                         scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
+                solve_time = time.perf_counter() - t0
 
+                t1 = time.perf_counter()
                 risk = np.array(quantify_risk(complexity, N, conf))
+                risk_time = time.perf_counter() - t1
             except Exception as error:
                 e = str(error)
                 # Shorten verbose MOSEK license errors
@@ -311,6 +310,8 @@ def _solve_inner():
             degeneracy_list.append(degeneracy)
             rho_list.append(rho)
             tau_list.append(tau)
+            solve_time_list.append(round(solve_time, 4))
+            risk_time_list.append(round(risk_time, 4))
 
     print(tau_list)
     print(rho_list)
@@ -329,7 +330,9 @@ def _solve_inner():
         "tau_": tau_list,
         "rho_": rho_list,
         "errorcode": e_list,
-        "degeneracy": degeneracy_list
+        "degeneracy": degeneracy_list,
+        "solve_time": solve_time_list,
+        "risk_time": risk_time_list
     }
 
     print(result)
