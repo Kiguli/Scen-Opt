@@ -499,6 +499,18 @@ function saveMatrix() {
 }
 
 function solve() {
+    const selectedSolver = document.getElementById('solver').value;
+
+    // If MOSEK is selected, show the license modal first
+    if (selectedSolver === 'MOSEK') {
+        $('#mosekLicenseModal').modal('show');
+        return;
+    }
+
+    executeSolve(null);
+}
+
+function executeSolve(mosekLicenseFile) {
     const activeTab = document.querySelector('.nav-link.active').id;
     let formId;
     if (activeTab === 'lp-tab') {
@@ -522,6 +534,11 @@ function solve() {
     const fileInput = document.getElementById('file');
     if (fileInput && fileInput.files.length > 0) {
         formData.append('file', fileInput.files[0]);
+    }
+
+    // Append MOSEK license if provided
+    if (mosekLicenseFile) {
+        formData.append('mosek_license', mosekLicenseFile);
     }
 
     document.getElementById('result-box').innerHTML = '<p>Solve button pressed, processing results...</p>';
@@ -1063,3 +1080,57 @@ function loadProblemJSON() {
         alert('Please upload a file or paste JSON content.');
     }
 }
+
+function filterSolvers() {
+    const activeTab = document.querySelector('.nav-link.active');
+    if (!activeTab) return;
+
+    const tabTypeMap = {'lp-tab': 'LP', 'qp-tab': 'QP', 'sdp-tab': 'SDP'};
+    const problemType = tabTypeMap[activeTab.id];
+    if (!problemType) return;
+
+    const solverSelect = document.getElementById('solver');
+    const currentValue = solverSelect.value;
+    let firstVisible = null;
+
+    Array.from(solverSelect.options).forEach(option => {
+        const types = (option.getAttribute('data-types') || '').split(',');
+        if (types.includes(problemType)) {
+            option.style.display = '';
+            option.disabled = false;
+            if (!firstVisible) firstVisible = option.value;
+        } else {
+            option.style.display = 'none';
+            option.disabled = true;
+        }
+    });
+
+    // If current selection is now hidden, switch to first visible solver
+    const currentOption = solverSelect.querySelector('option[value="' + currentValue + '"]');
+    if (currentOption && currentOption.disabled && firstVisible) {
+        solverSelect.value = firstVisible;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter solvers on tab change
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
+        filterSolvers();
+    });
+
+    // Initial filter on page load
+    filterSolvers();
+
+    // MOSEK license modal confirm button
+    document.getElementById('mosek-license-confirm').addEventListener('click', function() {
+        const fileInput = document.getElementById('mosek-license-file');
+        if (!fileInput.files.length) {
+            alert('Please select a MOSEK license file.');
+            return;
+        }
+        const licenseFile = fileInput.files[0];
+        $('#mosekLicenseModal').modal('hide');
+        fileInput.value = '';
+        executeSolve(licenseFile);
+    });
+});

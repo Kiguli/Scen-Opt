@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 import json as json_module
 import io
+import os
+import tempfile
 from src.LP import solve_lp
 from src.QP import solve_qp
 from src.SDP import solve_sdp
@@ -100,6 +102,33 @@ def parse_file():
 
 @app.route('/solve', methods=['POST'])
 def solve():
+    # Handle MOSEK license upload (temporary, not stored)
+    mosek_license_path = None
+    original_mosek_env = os.environ.get("MOSEKLM_LICENSE_FILE")
+
+    try:
+        if 'mosek_license' in request.files and request.files['mosek_license'].filename != '':
+            license_file = request.files['mosek_license']
+            temp = tempfile.NamedTemporaryFile(delete=False, suffix='.lic')
+            temp.write(license_file.stream.read())
+            temp.close()
+            mosek_license_path = temp.name
+            os.environ["MOSEKLM_LICENSE_FILE"] = mosek_license_path
+
+        return _solve_inner()
+    finally:
+        if mosek_license_path:
+            try:
+                os.unlink(mosek_license_path)
+            except OSError:
+                pass
+            if original_mosek_env is not None:
+                os.environ["MOSEKLM_LICENSE_FILE"] = original_mosek_env
+            elif "MOSEKLM_LICENSE_FILE" in os.environ:
+                del os.environ["MOSEKLM_LICENSE_FILE"]
+
+
+def _solve_inner():
     option = request.form.get('option')
     active_tab = request.form.get('active_tab')
 

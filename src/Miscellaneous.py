@@ -3,17 +3,29 @@ import cvxpy as cp
 import numpy as np
 import pandas as pd
 
+SOLVER_CAPABILITIES = {
+    'CLARABEL': ['LP', 'QP', 'SDP'], 'SCS': ['LP', 'QP', 'SDP'],
+    'OSQP': ['LP', 'QP'], 'ECOS': ['LP', 'QP', 'SDP'],
+    'CVXOPT': ['LP', 'QP', 'SDP'], 'GLOP': ['LP'], 'GLPK': ['LP'],
+    'GLPK_MI': ['LP'], 'SCIPY': ['LP', 'QP'], 'HIGHS': ['LP', 'QP'],
+    'SCIP': ['LP', 'QP', 'SDP'], 'CBC': ['LP', 'QP'],
+    'DAQP': ['LP', 'QP'], 'PIQP': ['LP', 'QP'],
+    'PROXQP': ['LP', 'QP'], 'QPALM': ['LP', 'QP'],
+    'MOSEK': ['LP', 'QP', 'SDP'], 'GUROBI': ['LP', 'QP', 'SDP'],
+    'CPLEX': ['LP', 'QP', 'SDP'], 'SDPA': ['SDP'],
+}
+
 def get_solvers():
     """
-        Retrieves a list of installed solvers available in cvxpy.
+        Retrieves installed solvers and their supported problem types.
 
         Returns:
-        list: A list of strings representing the names of the installed solvers.
+        dict: Mapping of solver name -> list of supported types ('LP', 'QP', 'SDP').
 
-        Full list of possible solvers can be found here: https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver
+        Full list: https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver
     """
-    solver_list = cp.installed_solvers()
-    return solver_list
+    installed = cp.installed_solvers()
+    return {s: SOLVER_CAPABILITIES.get(s, ['LP', 'QP', 'SDP']) for s in installed}
 
 def get_norm_types():
     """

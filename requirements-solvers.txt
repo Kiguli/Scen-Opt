@@ -1,0 +1,6 @@
+cvxopt
+ecos
+piqp
+proxsuite
+highspy
+daqp

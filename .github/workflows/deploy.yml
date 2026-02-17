@@ -51,6 +51,7 @@ jobs:
 
             cd current
             pip install -r requirements.txt
+            pip install -r requirements-solvers.txt
           EOF
 
       - name: Restart services
