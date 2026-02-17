@@ -22,7 +22,7 @@ python3 app.py
 
 The server starts at `http://127.0.0.1:5000`. Open this URL in a browser to access the web interface.
 
-**Optional:** For best performance on SDP problems, install [MOSEK](https://www.mosek.com/) (free academic license available).
+**Optional:** For best performance on SDP problems, install [MOSEK](https://www.mosek.com/) (free academic license available). See [MOSEK Support](#mosek-support) for license configuration.
 
 ## Quick Start
 
@@ -31,7 +31,9 @@ The server starts at `http://127.0.0.1:5000`. Open this URL in a browser to acce
 1. Run `python3 app.py` and open `http://127.0.0.1:5000`
 2. Select the program type tab (LP, QP, or SDP)
 3. Enter or upload constraint matrices, objective vectors, and scenarios
-4. Set solver parameters and press **Solve**
+4. Choose a solver (if using MOSEK, you will be prompted to upload a license file)
+5. Set solver parameters and press **Solve**
+6. Download results as `.json` or `.mat` using the buttons in the results panel
 
 ### One-Shot Benchmark Upload
 
@@ -87,6 +89,15 @@ where the scenario constraints are Linear Matrix Inequalities (LMIs) parameteriz
 ### Risk Quantification
 
 After solving, the tool computes the **complexity** k (number of support constraints) and the Campi-Garatti **risk bounds** [epsilon_lower, epsilon_upper]. These bound the probability that a new unseen scenario would violate the solution, providing certified probabilistic guarantees on out-of-sample performance.
+
+### Downloading Results
+
+After solving, two buttons appear in the results panel:
+
+- **Download .JSON** -- Downloads the full result data (optimal solution, cost, risk bounds, timing, etc.) as a JSON file directly from the browser.
+- **Download .MAT** -- Downloads the same data as a MATLAB `.mat` file, generated server-side.
+
+The results include optimization solve time and risk computation time alongside the standard outputs.
 
 ## Benchmarks
 
@@ -182,7 +193,9 @@ Scen-O-Con/
 │   ├── QP.py               Quadratic programming solver
 │   ├── SDP.py              Semidefinite programming solver
 │   ├── Risk.py             Campi-Garatti risk bound computation
-│   └── Miscellaneous.py    Utilities (active constraint detection, file loading)
+│   ├── Miscellaneous.py    Utilities (active constraint detection, file loading)
+│   ├── parsing.py          Shared matrix/tensor expression parsing
+│   └── mosek_solve.py      Subprocess entry point for MOSEK solves
 ├── templates/
 │   └── index.html          Web interface (single-page application)
 ├── static/
@@ -196,11 +209,12 @@ Scen-O-Con/
 
 #### `app.py` -- Flask Server
 
-The main entry point. Provides two routes:
+The main entry point. Routes:
 
 - `GET /` -- Serves the web interface with available solver list
-- `POST /solve` -- Parses uploaded matrices and scenario data, dispatches to the appropriate solver, and returns results as JSON
+- `POST /solve` -- Parses uploaded matrices and scenario data, dispatches to the appropriate solver, and returns results as JSON. When a MOSEK license is uploaded, the solve runs in an isolated subprocess for concurrent user support. Results include `solve_time` and `risk_time` fields.
 - `POST /parse-file` -- Parses uploaded binary files (MAT, Excel, Parquet) and returns content as JSON for the frontend
+- `POST /download-mat` -- Converts JSON result data to a MATLAB `.mat` file download
 
 Supports matrix expressions containing the `delta` variable (e.g., `[[delta[0] + delta[1], 0], [0, 1]]`) that are evaluated at each scenario point. Accepts file uploads in JSON, CSV, TXT, TSV, NPY, NPZ, MAT, Excel, and Parquet formats.
 
@@ -235,6 +249,15 @@ Identifies support constraints (active constraints that define the optimal solut
 | NumPy | `.npy`, `.npz` | Arrays |
 | Excel | `.xlsx`, `.xls` | Matrices, scenarios |
 | Parquet | `.parquet` | Large datasets |
+
+## MOSEK Support
+
+[MOSEK](https://www.mosek.com/) is a commercial solver with free academic licenses that is particularly effective for SDP problems. Scen-O-Con supports MOSEK with the following features:
+
+- **License upload:** When MOSEK is selected as the solver, a modal prompts you to upload your `mosek.lic` file. The license is **not** stored on the server.
+- **Browser caching:** After the first upload, the license is cached in your browser's session storage. Subsequent solves skip the modal automatically. A cache indicator and "Clear" button appear below the solver dropdown.
+- **Local license:** If MOSEK is installed locally with a system license (e.g., at `~/mosek/mosek.lic`), click "Skip" in the modal to use it directly.
+- **Concurrent users:** Each MOSEK solve with an uploaded license runs in an isolated subprocess with the license written to an ephemeral `/tmp` directory (RAM-backed, auto-purged). Multiple users can solve simultaneously without conflicts.
 
 ## Testing
 
