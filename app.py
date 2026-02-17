@@ -107,6 +107,8 @@ def solve():
     original_mosek_env = os.environ.get("MOSEKLM_LICENSE_FILE")
 
     try:
+        print(f"[MOSEK DEBUG] request.files keys: {list(request.files.keys())}")
+        print(f"[MOSEK DEBUG] solver: {request.form.get('solver')}")
         if 'mosek_license' in request.files and request.files['mosek_license'].filename != '':
             license_file = request.files['mosek_license']
             fd, mosek_license_path = tempfile.mkstemp(suffix='.lic')
