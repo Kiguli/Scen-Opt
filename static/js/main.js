@@ -4,6 +4,7 @@ window.sdpMatrixCollection3 = {};
 window.sdpMatrixCollection4 = {};
 window.sdpCurrentMatrixIndex = null;
 let currentMatrix = '';
+let lastResultData = null;
 
 // --- MOSEK License Session Caching ---
 const MOSEK_LICENSE_KEY = 'mosek_license_content';
@@ -619,6 +620,7 @@ function executeSolve(mosekLicenseFile) {
                     '<div class="alert alert-danger"><strong>Error:</strong> ' + data.error + '</div>';
                 return;
             }
+            lastResultData = data;
             const resultBox = document.getElementById('result-box');
             resultBox.innerHTML = `
     <div class="result-container">
@@ -638,7 +640,10 @@ function executeSolve(mosekLicenseFile) {
     </ul>
     <div class="tab-content" id="resultTabContent">
         <div class="tab-pane fade show active" id="result-table" role="tabpanel" aria-labelledby="result-table-tab">
-            <h3><br> Optimization Results</h3>
+            <h3><br> Optimization Results
+                <button class="btn btn-outline-success btn-sm ml-3" onclick="downloadResultsJSON()">Download .JSON</button>
+                <button class="btn btn-outline-success btn-sm ml-1" onclick="downloadResultsMAT()">Download .MAT</button>
+            </h3>
             <div class="result-table-container">
             ${generateResultTable(data)}
             </div>
@@ -928,6 +933,50 @@ function generateResultTable(data) {
     });
     table += `</table>`;
     return table;
+}
+
+function downloadResultsJSON() {
+    if (!lastResultData) return;
+    // Build a clean results object (exclude form_data for cleanliness)
+    var results = Object.assign({}, lastResultData);
+    delete results.form_data;
+    var blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'results.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadResultsMAT() {
+    if (!lastResultData) return;
+    var results = Object.assign({}, lastResultData);
+    delete results.form_data;
+    fetch('/download-mat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(results)
+    })
+    .then(function(response) {
+        if (!response.ok) throw new Error('Failed to generate MAT file');
+        return response.blob();
+    })
+    .then(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'results.mat';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    })
+    .catch(function(err) {
+        alert('Error downloading MAT file: ' + err.message);
+    });
 }
 
 function updateLatexText(tab) {

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import numpy as np
 import json as json_module
 import io
@@ -45,22 +45,36 @@ def parse_uploaded_file(file):
     elif filename.endswith('.mat'):
         import scipy.io
         file_bytes = io.BytesIO(file.read())
-        mat = scipy.io.loadmat(file_bytes, squeeze_me=True)
+        mat = scipy.io.loadmat(file_bytes, squeeze_me=False)
 
-        def mat_to_python(v):
-            """Recursively convert MATLAB values to Python types."""
+        def mat_unwrap(v):
+            """Recursively unwrap numpy types to plain Python."""
             if isinstance(v, np.ndarray):
-                # Struct array → dict (strip 'M' prefix from keys used for numeric MATLAB field names)
+                # Struct array → dict
                 if v.dtype.names is not None:
+                    item = v.flat[0] if v.size == 1 else v
                     sub = {}
                     for name in v.dtype.names:
                         key = name[1:] if name.startswith('M') and name[1:].isdigit() else name
-                        field = v[name].item() if v[name].ndim == 0 else v[name]
-                        sub[key] = mat_to_python(field)
+                        sub[key] = mat_unwrap(item[name])
                     return sub
-                # 1D object arrays that were column vectors → restore to 2D
-                if v.ndim == 1 and v.dtype == object:
-                    return [[str(x)] for x in v.tolist()]
+                # Scalar (1×1) string or char array → plain string
+                if v.dtype.kind in ('U', 'S'):
+                    return str(v.flat[0]) if v.size == 1 else str(v.flat[0])
+                # Scalar (1×1) numeric → float
+                if v.dtype.kind in ('f', 'i', 'u') and v.size == 1:
+                    return float(v.flat[0])
+                # Object (cell) array → recurse into each element
+                if v.dtype == object:
+                    # 2-D cell array → always preserve as list of lists
+                    if v.ndim == 2:
+                        return [[mat_unwrap(v[r, c]) for c in range(v.shape[1])] for r in range(v.shape[0])]
+                    # 1-D cell array → list
+                    if v.ndim == 1:
+                        return [mat_unwrap(x) for x in v]
+                    # 0-D cell → unwrap
+                    return mat_unwrap(v.item())
+                # Numeric 2-D+ array → nested lists
                 return v.tolist()
             elif isinstance(v, (np.integer, np.floating)):
                 return float(v)
@@ -72,7 +86,7 @@ def parse_uploaded_file(file):
         for k, v in mat.items():
             if k.startswith('__'):
                 continue
-            result[k] = mat_to_python(v)
+            result[k] = mat_unwrap(v)
         return result
     elif filename.endswith('.xlsx') or filename.endswith('.xls'):
         import pandas as pd
@@ -102,6 +116,28 @@ def parse_file():
         return jsonify({"data": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@app.route('/download-mat', methods=['POST'])
+def download_mat():
+    """Convert JSON result data to a MATLAB .mat file and return it."""
+    import scipy.io
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    mat_dict = {}
+    for key, value in data.items():
+        try:
+            mat_dict[key] = np.array(value)
+        except (ValueError, TypeError):
+            mat_dict[key] = np.array(value, dtype=object)
+
+    buf = io.BytesIO()
+    scipy.io.savemat(buf, mat_dict)
+    buf.seek(0)
+    return send_file(buf, mimetype='application/x-matlab',
+                     as_attachment=True, download_name='results.mat')
 
 
 @app.route('/solve', methods=['POST'])
