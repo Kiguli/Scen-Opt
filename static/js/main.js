@@ -998,7 +998,7 @@ function updateLatexText(tab) {
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
             latexText3 = 'i = 1, \\ldots, N.';
             latexText2 = 'Gx+h \\leq 0';
-        } else if (option === 'robust-regularization') {
+        } else if (option === 'regularization') {
             latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
             latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1006,13 +1006,13 @@ function updateLatexText(tab) {
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-p-group`).style.display = 'block';
-        } else if (option === 'robust-relaxation') {
+        } else if (option === 'relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i,';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
             latexText2 = 'Gx+h \\leq 0';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
-        } else if (option === 'robust-regularization-relaxation') {
+        } else if (option === 'regularization-relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1028,7 +1028,7 @@ function updateLatexText(tab) {
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
             latexText3 = 'i = 1, \\ldots, N.';
             latexText2 = 'Gx+h \\leq 0';
-        } else if (option === 'robust-regularization') {
+        } else if (option === 'regularization') {
             latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
             latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1036,13 +1036,13 @@ function updateLatexText(tab) {
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-p-group`).style.display = 'block';
-        } else if (option === 'robust-relaxation') {
+        } else if (option === 'relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
             latexText2 = 'Gx+h \\leq 0';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
-        } else if (option === 'robust-regularization-relaxation') {
+        } else if (option === 'regularization-relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1058,7 +1058,7 @@ function updateLatexText(tab) {
             latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq 0';
             latexText3 = ' i = 1, \\ldots, N.';
             latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\leq 0';
-        } else if (option === 'robust-regularization') {
+        } else if (option === 'regularization') {
             latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
             latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq 0';
             latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1066,13 +1066,13 @@ function updateLatexText(tab) {
             document.getElementById(`${tab}-tau-group`).style.display = 'block';
             document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
             document.getElementById(`${tab}-p-group`).style.display = 'block';
-        } else if (option === 'robust-relaxation') {
+        } else if (option === 'relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
             latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\leq 0';
             document.getElementById(`${tab}-rho-group`).style.display = 'block';
-        } else if (option === 'robust-regularization-relaxation') {
+        } else if (option === 'regularization-relaxation') {
             latexText1 = '\\displaystyle\\min_{x,\\zeta_i}\\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
             latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}x_jF_j(\\delta_i) \\leq \\zeta_i';
             latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
@@ -1108,9 +1108,9 @@ function loadProblemJSON() {
         const hasRho = data.rho !== undefined && parseFloat(data.rho) > 0;
         const hasTau = data.tau !== undefined && parseFloat(data.tau) > 0;
         let option = 'robust';
-        if (hasRho && hasTau) option = 'robust-regularization-relaxation';
-        else if (hasRho) option = 'robust-relaxation';
-        else if (hasTau) option = 'robust-regularization';
+        if (hasRho && hasTau) option = 'regularization-relaxation';
+        else if (hasRho) option = 'relaxation';
+        else if (hasTau) option = 'regularization';
 
         const prefix = type.toLowerCase();
         const optionSelect = document.getElementById(prefix + '-options');
