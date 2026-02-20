@@ -188,6 +188,8 @@ python plot.py
 Scen-O-Con/
 ├── app.py                  Flask application (routes, matrix parsing, solver dispatch)
 ├── requirements.txt        Python dependencies
+├── Dockerfile              Container image for local deployment
+├── DOCKER.md               Docker setup instructions
 ├── src/
 │   ├── LP.py               Linear programming solver
 │   ├── QP.py               Quadratic programming solver
@@ -202,7 +204,7 @@ Scen-O-Con/
 │   ├── css/styles.css      Stylesheet
 │   └── js/main.js          Frontend logic (matrix editors, file upload, results display)
 ├── benchmarks/             12 benchmark case studies (see above)
-└── tests/                  Test scripts
+└── tests/                  pytest test suite (42 tests)
 ```
 
 ### Core Modules
@@ -259,16 +261,55 @@ Identifies support constraints (active constraints that define the optimal solut
 - **Local license:** If MOSEK is installed locally with a system license (e.g., at `~/mosek/mosek.lic`), click "Skip" in the modal to use it directly.
 - **Concurrent users:** Each MOSEK solve with an uploaded license runs in an isolated subprocess with the license written to an ephemeral `/tmp` directory (RAM-backed, auto-purged). Multiple users can solve simultaneously without conflicts.
 
-## Testing
+## Docker
 
-Test scripts are standalone Python files (no pytest framework):
+The easiest way to run Scen-O-Con locally without managing Python dependencies is with Docker.
 
 ```bash
-python3 tests/LP.py
-python3 tests/QP.py
-python3 tests/SDP.py
-python3 tests/test_risk.py
+# Build the image
+docker build -t scen-o-con .
+
+# Run the container
+docker run -p 5000:5000 scen-o-con
 ```
+
+Open `http://localhost:5000` in your browser. See [DOCKER.md](DOCKER.md) for MOSEK license mounting, custom port mapping, and worker configuration.
+
+### Publishing as a GitHub Package
+
+To publish the Docker image to GitHub Container Registry so others can pull it directly:
+
+1. Create a Personal Access Token with `write:packages` scope at [GitHub Settings > Tokens](https://github.com/settings/tokens)
+
+2. Log in to the registry:
+   ```bash
+   echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+   ```
+
+3. Build, tag, and push:
+   ```bash
+   docker build -t ghcr.io/kiguli/scen-o-con:latest .
+   docker push ghcr.io/kiguli/scen-o-con:latest
+   ```
+
+4. Make the package public (optional): go to the package settings at `https://github.com/users/Kiguli/packages/container/package/scen-o-con` and set visibility to **Public**.
+
+Users can then run the tool with a single command:
+
+```bash
+docker run -p 5000:5000 ghcr.io/kiguli/scen-o-con:latest
+```
+
+## Testing
+
+The test suite uses [pytest](https://docs.pytest.org/) with 42 tests covering all core modules: solvers (LP, QP, SDP), risk quantification, matrix/tensor parsing, file loading utilities, and Flask route integration.
+
+```bash
+pip install pytest
+python -m pytest tests/ -v
+```
+
+Tests run automatically on push and pull request via GitHub Actions (see `.github/workflows/test.yml`).
 
 ## License
 
