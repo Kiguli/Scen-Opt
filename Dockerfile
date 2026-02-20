@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 # System dependencies for scientific Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ gfortran libopenblas-dev \
+    gcc g++ gfortran libopenblas-dev git cmake \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
