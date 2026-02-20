@@ -35,7 +35,7 @@ def test_sdp_basic():
 
     x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
         deltas=deltas, F_d=F_d, E=E, c=c, Q=Q,
-        tau=0.0, x_ref=np.zeros(2), rho=0.0, norm_type=2, solver=None,
+        tau=0.0, x_ref=np.zeros(2), rho=0.0, norm_type=2, solver="SCS",
     )
 
     delta_max = np.max(deltas)
