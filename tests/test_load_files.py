@@ -37,3 +37,18 @@ def test_load_json(tmp_path):
     loaded = load_file(path)
     assert loaded is not None
     np.testing.assert_array_almost_equal(loaded, SAMPLE_DATA)
+
+
+def test_load_unsupported_format(tmp_path):
+    """Unsupported file format returns None."""
+    path = str(tmp_path / "data.yaml")
+    with open(path, "w") as f:
+        f.write("key: value\n")
+    result = load_file(path)
+    assert result is None
+
+
+def test_load_missing_file():
+    """Non-existent file returns None."""
+    result = load_file("/tmp/nonexistent_file_12345.csv")
+    assert result is None
