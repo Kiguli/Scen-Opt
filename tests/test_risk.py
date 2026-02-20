@@ -1,30 +1,27 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from src.Risk import quantify_risk
 
-# Parameters
-beta = 1e-6  # Confidence level
-N_values = [2000, 4000, 8000]  # N1, N2, N3
-N1 = N_values[1]
-k = np.linspace(0,N1)
 
-# Calculate risk bounds for each k value
-epsL_values = []
-epsU_values = []
+def test_risk_bounds_basic():
+    """Verify risk bounds are valid for a typical case."""
+    epsL, epsU = quantify_risk(k=10, N=4000, beta=1e-6)
+    assert 0.0 <= epsL <= epsU <= 1.0
 
-for k_value in k:
-    print("k = ", k_value)
-    epsL, epsU = quantify_risk(k_value, N1, beta)
-    epsL_values.append(epsL)
-    epsU_values.append(epsU)
 
-# Plot the results
-plt.figure(figsize=(10, 6))
-plt.plot(k, epsL_values, label="Lower Bound (epsL)", marker="o")
-plt.plot(k, epsU_values, label="Upper Bound (epsU)", marker="o")
-plt.xlabel("k")
-plt.ylabel("Risk Bounds")
-plt.title("Risk Bounds vs k")
-plt.legend()
-plt.grid(True)
-plt.show()
+def test_risk_bounds_k_zero():
+    """When k=0, risk bounds should be near zero."""
+    epsL, epsU = quantify_risk(k=0, N=4000, beta=1e-6)
+    assert epsL == 0.0
+    assert epsU < 0.01
+
+
+def test_risk_bounds_k_equals_N():
+    """When k=N, upper bound should be 1."""
+    epsL, epsU = quantify_risk(k=100, N=100, beta=1e-6)
+    assert epsU == 1.0
+
+
+def test_risk_bounds_monotonic():
+    """Risk bounds should increase with k."""
+    _, epsU_small = quantify_risk(k=5, N=4000, beta=1e-6)
+    _, epsU_large = quantify_risk(k=50, N=4000, beta=1e-6)
+    assert epsU_small < epsU_large
