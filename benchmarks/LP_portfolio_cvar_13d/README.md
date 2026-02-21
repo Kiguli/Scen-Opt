@@ -15,11 +15,11 @@ A pension fund must allocate capital across 8 ETF asset classes to minimize tail
 | VWO | Emerging Markets | Intl Equity | Growth |
 | LQD | Investment Grade Corp | Credit | Yield |
 
-Position limits are 5-30% per asset. Equities (SPY+EFA+VWO) must be 30-60%, fixed income (AGG+TLT+LQD) at least 25%. Scenario data is bootstrapped from 5 years of real daily ETF returns downloaded via yfinance.
+Position limits are 5-30% per asset. Equities (SPY+EFA+VWO) must be 30-60%, fixed income (AGG+TLT+LQD) at least 25%. Scenario data is computed from 5 years of real daily ETF returns downloaded via yfinance, with each trading day as one scenario.
 
 ## Formulation
 
-This is a Linear Program using the Rockafellar-Uryasev CVaR formulation with shared-slack augmentation. The original decision variable [w, alpha] in R^9 (8 portfolio weights + VaR threshold) is augmented with 4 slack variables zeta (one per scenario constraint) to form x_aug = [w, alpha, zeta] in R^13. The objective c_aug = [0,...,0, 1, 0.04, ..., 0.04] in R^13 minimizes alpha with rho = 1/((1-0.95)*500) = 0.04 embedded in the cost vector, so the solver is called with rho = 0. This means alpha + rho*sum(zeta) approximates CVaR at the 95% level. No regularisation (tau = 0).
+This is a Linear Program using the Rockafellar-Uryasev CVaR formulation with shared-slack augmentation. The original decision variable [w, alpha] in R^9 (8 portfolio weights + VaR threshold) is augmented with 4 slack variables zeta (one per scenario constraint) to form x_aug = [w, alpha, zeta] in R^13. The objective c_aug = [0,...,0, 1, rho, ..., rho] in R^13 minimizes alpha with rho = 1/((1-0.95)*N) ≈ 0.016 embedded in the cost vector, so the solver is called with rho = 0. This means alpha + rho*sum(zeta) approximates CVaR at the 95% level. No regularisation (tau = 0).
 
 Each scenario delta_i in R^12 encodes 8 asset returns (delta[0:8]), a market stress indicator (delta[8]), credit spread shock (delta[9]), interest rate shock (delta[10]), and volatility scaling (delta[11]). The augmented scenario constraint matrix A_d (4 x 13) captures: (1) portfolio loss with stress amplification, (2) credit spread impact on bonds, (3) interest rate duration exposure, and (4) equity correlation breakdown during crises, with -I slack columns absorbing violations. Hard constraints (G: 27 x 13) encode position limits, budget (weights sum to 1), equity allocation range, fixed income minimum, VaR threshold bounds, and non-negativity on zeta.
 
@@ -27,7 +27,7 @@ Each scenario delta_i in R^12 encodes 8 asset returns (delta[0:8]), a market str
 
 ![CVaR Portfolio Results](results/portfolio_cvar.png)
 
-The LP solves with N = 500 scenarios. The optimizer tilts heavily toward alternatives: GLD (24.1%) and VNQ (20.9%) dominate, while equities sit at the 30% regulatory minimum and fixed income at 25%. This defensive posture minimizes tail risk — the CVaR(95%) is only 1.52% daily loss. The LP had complexity k = 3, no degeneracy, and risk bounds [0.0000, 0.0278].
+The LP solves with N = 1,255 market scenarios (one per historical trading day). The optimizer tilts heavily toward alternatives: GLD (23.2%) and VNQ (21.8%) dominate, while equities sit at the 30% regulatory minimum and fixed income at 25%. This defensive posture minimizes tail risk — the CVaR(95%) is only 1.21% daily loss. The LP had complexity k = 3, no degeneracy, and risk bounds [0.0000, 0.0200].
 
 ## Files
 
@@ -46,7 +46,7 @@ LP_portfolio_cvar_13d/
 │   ├── c.csv           Augmented objective vector (13 x 1, includes rho)
 │   ├── G.csv           Augmented hard constraint matrix (27 x 13)
 │   ├── h.csv           Hard constraint RHS (27 x 1)
-│   ├── scenarios.csv   500 x 12 uncertainty scenarios
+│   ├── scenarios.csv   1255 x 12 uncertainty scenarios
 │   ├── assets.csv      Asset metadata
 │   ├── historical_prices.csv   5-year ETF price history
 │   └── historical_returns.csv  Daily returns
@@ -61,7 +61,7 @@ LP_portfolio_cvar_13d/
 
 ```bash
 # Regenerate scenarios (requires yfinance and internet)
-python generate.py --n_scenarios 500 --seed 42
+python generate.py --seed 42
 
 # Solve the LP
 python run.py
@@ -89,12 +89,12 @@ python plot.py
    - **c**: `data/c.csv`
    - **G**: `data/G.csv`
    - **h**: `data/h.csv`
-3. Set parameters: rho = 0.040000, tau = 0, confidence (beta) = 0.01
+3. Set parameters: rho = 0.015936, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 0.050660233770277306
+- Optimal cost: 0.05133721274593786
 - Complexity k: 3
-- Risk bounds: [0.0, 0.027843863722984686]
+- Risk bounds: [0.0, 0.02002552248652564]

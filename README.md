@@ -88,7 +88,7 @@ where the scenario constraints are Linear Matrix Inequalities (LMIs) parameteriz
 
 ### Risk Quantification
 
-After solving, the tool computes the **complexity** k (number of support constraints) and the Campi-Garatti **risk bounds** [epsilon_lower, epsilon_upper]. These bound the probability that a new unseen scenario would violate the solution, providing certified probabilistic guarantees on out-of-sample performance.
+After solving, the tool computes the **complexity** k (number of support constraints) and the scenario approach **risk bounds** [epsilon_lower, epsilon_upper]. These bound the probability that a new unseen scenario would violate the solution, providing certified probabilistic guarantees on out-of-sample performance.
 
 ### Downloading Results
 
@@ -107,16 +107,16 @@ The `benchmarks/` directory contains 12 case studies spanning all three program 
 |-----------|------|---|---|-----|-----|-----|-----|---|------|---|---------------|---------------|----------|-------------|
 | Half Width | LP | 2 | 1 | 2 | 0 | 0 | 0 | 100 | 1e-6 | 2 | 0 | 0.2073 | 6.7 | --- |
 | Growth Bound | LP | 12 | 6 | 2 | 5 | 0 | 0 | 3127 | 1e-6 | 6 | * | 0.0101 | 7231.9 | --- |
-| Inventory | LP | 11 | 15 | 6 | 17 | 100 | 0 | 500 | 1e-2 | 7 | 0.0022 | 0.0418 | 9.7 | --- |
-| Portfolio CVaR | LP | 13 | 12 | 4 | 27 | 0.04 | 0 | 500 | 1e-2 | 3 | 0 | 0.0278 | 1.4 | Yahoo Finance |
-| Power Dispatch | LP | 120 | 48 | 48 | 330 | 100 | 0 | 150 | 1e-2 | 34 | 0.1194 | 0.3659 | 3.4 | --- |
+| Inventory | LP | 11 | 15 | 6 | 17 | 100 | 0 | 500 | 1e-6 | 7 | 0 | 0.0655 | 9.7 | --- |
+| Portfolio CVaR | LP | 13 | 12 | 4 | 27 | 0.016 | 0 | 1255 | 1e-6 | 3 | 0 | 0.0200 | 1.4 | Yahoo Finance |
+| Power Dispatch | LP | 120 | 48 | 48 | 330 | 100 | 0 | 150 | 1e-6 | 34 | 0.0791 | 0.4425 | 3.4 | --- |
 | Iris SVM | QP | 3 | 3 | 1 | 0 | 0 | 0 | 150 | 1e-6 | 2 | 0 | 0.1430 | 1.0 | UCI Iris |
-| Robot Navigation | QP | 118 | 1 | 3 | 320 | 0 | 0 | 500 | 1e-2 | 1 | 0 | 0.0196 | 2.3 | --- |
-| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-2 | 5 | 0.0003 | 0.0860 | 131.6 | TROTS |
-| LPV Stability | SDP | 3 | 1 | 2 | 2 | 1 | 0 | 100 | 1e-2 | 1 | 0 | 0.0941 | 4.0 | --- |
-| Quadratic Stability | SDP | 6 | 2 | 3 | 3 | 0 | 0 | 500 | 1e-2 | 1 | 0 | 0.0196 | 3.1 | --- |
-| Covariance Estimation | SDP | 15 | 15 | 5 | 5 | 0 | 0 | 200 | 1e-2 | 7 | 0.0055 | 0.1022 | 3.9 | UCI Wine |
-| Min. Encl. Ellipsoid | SDP | 15 | 5 | 1 | 5 | 0 | 0 | 200 | 1e-2 | 6 | 0.0029 | 0.0942 | 117.1 | UCI Breast Cancer |
+| Robot Navigation | QP | 118 | 1 | 3 | 320 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0400 | 2.3 | --- |
+| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-6 | 6 | 0 | 0.1486 | 6.5 | TROTS |
+| LPV Stability | SDP | 3 | 1 | 2 | 2 | 1 | 0 | 100 | 1e-6 | 1 | 0 | 0.1853 | 4.0 | --- |
+| Quadratic Stability | SDP | 6 | 2 | 3 | 3 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0400 | 3.1 | --- |
+| Covariance Estimation | SDP | 15 | 5 | 5 | 5 | 0 | 0 | 178 | 1e-6 | 7 | 0 | 0.1754 | 3.9 | UCI Wine |
+| Min. Encl. Ellipsoid | SDP | 15 | 5 | 1 | 5 | 0 | 0 | 569 | 1e-6 | 5 | 0 | 0.0510 | 117.1 | UCI Breast Cancer |
 
 d = decision variables, q = uncertainty dimension, m_s = scenario constraints per sample, m_h = hard constraints, N = number of scenarios, k = complexity (support constraints). Solve times on Apple MacBook Air (M2, 8 GB). *No lower bound due to degeneracy.
 
@@ -194,7 +194,7 @@ Scen-O-Con/
 │   ├── LP.py               Linear programming solver
 │   ├── QP.py               Quadratic programming solver
 │   ├── SDP.py              Semidefinite programming solver
-│   ├── Risk.py             Campi-Garatti risk bound computation
+│   ├── Risk.py             Scenario approach risk bound computation
 │   ├── Miscellaneous.py    Utilities (active constraint detection, file loading)
 │   ├── parsing.py          Shared matrix/tensor expression parsing
 │   └── mosek_solve.py      Subprocess entry point for MOSEK solves
@@ -234,7 +234,7 @@ Solves semidefinite programs with LMI constraints. Each scenario produces a matr
 
 #### `src/Risk.py` -- `quantify_risk(k, N, beta)`
 
-Computes the Campi-Garatti risk bounds given the complexity k (support constraint count), number of scenarios N, and confidence parameter beta. Uses the regularized incomplete beta function via JAX to compute both lower and upper bounds on the violation probability epsilon through bisection. Returns `(epsilon_lower, epsilon_upper)`.
+Computes the scenario approach risk bounds given the complexity k (support constraint count), number of scenarios N, and confidence parameter beta. Uses the regularized incomplete beta function via JAX to compute both lower and upper bounds on the violation probability epsilon through bisection. Returns `(epsilon_lower, epsilon_upper)`.
 
 #### `src/Miscellaneous.py` -- `get_active()`
 

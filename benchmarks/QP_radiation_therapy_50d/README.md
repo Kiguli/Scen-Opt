@@ -30,7 +30,7 @@ The optimal plan achieves a tumour D95 = 145.12 Gy (exceeding the 137.75 Gy mini
 
 Panel (a) shows the dose-volume histogram (DVH). The tumour curve drops steeply beyond the prescription dose, confirming adequate target coverage, while the long tail reflects the hot spots inherent to brachytherapy (high doses near dwell positions are physically unavoidable and clinically acceptable). Both OAR curves fall well within their respective dose constraints.
 
-Panel (b) shows the Campi-Garatti risk bounds. The complexity is k = 6 with no degeneracy, yielding risk bounds [0.003, 0.094] at 99% confidence (beta = 0.01). This guarantees that the dose constraints will be satisfied for a new random catheter placement with probability at least 90.6%. The low complexity relative to d = 50 decision variables indicates that only a small number of catheter-shift scenarios are critical to the solution geometry.
+Panel (b) shows the scenario approach risk bounds. The complexity is k = 6 with no degeneracy, yielding risk bounds [0.000, 0.149] at 99.9999% confidence (beta = 10^{-6}). This guarantees that the dose constraints will be satisfied for a new random catheter placement with probability at least 85.1%. The low complexity relative to d = 50 decision variables indicates that only a small number of catheter-shift scenarios are critical to the solution geometry.
 
 Panel (c) displays the dwell-position intensity profile. Most channels carry high intensity (~150 Gy.s, the upper bound), with a few positions at low or zero intensity. This reflects the geometry of the prostate target relative to the catheter array: dwell positions near the centre of the PTV deliver maximum intensity, while those far from the target or near OARs are suppressed.
 
@@ -95,12 +95,12 @@ python plot.py
    - **G**: `data/G.csv`
    - **h**: `data/h.csv`
    - **Q**: `data/Q.csv`
-3. Set parameters: rho = 0, tau = 0.1, confidence (beta) = 0.01
+3. Set parameters: rho = 0, tau = 0.1, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
 - Optimal cost: 4698.836116109508
-- Complexity k: 5
-- Risk bounds: [0.000348460115492344, 0.08596500383573583]
+- Complexity k: 6
+- Risk bounds: [0.0, 0.14861067387333604]

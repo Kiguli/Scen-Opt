@@ -362,7 +362,7 @@ def save_benchmark_files(scenarios, Q, c, G, h, a_d_rows, b_d_rows):
         f.write(f"# Safety distance from face: {D_SAFE}m\n\n")
         f.write("rho = 0\n")
         f.write("tau = 0\n")
-        f.write("confidence = 0.99\n")
+        f.write("confidence = 0.999999\n")
     print("Saved parameters.txt")
 
 

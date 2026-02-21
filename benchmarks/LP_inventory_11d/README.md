@@ -26,7 +26,7 @@ Each scenario delta_i in R^15 encodes uncertain yields (delta[0:5]), demands (de
 
 ![Inventory Results](results/inventory.png)
 
-The LP solves in 9.07 seconds with N = 500 scenarios. The full budget of $12,000 is used. The penalty rho = 100 implies a cost per case of lost sales; the expected daily loss from stockouts is only $66.20 (about 0.5% of the ordering budget). The LP had complexity k = 7, no degeneracy, and risk bounds [0.0022, 0.0418].
+The LP solves in 9.07 seconds with N = 500 scenarios. The full budget of $12,000 is used. The penalty rho = 100 implies a cost per case of lost sales; the expected daily loss from stockouts is only $66.20 (about 0.5% of the ordering budget). The LP had complexity k = 7, no degeneracy, and risk bounds [0.000, 0.066] at 99.9999% confidence (beta = 10^{-6}).
 
 | Product | Order (cases) | Mean Demand | Service Level (%) |
 |---------|--------------|-------------|-------------------|
@@ -95,7 +95,7 @@ python plot.py
    - **c**: `data/c.csv`
    - **G**: `data/G.csv`
    - **h**: `data/h.csv`
-3. Set parameters: rho = 100.0, tau = 0, confidence (beta) = 0.01
+3. Set parameters: rho = 100.0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
@@ -103,4 +103,4 @@ python plot.py
 
 - Optimal cost: 45099.672322171755
 - Complexity k: 7
-- Risk bounds: [0.002157272130250931, 0.041795102893491295]
+- Risk bounds: [0.0, 0.06550756473687944]

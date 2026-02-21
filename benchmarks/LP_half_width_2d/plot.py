@@ -102,7 +102,7 @@ ax.set_yticks([])
 ax.set_title('(a) Smallest enclosing interval')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='lower right')
 
-# ── Panel (b): Campi–Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
 k_range = np.arange(0, min(N // 5, 20) + 1)
 eps_lo = np.zeros_like(k_range, dtype=float)

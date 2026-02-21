@@ -28,7 +28,7 @@ The SDP solves with N = 100 scenarios. The optimal Lyapunov matrix is:
     P = [[10.68, 1.31],
          [1.31,  9.00]]
 
-The solver found complexity k = 1, meaning one scenario constraint is active at the optimal solution. This occurs at the upper boundary of the parameter range (delta near 1.0), where the system is closest to instability. With 99% confidence, the risk bounds are [0.0000, 0.0941], meaning at most 9.41% of parameter values could violate the certified stability condition. There is no degeneracy.
+The solver found complexity k = 1, meaning one scenario constraint is active at the optimal solution. This occurs at the upper boundary of the parameter range (delta near 1.0), where the system is closest to instability. With 99.9999% confidence (beta = 10^{-6}), the risk bounds are [0.000, 0.185], meaning at most 18.5% of parameter values could violate the certified stability condition. There is no degeneracy.
 
 ## Files
 
@@ -93,7 +93,7 @@ python plot.py
 3. Upload or enter:
    - **c**: `data/c.csv`
    - **Q**: `data/Q.csv`
-4. Set parameters: rho = 1.0, tau = 0, confidence (beta) = 0.01
+4. Set parameters: rho = 1.0, tau = 0, confidence (beta) = 1e-06
 5. Upload `data/scenarios.csv` in the Scenarios box
 6. Press **Solve**
 
@@ -101,4 +101,4 @@ python plot.py
 
 - Optimal cost: -9.843942363041855
 - Complexity k: 1
-- Risk bounds: [0.0, 0.0940833948721411]
+- Risk bounds: [0.0, 0.185321964349132]

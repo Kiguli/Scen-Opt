@@ -12,4 +12,4 @@
 #
 rho = 0
 tau = 0.1
-confidence = 0.99
+confidence = 0.999999

@@ -107,7 +107,7 @@ ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='lower
 ax.set_xlim(x1_min, x1_max)
 ax.set_ylim(x2_min, x2_max)
 
-# ── Panel (b): Campi–Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
 k_range = np.arange(0, min(N // 5, 25) + 1)
 eps_lo = np.zeros_like(k_range, dtype=float)

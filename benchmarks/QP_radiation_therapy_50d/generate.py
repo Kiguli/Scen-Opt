@@ -449,7 +449,7 @@ def save_benchmark_files(scenarios, Q, c, G, h, a_d_rows, b_d_rows, D_nominal):
         f.write("#\n")
         f.write("rho = 1.0\n")
         f.write("tau = 0.1\n")
-        f.write("confidence = 0.99\n")
+        f.write("confidence = 0.999999\n")
     print("Saved parameters.txt")
 
 

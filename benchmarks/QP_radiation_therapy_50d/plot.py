@@ -54,7 +54,7 @@ with open(os.path.join(benchmark_dir, 'parameters.txt'), 'r') as f:
         if '=' in line and not line.strip().startswith('#'):
             key, val = line.split('=', 1)
             params[key.strip()] = float(val.split('#')[0].strip())
-beta = 1.0 - params.get('confidence', 0.99)
+beta = 1.0 - params.get('confidence', 0.999999)
 
 # Load dose matrix and compute doses
 import pandas as pd
@@ -125,7 +125,7 @@ ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='upper
 ax.set_xlim([0, dose_prescribed * 3])
 ax.set_ylim([0, 105])
 
-# ── Panel (b): Campi-Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
 k_range = np.arange(0, min(N // 4, 60) + 1)
 eps_lo = np.zeros_like(k_range, dtype=float)

@@ -114,7 +114,7 @@ def main():
         E[str(i)] = load_matrix(os.path.join(data_dir, f'E_{i}.csv'))
 
     params = load_parameters(os.path.join(benchmark_dir, 'parameters.txt'))
-    beta = 1.0 - params.get('confidence', 0.99)
+    beta = 1.0 - params.get('confidence', 0.999999)
 
     print(f"  Features: {p} ({', '.join(feature_names)})")
     print(f"  Decision variables: {n_vars} (entries of {p}x{p} symmetric Sigma)")

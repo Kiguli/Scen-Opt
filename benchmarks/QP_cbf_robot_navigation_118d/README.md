@@ -18,13 +18,13 @@ This is a Quadratic Program with 118 decision variables: 80 states (position and
 | Hard constraints | 320 |
 | Slack penalty (rho) | 0 |
 | Regularisation (tau) | 0 |
-| Confidence (1 - beta) | 0.99 |
+| Confidence (1 - beta) | 0.999999 |
 
 ## Results
 
 ![QP Robot Navigation](results/cbf_navigation.png)
 
-The QP solves with N = 500 scenarios. The optimal trajectory has path length 9.79 m over 8.0 s, arcing smoothly above the wall with a minimum clearance of 0.19 m from the safety boundary. The complexity is k = 1 (one support constraint). With beta = 0.01, the risk bounds are eps_lower = 0 and eps_upper = 0.0196.
+The QP solves with N = 500 scenarios. The optimal trajectory has path length 9.79 m over 8.0 s, arcing smoothly above the wall with a minimum clearance of 0.19 m from the safety boundary. The complexity is k = 1 (one support constraint). With beta = 10^{-6}, the risk bounds are eps_lower = 0 and eps_upper = 0.0400.
 
 ## Files
 
@@ -85,7 +85,7 @@ python plot.py
    - **G**: `data/G.csv`
    - **h**: `data/h.csv`
    - **Q**: `data/Q.csv`
-3. Set parameters: rho = 0, tau = 0, confidence (beta) = 0.01
+3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
@@ -93,4 +93,4 @@ python plot.py
 
 - Optimal cost: -13777.807262403046
 - Complexity k: 1
-- Risk bounds: [0.0, 0.01956555154745001]
+- Risk bounds: [0.0, 0.04000231437711046]

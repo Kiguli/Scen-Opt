@@ -147,7 +147,7 @@ def main():
             return
 
     # Risk bounds
-    beta = 0.01
+    beta = 1e-6
     eps_lower, eps_upper = quantify_risk(k, N, beta)
 
     # Results

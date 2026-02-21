@@ -18,4 +18,4 @@
 # The penalty coefficient rho=100 is embedded in c_aug, not passed to the solver
 rho = 0
 tau = 0
-confidence = 0.99
+confidence = 0.999999

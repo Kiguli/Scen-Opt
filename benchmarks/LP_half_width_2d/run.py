@@ -90,7 +90,7 @@ def main():
 
     rho = params.get('rho', 0.0)
     tau = params.get('tau', 0.0)
-    beta = 1.0 - params.get('confidence', 0.99)
+    beta = 1.0 - params.get('confidence', 0.999999)
 
     # Solve LP
     print("Solving LP with MOSEK...")

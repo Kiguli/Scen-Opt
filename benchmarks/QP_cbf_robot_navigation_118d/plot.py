@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Rectangle
+from scipy.interpolate import UnivariateSpline
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.Risk import quantify_risk
@@ -131,22 +132,26 @@ ax.set_xlim(-0.3, 10.5)
 ax.set_ylim(-0.3, 4.5)
 ax.set_aspect('equal')
 
-# ── Panel (b): Campi–Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
-k_range = np.arange(0, min(N // 10, 40) + 1)
-eps_lo = np.zeros_like(k_range, dtype=float)
-eps_hi = np.zeros_like(k_range, dtype=float)
-for idx, kv in enumerate(k_range):
-    eps_lo[idx], eps_hi[idx] = quantify_risk(kv, N, beta)
+k_max = min(N // 10, 40)
+k_int = np.arange(0, k_max + 1)
+eps_lo_int = np.zeros_like(k_int, dtype=float)
+eps_hi_int = np.zeros_like(k_int, dtype=float)
+for idx, kv in enumerate(k_int):
+    eps_lo_int[idx], eps_hi_int[idx] = quantify_risk(int(kv), N, beta)
+eps_lo_k, eps_hi_k = quantify_risk(k, N, beta)
+k_smooth = np.linspace(0, k_max, 500)
+spl_lo = UnivariateSpline(k_int, eps_lo_int, s=1e-4)
+spl_hi = UnivariateSpline(k_int, eps_hi_int, s=1e-4)
 
-ax.fill_between(k_range, eps_lo, eps_hi, alpha=0.25, color=C_RISK_FILL, label='Feasible region')
-ax.plot(k_range, eps_lo, '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
-ax.plot(k_range, eps_hi, '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
+ax.fill_between(k_smooth, spl_lo(k_smooth), spl_hi(k_smooth), alpha=0.25, color=C_RISK_FILL, label='Feasible region')
+ax.plot(k_smooth, spl_lo(k_smooth), '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
+ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
 ax.axvline(x=k, color=C_MARKER, linestyle='-', linewidth=1.5, alpha=0.8)
-k_idx = min(k, len(eps_lo) - 1)
-ax.scatter([k], [eps_lo[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.scatter([k], [eps_hi[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 3, eps_hi[k_idx] + 0.01),
+ax.scatter([k], [eps_lo_k], c=C_MARKER, s=50, zorder=5, marker='o')
+ax.scatter([k], [eps_hi_k], c=C_MARKER, s=50, zorder=5, marker='o')
+ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 3, eps_hi_k + 0.01),
             fontsize=9, color=C_MARKER,
             arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
 ax.set_xlabel('Complexity $k$')

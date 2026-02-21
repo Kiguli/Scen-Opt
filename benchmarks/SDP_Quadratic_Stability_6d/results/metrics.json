@@ -11,7 +11,7 @@
   "N": 500,
   "k": 1,
   "eps_lower": 0.0,
-  "eps_upper": 0.01956555154745001,
+  "eps_upper": 0.04000231437711046,
   "degeneracy": false,
   "delta0_range": [
     -0.9898768323,

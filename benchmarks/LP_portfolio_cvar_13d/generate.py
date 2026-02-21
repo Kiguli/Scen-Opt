@@ -19,7 +19,7 @@ Data Sources:
   Value-at-Risk." Journal of Risk, 2, 21-42.
 
 Usage:
-    python generate.py [--n_scenarios N] [--seed SEED] [--years Y]
+    python generate.py [--seed SEED] [--years Y]
 """
 
 import os
@@ -95,58 +95,55 @@ def compute_statistics(returns):
     return mean_returns, volatility, correlation
 
 
-def generate_scenarios(returns, n_scenarios, seed=42):
+def generate_scenarios(returns, seed=42):
     """
-    Generate scenarios with 12 uncertain parameters:
-    - delta[0:8]  = asset returns (bootstrapped from historical data)
-    - delta[8]    = market stress indicator [0, 1]
-    - delta[9]    = credit spread shock [-0.02, 0.02]
-    - delta[10]   = interest rate shock [-0.01, 0.01]
-    - delta[11]   = volatility scaling factor [0.8, 1.5]
+    Generate scenarios from ALL trading days (no bootstrap).
 
-    Total: 12-dimensional uncertainty
+    Each trading day becomes one scenario with 12 uncertain parameters:
+    - delta[0:8]  = actual daily asset returns
+    - delta[8]    = market stress indicator [0, 1] (rolling vol percentile)
+    - delta[9]    = credit spread proxy (LQD return minus AGG return)
+    - delta[10]   = interest rate proxy (negative TLT return)
+    - delta[11]   = volatility scaling (realized/long-term vol ratio)
+
+    Total: 12-dimensional uncertainty, N = number of trading days
     """
     np.random.seed(seed)
 
     n_days = len(returns)
-    scenarios = np.zeros((n_scenarios, 12))
+    scenarios = np.zeros((n_days, 12))
 
     # Compute statistics
     mean_returns, volatility, correlation = compute_statistics(returns)
 
     # Compute rolling volatility for stress detection
-    rolling_vol = returns.rolling(window=20).std().mean(axis=1).dropna()
-    vol_percentiles = rolling_vol.rank(pct=True).values
+    rolling_vol = returns.rolling(window=20).std().mean(axis=1)
+    long_term_vol = returns.std().mean()
+    vol_percentiles = rolling_vol.rank(pct=True)
 
-    for i in range(n_scenarios):
-        # Bootstrap: sample a random day's returns
-        idx = np.random.randint(0, n_days)
-        daily_returns = returns.iloc[idx].values
+    for i in range(n_days):
+        # Actual daily returns (no bootstrap, no scaling)
+        scenarios[i, 0:8] = returns.iloc[i].values
 
-        # Volatility scaling based on regime
-        vol_scale = np.random.uniform(0.8, 1.5)
-
-        # Scale returns by volatility factor
-        scaled_returns = daily_returns * vol_scale
-        scenarios[i, 0:8] = scaled_returns
-
-        # Market stress indicator
-        if len(vol_percentiles) > 0 and idx < len(vol_percentiles):
-            stress = vol_percentiles[min(idx, len(vol_percentiles)-1)]
+        # Market stress indicator from rolling volatility percentile
+        if not np.isnan(vol_percentiles.iloc[i]):
+            scenarios[i, 8] = vol_percentiles.iloc[i]
         else:
-            stress = np.random.uniform(0, 1)
-        scenarios[i, 8] = stress
+            scenarios[i, 8] = 0.5  # neutral for initial window
 
-        # Credit spread shock (wider in stress)
-        credit_shock = np.random.uniform(-0.01, 0.01) - stress * 0.01
-        scenarios[i, 9] = credit_shock
+        # Credit spread proxy: LQD (credit) minus AGG (treasury) return
+        lqd_ret = returns.iloc[i][TICKERS[7]]  # LQD
+        agg_ret = returns.iloc[i][TICKERS[1]]  # AGG
+        scenarios[i, 9] = lqd_ret - agg_ret
 
-        # Interest rate shock
-        rate_shock = np.random.uniform(-0.005, 0.005)
-        scenarios[i, 10] = rate_shock
+        # Interest rate proxy: negative TLT return (rates up = bonds down)
+        scenarios[i, 10] = -returns.iloc[i][TICKERS[5]]  # -TLT
 
-        # Volatility scaling factor
-        scenarios[i, 11] = vol_scale
+        # Volatility scaling: realized/long-term ratio
+        if not np.isnan(rolling_vol.iloc[i]) and long_term_vol > 0:
+            scenarios[i, 11] = rolling_vol.iloc[i] / long_term_vol
+        else:
+            scenarios[i, 11] = 1.0
 
     return scenarios, mean_returns, volatility, correlation
 
@@ -357,8 +354,6 @@ def save_constraint_files(data_dir, mean_returns, n_scenarios):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate Pension Fund CVaR benchmark')
-    parser.add_argument('--n_scenarios', type=int, default=500,
-                        help='Number of scenarios (default: 500)')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed')
     parser.add_argument('--years', type=int, default=5,
@@ -374,13 +369,12 @@ def main():
         info = ASSET_INFO[ticker]
         print(f"  {ticker:5s} - {info['name']:22s} ({info['class']}, {info['role']})")
     print()
-    print(f"Scenarios: {args.n_scenarios}")
     print(f"Uncertainty dimensions: 12")
-    print(f"  - 8 asset returns (bootstrapped from {args.years} years of data)")
-    print(f"  - 1 market stress indicator")
-    print(f"  - 1 credit spread shock")
-    print(f"  - 1 interest rate shock")
-    print(f"  - 1 volatility scaling factor")
+    print(f"  - 8 asset returns (all trading days from {args.years} years)")
+    print(f"  - 1 market stress indicator (rolling vol percentile)")
+    print(f"  - 1 credit spread proxy (LQD - AGG return)")
+    print(f"  - 1 interest rate proxy (negative TLT return)")
+    print(f"  - 1 volatility scaling (realized/long-term vol ratio)")
     print()
 
     # Set up directories
@@ -391,18 +385,50 @@ def main():
     # Download real data
     print("Downloading data from Yahoo Finance...")
     prices, returns = download_stock_data(TICKERS, args.years)
-    print(f"Downloaded {len(returns)} trading days of data")
+    n_scenarios = len(returns)
+    print(f"Downloaded {n_scenarios} trading days of data")
+    print(f"Using ALL {n_scenarios} trading days as scenarios (no bootstrap)")
     print()
+
+    # Update rho in parameters.txt based on actual N
+    rho = 1.0 / ((1 - CVAR_ALPHA) * n_scenarios)
+    params_path = os.path.join(benchmark_dir, 'parameters.txt')
+    with open(params_path, 'w') as f:
+        f.write("# Pension Fund CVaR Portfolio Optimization (LP)\n")
+        f.write("# 8 ETFs: SPY, AGG, VNQ, GLD, EFA, TLT, VWO, LQD\n")
+        f.write("#\n")
+        f.write(f"# Augmented formulation: x_aug = [w; alpha; zeta] in R^13\n")
+        f.write("#   w[0:8]    = portfolio weights\n")
+        f.write("#   alpha     = VaR threshold\n")
+        f.write("#   zeta[0:4] = shared slack variables (CVaR constraint violations)\n")
+        f.write("#\n")
+        f.write("# Uncertainty (12D):\n")
+        f.write("#   delta[0:8]  = asset returns (all trading days from Yahoo Finance)\n")
+        f.write("#   delta[8]    = market stress indicator\n")
+        f.write("#   delta[9]    = credit spread proxy\n")
+        f.write("#   delta[10]   = interest rate proxy\n")
+        f.write("#   delta[11]   = volatility scaling factor\n")
+        f.write("#\n")
+        f.write(f"# Scenario constraints (4): CVaR loss, credit spread, rate duration, equity correlation\n")
+        f.write(f"# Hard constraints (27): position limits 5-30%, sum(w)=1, equity 30-60%,\n")
+        f.write(f"#                         fixed income >= 25%, alpha bounds, zeta >= 0\n")
+        f.write(f"# Objective: min alpha + rho * sum(zeta)  (approximates CVaR at 95% level)\n")
+        f.write(f"# rho = 1/((1-0.95)*N) = {rho:.6f} for N={n_scenarios}\n")
+        f.write(f"\n")
+        f.write(f"rho = {rho:.6f}\n")
+        f.write("tau = 0\n")
+        f.write("confidence = 0.999999\n")
+    print(f"Updated parameters.txt: rho = {rho:.6f} (for N={n_scenarios})")
 
     # Generate scenarios
     print("Generating scenarios...")
     scenarios, mean_returns, volatility, correlation = generate_scenarios(
-        returns, args.n_scenarios, args.seed
+        returns, args.seed
     )
 
     # Save scenarios
     np.savetxt(os.path.join(data_dir, 'scenarios.csv'), scenarios, delimiter=',', fmt='%.10f')
-    print(f"Saved data/scenarios.csv: {args.n_scenarios} x 12")
+    print(f"Saved data/scenarios.csv: {n_scenarios} x 12")
 
     # Save prices for visualization
     prices.to_csv(os.path.join(data_dir, 'historical_prices.csv'))
@@ -414,7 +440,7 @@ def main():
 
     # Save constraint files
     print("Generating constraint files...")
-    save_constraint_files(data_dir, mean_returns, args.n_scenarios)
+    save_constraint_files(data_dir, mean_returns, n_scenarios)
     print("Saved: data/A_d.csv, b_d.csv, c.csv, G.csv, h.csv, assets.csv")
 
     # Print summary statistics

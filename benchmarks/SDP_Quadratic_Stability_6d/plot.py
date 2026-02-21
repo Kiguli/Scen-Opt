@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.integrate import solve_ivp
+from scipy.interpolate import UnivariateSpline
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.Risk import quantify_risk
@@ -37,7 +38,7 @@ scenarios = np.loadtxt(os.path.join(benchmark_dir, 'data', 'scenarios.csv'),
 x_sol = np.array(metrics['x'])
 N = metrics['N']
 k = metrics['k']
-beta = 0.01
+beta = 1e-6
 
 # Reconstruct P (3x3 symmetric)
 P = np.array([[x_sol[0], x_sol[1], x_sol[2]],
@@ -102,39 +103,44 @@ ax.set_ylim(bottom=0)
 
 # ── Panel (b): Risk bounds ──
 ax = axes[1]
-k_range = np.arange(0, min(N // 10, 30) + 1)
-eps_lo = np.zeros_like(k_range, dtype=float)
-eps_hi = np.zeros_like(k_range, dtype=float)
-for idx, kv in enumerate(k_range):
-    eps_lo[idx], eps_hi[idx] = quantify_risk(kv, N, beta)
+k_max = min(N // 10, 30)
+k_int = np.arange(0, k_max + 1)
+eps_lo_int = np.zeros_like(k_int, dtype=float)
+eps_hi_int = np.zeros_like(k_int, dtype=float)
+for idx, kv in enumerate(k_int):
+    eps_lo_int[idx], eps_hi_int[idx] = quantify_risk(int(kv), N, beta)
+eps_lo_k, eps_hi_k = quantify_risk(k, N, beta)
+k_smooth = np.linspace(0, k_max, 500)
+spl_lo = UnivariateSpline(k_int, eps_lo_int, s=1e-4)
+spl_hi = UnivariateSpline(k_int, eps_hi_int, s=1e-4)
 
-ax.fill_between(k_range, eps_lo, eps_hi, alpha=0.25, color=C_RISK_FILL,
+ax.fill_between(k_smooth, spl_lo(k_smooth), spl_hi(k_smooth), alpha=0.25, color=C_RISK_FILL,
                 label='Feasible region')
-ax.plot(k_range, eps_lo, '--', color=C_RISK_LINE, linewidth=1.2,
+ax.plot(k_smooth, spl_lo(k_smooth), '--', color=C_RISK_LINE, linewidth=1.2,
         label=r'$\epsilon_{\mathrm{lo}}(k)$')
-ax.plot(k_range, eps_hi, '-', color=C_RISK_LINE, linewidth=1.2,
+ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2,
         label=r'$\epsilon_{\mathrm{up}}(k)$')
 
 if k > 0:
     ax.axvline(x=k, color=C_UNSTABLE, linestyle='-', linewidth=1.5, alpha=0.8)
-    ax.scatter([k], [eps_lo[k]], c=C_UNSTABLE, s=50, zorder=5)
-    ax.scatter([k], [eps_hi[k]], c=C_UNSTABLE, s=50, zorder=5)
-    ax.annotate(f'$k={k}$', xy=(k, eps_hi[k]),
-                xytext=(k + 3, eps_hi[k] + 0.06),
+    ax.scatter([k], [eps_lo_k], c=C_UNSTABLE, s=50, zorder=5)
+    ax.scatter([k], [eps_hi_k], c=C_UNSTABLE, s=50, zorder=5)
+    ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
+                xytext=(k + 3, eps_hi_k + 0.06),
                 fontsize=9, color=C_UNSTABLE,
                 arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
 else:
     # k=0: mark on y-axis
-    ax.scatter([0], [eps_lo[0]], c=C_UNSTABLE, s=50, zorder=5)
-    ax.scatter([0], [eps_hi[0]], c=C_UNSTABLE, s=50, zorder=5)
-    ax.annotate(f'$k=0$', xy=(0, eps_hi[0]),
-                xytext=(3, eps_hi[0] + 0.005),
+    ax.scatter([0], [eps_lo_k], c=C_UNSTABLE, s=50, zorder=5)
+    ax.scatter([0], [eps_hi_k], c=C_UNSTABLE, s=50, zorder=5)
+    ax.annotate(f'$k=0$', xy=(0, eps_hi_k),
+                xytext=(3, eps_hi_k + 0.005),
                 fontsize=9, color=C_UNSTABLE,
                 arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
 
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
-ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=0.01$)')
+ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', loc='upper left')
 
 # ── Panel (c): Scenario samples coloured by max eigenvalue ──

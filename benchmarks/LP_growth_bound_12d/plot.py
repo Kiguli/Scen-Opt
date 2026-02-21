@@ -118,7 +118,7 @@ ax.set_title('(a) Reachable set (X–Y plane)')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='upper left')
 ax.axis('equal')
 
-# ── Panel (b): Campi–Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
 k_range = np.arange(0, min(N // 50, 40) + 1)
 eps_lo = np.zeros_like(k_range, dtype=float)

@@ -5,6 +5,7 @@ import sys, os, json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from scipy.interpolate import UnivariateSpline
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.Risk import quantify_risk
@@ -42,7 +43,7 @@ solar_scenarios = scenarios[:, 24:]
 NAMES = ['Gas1', 'Gas2', 'Coal']
 N = metrics['N']
 k = metrics['k']
-beta = 0.01
+beta = 1e-6
 hours = np.arange(24)
 
 # Extract dispatch
@@ -88,27 +89,31 @@ ax.set_ylim(0, ax.get_ylim()[1] * 1.05)
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='upper left', ncol=2)
 ax.set_xticks([0, 4, 8, 12, 16, 20])
 
-# ── Panel (b): Campi–Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
-k_range = np.arange(0, min(N // 3, 60) + 1)
-eps_lo = np.zeros_like(k_range, dtype=float)
-eps_hi = np.zeros_like(k_range, dtype=float)
-for idx, kv in enumerate(k_range):
-    eps_lo[idx], eps_hi[idx] = quantify_risk(kv, N, beta)
+k_max = min(N // 3, 60)
+k_int = np.arange(0, k_max + 1)
+eps_lo_int = np.zeros_like(k_int, dtype=float)
+eps_hi_int = np.zeros_like(k_int, dtype=float)
+for idx, kv in enumerate(k_int):
+    eps_lo_int[idx], eps_hi_int[idx] = quantify_risk(int(kv), N, beta)
+eps_lo_k, eps_hi_k = quantify_risk(k, N, beta)
+k_smooth = np.linspace(0, k_max, 500)
+spl_lo = UnivariateSpline(k_int, eps_lo_int, s=1e-4)
+spl_hi = UnivariateSpline(k_int, eps_hi_int, s=1e-4)
 
-ax.fill_between(k_range, eps_lo, eps_hi, alpha=0.25, color=C_RISK_FILL, label='Feasible region')
-ax.plot(k_range, eps_lo, '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
-ax.plot(k_range, eps_hi, '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
+ax.fill_between(k_smooth, spl_lo(k_smooth), spl_hi(k_smooth), alpha=0.25, color=C_RISK_FILL, label='Feasible region')
+ax.plot(k_smooth, spl_lo(k_smooth), '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
+ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
 ax.axvline(x=k, color=C_DEMAND, linestyle='-', linewidth=1.5, alpha=0.8)
-k_idx = min(k, len(eps_lo) - 1)
-ax.scatter([k], [eps_lo[k_idx]], c=C_DEMAND, s=50, zorder=5, marker='o')
-ax.scatter([k], [eps_hi[k_idx]], c=C_DEMAND, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 5, eps_hi[k_idx] + 0.08),
+ax.scatter([k], [eps_lo_k], c=C_DEMAND, s=50, zorder=5, marker='o')
+ax.scatter([k], [eps_hi_k], c=C_DEMAND, s=50, zorder=5, marker='o')
+ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 5, eps_hi_k + 0.08),
             fontsize=9, color=C_DEMAND,
             arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
-ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=0.01$)')
+ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', loc='upper left')
 
 # ── Panel (c): Renewable scenario variability ──

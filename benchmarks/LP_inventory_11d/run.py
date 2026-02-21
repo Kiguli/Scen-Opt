@@ -129,7 +129,7 @@ def main():
 
     rho = params.get('rho', 25.0)
     tau = params.get('tau', 0.0)
-    beta = 1.0 - params.get('confidence', 0.99)
+    beta = 1.0 - params.get('confidence', 0.999999)
 
     N = len(scenarios)
     n_vars = N_PRODUCTS                    # original decision variables (q)

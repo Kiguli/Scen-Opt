@@ -199,7 +199,7 @@ def main():
     dose_max_oar2 = anatomy.get('dose_max_oar2', 60.0)
 
     tau = params.get('tau', 0.1)
-    beta = 1.0 - params.get('confidence', 0.99)
+    beta = 1.0 - params.get('confidence', 0.999999)
 
     N = len(scenarios)
     n_vars = c.shape[0]

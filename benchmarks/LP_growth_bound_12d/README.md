@@ -23,7 +23,7 @@ The LP solves with N = 3127 sampled trajectories. The optimal growth matrix and 
     M* = [[-1.000, 0.000, 0.005], [0.000, -1.000, 0.009], [0.000, 0.000, -1.000]]
     b* = [-1.000, -1.000, -1.000]
 
-With pre-selected bias γ = 0.067 and β = 10⁻⁶, the support set size is k = 6 and degeneracy was detected, so no lower bound on risk can be certified. The upper bound is ε̄ = 0.01.
+With pre-selected bias γ = 0.067 and β = 10⁻⁶, the support set size is k = 6 and degeneracy was detected, so no lower bound on risk can be certified. The upper bound is ε̄ = 0.0101.
 
 ## Files
 

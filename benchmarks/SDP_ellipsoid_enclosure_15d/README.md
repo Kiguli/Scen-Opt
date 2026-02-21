@@ -8,7 +8,7 @@ The Breast Cancer Wisconsin dataset contains 569 samples with 30 features. We se
 
 The decision variable is x = [p_11, p_12, ..., p_55] in R^15, the entries of the 5 x 5 symmetric shape matrix P = sum_{k=1}^{15} x_k Pi_k, defining the ellipsoid E = {z : (z - x_bar)' P (z - x_bar) <= 1}.
 
-Each scenario delta_i in R^5 is a data point drawn uniformly at random from the dataset (N = 200 scenarios).
+Each scenario delta_i in R^5 is a data point from the full dataset (N = 569 scenarios, one per sample).
 
 ## Formulation
 
@@ -22,7 +22,7 @@ so that (delta_i - x_bar)' P (delta_i - x_bar) - 1 <= 0. The hard constraint enf
 
 ![Minimum Enclosing Ellipsoid](results/minimum_enclosing_ellipsoid.png)
 
-The optimal P has trace 53.77 and eigenvalues {~0, ~0, ~0, 0.61, 53.16}, revealing that the standardized data effectively lies in a 2-dimensional subspace (the first 5 breast cancer features are highly correlated). Of the full 569-point dataset, 559 (98.2%) lie inside the ellipsoid; the 10 points outside were not among the 200 sampled scenarios. The complexity is k = 6 (six boundary data points define the ellipsoid), no degeneracy, and risk bounds [0.0029, 0.0942] at 99% confidence, guaranteeing that a new random data point will fall inside the ellipsoid with probability at least 90.6%.
+The optimal P has trace 44.59 and eigenvalues {~0, ~0, ~0, ~0, 44.59}, revealing that the standardized data effectively lies in a 1-dimensional subspace (the first 5 breast cancer features are highly correlated). Since all 569 data points are used as scenarios, the ellipsoid contains all of them (100% containment). The complexity is k = 5 (five boundary data points define the ellipsoid), no degeneracy, and risk bounds [0.000, 0.051] at 99.9999% confidence, guaranteeing that a new random data point will fall inside the ellipsoid with probability at least 94.9%.
 
 ## Files
 
@@ -36,7 +36,7 @@ SDP_ellipsoid_enclosure_15d/
 ├── data/
 │   ├── benchmark.json             One-shot program definition (JSON)
 │   ├── benchmark.mat              One-shot program definition (MATLAB)
-│   ├── scenarios.csv              200 x 5 data point scenarios
+│   ├── scenarios.csv              569 x 5 data point scenarios
 │   ├── basis_matrices.npy         15 x 5 x 5 symmetric basis matrices Pi_k
 │   ├── free_entries.csv           Mapping of free entries in symmetric matrix
 │   ├── coeffs.csv                 Precomputed containment coefficients
@@ -93,12 +93,12 @@ python plot.py
 3. Upload or enter:
    - **c**: `data/c.csv`
    - **Q**: `data/Q.csv`
-4. Set parameters: rho = 0.0, tau = 0.0, confidence (beta) = 0.01
+4. Set parameters: rho = 0.0, tau = 0.0, confidence (beta) = 1e-06
 5. Upload `data/scenarios.csv` in the Scenarios box
 6. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: -53.77272568355289
-- Complexity k: 6
-- Risk bounds: [0.0029051032103598116, 0.0942128561489517]
+- Optimal cost: -44.59438886598514
+- Complexity k: 5
+- Risk bounds: [0.0, 0.05102523978920701]

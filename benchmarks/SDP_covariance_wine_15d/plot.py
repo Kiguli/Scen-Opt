@@ -5,6 +5,7 @@ import sys, os, json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from scipy.interpolate import UnivariateSpline
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.Risk import quantify_risk
@@ -48,7 +49,7 @@ with open(os.path.join(benchmark_dir, 'parameters.txt'), 'r') as f:
         if '=' in line and not line.strip().startswith('#'):
             key, val = line.split('=', 1)
             params[key.strip()] = float(val.split('#')[0].strip())
-beta = 1.0 - params.get('confidence', 0.99)
+beta = 1.0 - params.get('confidence', 0.999999)
 
 # Short feature labels
 short_names = ['Alc', 'Mal', 'Ash', 'Alk', 'Mg']
@@ -60,7 +61,7 @@ C_RISK_FILL = '#4393c3'
 C_RISK_LINE = '#2166ac'
 C_MARKER = '#b2182b'
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
 
 # ── Panel (a): Covariance matrices side by side ──
 ax = axes[0]
@@ -84,25 +85,30 @@ ax.set_yticks(range(p))
 ax.set_yticklabels(short_names, fontsize=8)
 ax.set_title(r'(a) $\hat{\Sigma} - \Sigma_{\mathrm{full}}$ (entry errors)')
 
-# ── Panel (b): Campi-Garatti risk bounds ──
+# ── Panel (b): Scenario approach risk bounds ──
 ax = axes[1]
-k_range = np.arange(0, min(N, 60) + 1)
-eps_lo = np.zeros_like(k_range, dtype=float)
-eps_hi = np.zeros_like(k_range, dtype=float)
-for idx, kv in enumerate(k_range):
-    eps_lo[idx], eps_hi[idx] = quantify_risk(kv, N, beta)
+k_max = min(N, 60)
+k_int = np.arange(0, k_max + 1)
+eps_lo_int = np.zeros_like(k_int, dtype=float)
+eps_hi_int = np.zeros_like(k_int, dtype=float)
+for idx, kv in enumerate(k_int):
+    eps_lo_int[idx], eps_hi_int[idx] = quantify_risk(int(kv), N, beta)
+eps_lo_k, eps_hi_k = quantify_risk(min(k, k_max), N, beta)
+k_smooth = np.linspace(0, k_max, 500)
+spl_lo = UnivariateSpline(k_int, eps_lo_int, s=1e-2)
+spl_hi = UnivariateSpline(k_int, eps_hi_int, s=1e-2)
 
-ax.fill_between(k_range, eps_lo, eps_hi, alpha=0.25, color=C_RISK_FILL, label='Feasible region')
-ax.plot(k_range, eps_lo, '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
-ax.plot(k_range, eps_hi, '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
-k_plot = min(k, k_range[-1])
+ax.fill_between(k_smooth, spl_lo(k_smooth), spl_hi(k_smooth), alpha=0.25, color=C_RISK_FILL, label='Feasible region')
+ax.plot(k_smooth, spl_lo(k_smooth), '--', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{lo}}(k)$')
+ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label=r'$\epsilon_{\mathrm{up}}(k)$')
+k_plot = min(k, k_max)
 ax.axvline(x=k_plot, color=C_MARKER, linestyle='-', linewidth=1.5, alpha=0.8)
-ax.scatter([k_plot], [eps_lo[k_plot]], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.scatter([k_plot], [eps_hi[k_plot]], c=C_MARKER, s=50, zorder=5, marker='o')
+ax.scatter([k_plot], [eps_lo_k], c=C_MARKER, s=50, zorder=5, marker='o')
+ax.scatter([k_plot], [eps_hi_k], c=C_MARKER, s=50, zorder=5, marker='o')
 
-if k <= k_range[-1]:
-    ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_plot]),
-                xytext=(k + 3, eps_hi[k_plot] + 0.02),
+if k <= k_max:
+    ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
+                xytext=(k + 3, eps_hi_k + 0.02),
                 fontsize=9, color=C_MARKER,
                 arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
 else:
@@ -116,23 +122,6 @@ ax.set_ylabel(r'Risk $\varepsilon$')
 beta_str = f'{beta:.2g}'
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta={beta_str}$)')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', loc='upper left')
-
-# ── Panel (c): Eigenvalue comparison ──
-ax = axes[2]
-eigvals_full = np.linalg.eigvalsh(cov_full)
-
-x_pos = np.arange(p)
-width = 0.35
-bars1 = ax.bar(x_pos - width / 2, sorted(eigvals_full), width, color=C_FULL,
-               edgecolor='black', linewidth=0.5, label='Full-sample', alpha=0.8)
-bars2 = ax.bar(x_pos + width / 2, sorted(eigvals), width, color=C_EST,
-               edgecolor='black', linewidth=0.5, label='Estimated', alpha=0.8)
-
-ax.set_xticks(x_pos)
-ax.set_xticklabels([f'$\\lambda_{i + 1}$' for i in range(p)])
-ax.set_ylabel('Eigenvalue')
-ax.set_title(r'(c) Eigenvalue spectrum of $\hat{\Sigma}$')
-ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=8, loc='upper left')
 
 plt.tight_layout()
 out_path = os.path.join(results_dir, 'robust_covariance_wine.png')

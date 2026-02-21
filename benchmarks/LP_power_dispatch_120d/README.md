@@ -22,7 +22,7 @@ Each scenario delta_i in R^48 encodes uncertain hourly wind generation (delta[0:
 
 ![Power Dispatch Results](results/power_dispatch.png)
 
-The LP solves with N = 150 scenarios. Total cost is $831,357 comprising $537,670 in generation cost and $293,687 in power imbalance penalty. Coal (cheapest at $30/MWh) provides baseload at 284-500 MW. Gas 1 ($40/MWh) ramps to cover evening peak, reaching 300 MW at hour 18. Gas 2 ($50/MWh) sits at its 75 MW minimum throughout. The LP had complexity k = 34, no degeneracy, and risk bounds [0.1194, 0.3659].
+The LP solves with N = 150 scenarios. Total cost is $831,357 comprising $537,670 in generation cost and $293,687 in power imbalance penalty. Coal (cheapest at $30/MWh) provides baseload at 284-500 MW. Gas 1 ($40/MWh) ramps to cover evening peak, reaching 300 MW at hour 18. Gas 2 ($50/MWh) sits at its 75 MW minimum throughout. The LP had complexity k = 34, no degeneracy, and risk bounds [0.079, 0.443] at 99.9999% confidence (beta = 10^{-6}).
 
 ## Files
 
@@ -83,7 +83,7 @@ python plot.py
    - **c**: `data/c.csv`
    - **G**: `data/G.csv`
    - **h**: `data/h.csv`
-3. Set parameters: rho = 0, tau = 0, confidence (beta) = 0.01
+3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
@@ -91,4 +91,4 @@ python plot.py
 
 - Optimal cost: 831357.4274826923
 - Complexity k: 34
-- Risk bounds: [0.1194032020432254, 0.36593072125067305]
+- Risk bounds: [0.07906891773454847, 0.44250483819283526]

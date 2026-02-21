@@ -2,8 +2,8 @@
 """
 Generate minimum enclosing ellipsoid data from Breast Cancer Wisconsin dataset for SDP.
 
-Each scenario is a randomly drawn data point. The SDP finds the tightest PSD shape
-matrix P such that all sampled points lie inside the ellipsoid {x : (x-c)'P(x-c) <= 1}.
+Each scenario is a data point from the full dataset. The SDP finds the tightest PSD shape
+matrix P such that all points lie inside the ellipsoid {x : (x-c)'P(x-c) <= 1}.
 The scenario approach guarantees containment of future random data points.
 
 SDP formulation (robust, rho=0):
@@ -66,11 +66,11 @@ for k, (i, j) in enumerate(free_entries):
 Q = np.zeros((n_vars, n_vars))
 
 # ===== Generate scenarios =====
-N = 200
-idx = np.random.choice(n_samples, size=N, replace=False)
-scenario_points = data[idx]
+# Use ALL data points as scenarios (no subsampling)
+N = n_samples
+scenario_points = data
 
-print(f"\nScenarios: {N} (random data points)")
+print(f"\nScenarios: {N} (all data points)")
 print(f"Data shape: {scenario_points.shape}")
 
 # Precompute coefficients for each scenario

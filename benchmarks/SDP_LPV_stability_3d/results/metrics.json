@@ -8,7 +8,7 @@
   "N": 100,
   "k": 1,
   "eps_lower": 0.0,
-  "eps_upper": 0.0940833948721411,
+  "eps_upper": 0.185321964349132,
   "degeneracy": false,
   "parameter_range": [
     -0.18686577316898031,
