@@ -1094,6 +1094,32 @@ function loadProblemJSON() {
 
     function processData(data) {
 
+        // Clear all previous state before loading a new program
+        // Reset SDP matrix collections
+        window.sdpMatrixCollection1 = {};
+        window.sdpMatrixCollection2 = {};
+        window.sdpMatrixCollection3 = {};
+        window.sdpMatrixCollection4 = {};
+        window.sdpCurrentMatrixIndex = null;
+
+        // Clear all form fields across all tabs
+        ['lp', 'qp', 'sdp'].forEach(function(p) {
+            ['A_d', 'b_d', 'A', 'b', 'c', 'Q', 'F_d', 'F'].forEach(function(field) {
+                var el = document.getElementById(p + '-' + field);
+                if (el) el.value = '';
+            });
+            ['rho', 'tau', 'p'].forEach(function(field) {
+                var el = document.getElementById(p + '-' + field);
+                if (el) el.value = '';
+            });
+            var thetaEl = document.getElementById(p + '-theta-bar');
+            if (thetaEl) thetaEl.value = '';
+        });
+
+        // Clear result box
+        var resultBox = document.getElementById('result-box');
+        if (resultBox) resultBox.innerHTML = '<p>No result yet.</p>';
+
         const type = (data.type || '').toUpperCase();
         if (!['LP', 'QP', 'SDP'].includes(type)) {
             alert('JSON must include a "type" field with value "LP", "QP", or "SDP".');
