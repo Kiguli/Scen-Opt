@@ -4,27 +4,66 @@ from src.Miscellaneous import get_active
 
 
 def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
+    r"""Solve a semidefinite program with LMI scenario constraints via the scenario approach.
+
+    Minimizes :math:`\tfrac{1}{2} x^\top Q x + c^\top x + \tau \|x - x_{\text{ref}}\|_p + \rho \sum \zeta_i`
+    subject to scenario LMI constraints
+    :math:`F_0(\delta_i) + \sum_j x_j F_j(\delta_i) \preceq \zeta_i I`
+    and a hard LMI constraint :math:`E_0 + \sum_j x_j E_j \preceq 0`.
+
+    Parameters
+    ----------
+    deltas : numpy.ndarray
+        Scenario samples with shape ``(N,)`` or ``(N, q)`` where *N* is the
+        number of scenarios and *q* is the uncertainty dimension.
+    F_d : callable
+        Function mapping a scenario to a dict of symmetric matrices keyed by
+        variable index (``'0'`` for the constant term, ``'1'`` for
+        :math:`x_1`, etc.):  ``F_d(delta) -> {'0': F0, '1': F1, ...}``.
+    E : dict or None
+        Dict of symmetric matrices for the hard LMI constraint, same key
+        format as *F_d* output. Pass ``None`` if there are no hard constraints.
+    c : numpy.ndarray
+        Linear objective coefficient vector with shape ``(n,)``.
+    Q : numpy.ndarray
+        Quadratic cost matrix with shape ``(n, n)``. Must be positive
+        semidefinite and symmetric.
+    tau : float, optional
+        Regularization strength toward *x_ref*. Default is ``0.0``.
+    x_ref : numpy.ndarray, optional
+        Reference point for the regularization term. Default is ``[0.0]``.
+    rho : float, optional
+        Penalty on slack variables. When ``0.0`` the scenario constraints are
+        hard. Default is ``0.0``.
+    norm_type : int, optional
+        Norm type for the regularization term (1, 2, etc.). Default is ``2``.
+    solver : str or None, optional
+        CVXPY solver name. ``None`` for automatic selection.
+
+    Returns
+    -------
+    x : numpy.ndarray
+        Optimal decision variable vector.
+    zeta : numpy.ndarray
+        Optimal slack variable values (one per scenario).
+    cost : float
+        Optimal objective value.
+    N : int
+        Number of scenarios used.
+    complexity : int
+        Number of active (support) scenario constraints.
+    constraints : list
+        CVXPY constraint objects from the problem formulation.
+    degeneracy : bool
+        ``True`` if degeneracy was detected during support identification.
+
+    Raises
+    ------
+    ValueError
+        If the solver does not reach an optimal or near-optimal status.
+    AssertionError
+        If *Q* or any :math:`F_j(\delta)` matrix is not symmetric.
     """
-        Solves a semidefinite programming problem with optional robust and regularization constraints.
-
-        Parameters:
-        deltas (numpy.ndarray): Collected deltas that should be added to constraints.
-        F_d (function): Function that returns the matrices for the constraints given a delta.
-        E (numpy.ndarray): matrices for the hard constraints.
-        c (numpy.ndarray): Coefficient vector for the objective function.
-        Q (numpy.ndarray): Quadratic cost matrix for the objective function.
-        tau (float): Regularization parameter for the norm term in the objective function.
-        x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
-        rho (float): Penalty parameter for the slack variables in the objective function.
-        norm_type (int or str, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
-        solver (str, optional): The solver to use for the optimization problem. Default is None.
-
-        Returns:
-        tuple: A tuple containing:
-            - x (numpy.ndarray): Optimal solution vector.
-            - zeta (numpy.ndarray): Optimal slack variables vector.
-            - cost (float): Optimal value of the objective function.
-        """
 
     # TODO: need to change all this...
     # Check Q is positive semi-definite and symmetric

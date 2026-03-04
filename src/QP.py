@@ -3,29 +3,70 @@ import numpy as np
 from src.Miscellaneous import get_active
 
 def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2,solver=None):
+    r"""Solve a quadratic program with scenario constraints via the scenario approach.
+
+    Minimizes :math:`\tfrac{1}{2} x^\top Q x + c^\top x + \tau \|x - x_{\text{ref}}\|_p + \rho \sum \zeta_i`
+    subject to scenario constraints :math:`A(\delta_i) x + b(\delta_i) \leq \zeta_i`
+    and hard constraints :math:`Gx + h \leq 0`.
+
+    Parameters
+    ----------
+    deltas : numpy.ndarray
+        Scenario samples with shape ``(N,)`` or ``(N, q)`` where *N* is the
+        number of scenarios and *q* is the uncertainty dimension.
+    A_d : callable
+        Function mapping a scenario to the constraint coefficient matrix,
+        ``A_d(delta) -> (m_s, n)`` array.
+    b_d : callable
+        Function mapping a scenario to the constraint right-hand-side vector,
+        ``b_d(delta) -> (m_s, 1)`` array.
+    G : numpy.ndarray
+        Coefficient matrix for hard (non-scenario) constraints.
+        Pass ``np.array([])`` if there are none.
+    h : numpy.ndarray
+        Right-hand-side vector for hard constraints.
+        Pass ``np.array([])`` if there are none.
+    c : numpy.ndarray
+        Linear objective coefficient vector with shape ``(n, 1)``.
+    Q : numpy.ndarray
+        Quadratic cost matrix with shape ``(n, n)``. Must be positive
+        semidefinite and symmetric.
+    tau : float, optional
+        Regularization strength toward *x_ref*. Default is ``0.0``.
+    x_ref : numpy.ndarray, optional
+        Reference point for the regularization term. Default is ``[0.0]``.
+    rho : float, optional
+        Penalty on slack variables. When ``0.0`` the scenario constraints are
+        hard. Default is ``0.0``.
+    norm_type : int, optional
+        Norm type for the regularization term (1, 2, etc.). Default is ``2``.
+    solver : str or None, optional
+        CVXPY solver name. ``None`` for automatic selection.
+
+    Returns
+    -------
+    x : numpy.ndarray
+        Optimal decision variable vector.
+    zeta : numpy.ndarray
+        Optimal slack variable values (one per scenario).
+    cost : float
+        Optimal objective value.
+    N : int
+        Number of scenarios used.
+    complexity : int
+        Number of active (support) scenario constraints.
+    constraints : list
+        CVXPY constraint objects from the problem formulation.
+    degeneracy : bool
+        ``True`` if degeneracy was detected during support identification.
+
+    Raises
+    ------
+    ValueError
+        If the solver does not reach an optimal or near-optimal status.
+    AssertionError
+        If *Q* is not positive semidefinite or not symmetric.
     """
-        Solves a quadratic programming problem with optional robust and regularization constraints.
-
-        Parameters:
-        deltas (numpy.ndarray): Collected deltas that should be added to constraints.
-        A_d (function): Function that returns the coefficient matrix for the constraints given a delta.
-        b_d (function): Function that returns the right-hand side vector for the constraints given a delta.
-        G (numpy.ndarray): coefficient matrix for the hard constraints.
-        h (numpy.ndarray): right-hand side vector for the hard constraints.
-        c (numpy.ndarray): Coefficient vector for the objective function.
-        Q (numpy.ndarray): Quadratic cost matrix for the objective function.
-        tau (float): Regularization parameter for the norm term in the objective function.
-        x_ref (numpy.ndarray): Reference point for the norm term in the objective function.
-        rho (float): Penalty parameter for the slack variables in the objective function.
-        norm_type (int or str, optional): Type of norm to use in the objective function. Default is 2 (Euclidean norm).
-        solver (str, optional): The solver to use for the optimization problem. Default is None.
-
-        Returns:
-        tuple: A tuple containing:
-            - x (numpy.ndarray): Optimal solution vector.
-            - zeta (numpy.ndarray): Optimal slack variables vector.
-            - cost (float): Optimal value of the objective function.
-        """
     # Check Q is positive semi-definite and symmetric
     #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
 

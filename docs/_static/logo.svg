@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2962FF"/>
+      <stop offset="100%" style="stop-color:#00BFA5"/>
+    </linearGradient>
+  </defs>
+  <!-- Scatter dots representing scenarios -->
+  <circle cx="18" cy="28" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <circle cx="30" cy="52" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <circle cx="12" cy="44" r="3.5" fill="#2962FF" opacity="0.35"/>
+  <circle cx="42" cy="36" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <circle cx="26" cy="62" r="3.5" fill="#2962FF" opacity="0.25"/>
+  <circle cx="50" cy="22" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <circle cx="56" cy="50" r="3.5" fill="#2962FF" opacity="0.35"/>
+  <circle cx="38" cy="18" r="3.5" fill="#2962FF" opacity="0.25"/>
+  <circle cx="48" cy="60" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <circle cx="62" cy="34" r="3.5" fill="#2962FF" opacity="0.3"/>
+  <!-- Constraint boundary line (active) -->
+  <line x1="8" y1="68" x2="68" y2="12" stroke="url(#grad)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Active constraint dots (support) -->
+  <circle cx="22" cy="48" r="4.5" fill="#2962FF"/>
+  <circle cx="52" cy="24" r="4.5" fill="#00BFA5"/>
+  <!-- Title text -->
+  <text x="82" y="38" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#1a1a2e" letter-spacing="-0.5">
+    Scen<tspan fill="#2962FF">-O-</tspan>Con
+  </text>
+  <text x="83" y="58" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="13" fill="#5f6368" letter-spacing="0.5">
+    Scenario Optimization Toolbox
+  </text>
+</svg>

@@ -1,0 +1,50 @@
+/* Brand colors */
+:root {
+    --color-brand-primary: #2962FF;
+    --color-brand-secondary: #00BFA5;
+}
+
+/* Furo light-mode overrides */
+body[data-theme="light"] {
+    --color-brand-primary: #2962FF;
+    --color-brand-content: #2962FF;
+}
+
+/* Furo dark-mode overrides */
+body[data-theme="dark"] {
+    --color-brand-primary: #448AFF;
+    --color-brand-content: #448AFF;
+}
+
+/* Card grid styling */
+.sd-card {
+    border-radius: 8px !important;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.sd-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+    transform: translateY(-2px);
+}
+
+/* Parameter list styling */
+dl.field-list > dt {
+    font-weight: 600;
+}
+
+/* Function signature styling */
+dt.sig {
+    background: var(--color-background-secondary) !important;
+    border-left: 3px solid var(--color-brand-primary) !important;
+    padding: 8px 12px !important;
+    border-radius: 0 4px 4px 0 !important;
+}
+
+/* Admonition accent colors */
+.admonition.note {
+    border-color: #2962FF;
+}
+
+.admonition.tip {
+    border-color: #00BFA5;
+}

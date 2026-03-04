@@ -1,4 +1,8 @@
-# Scen-O-Con: A Scenario Optimization Toolbox for Data-Driven Convex Programming
+<p align="center">
+  <img src="docs/_static/logo.svg" alt="Scen-O-Con" width="400">
+</p>
+
+<h1 align="center">A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
 
 Scen-O-Con is an open-source software tool for data-driven convex optimization using the scenario approach of Campi and Garatti. It solves **Linear Programs (LP)**, **Quadratic Programs (QP)**, and **Semidefinite Programs (SDP)** using only sampled uncertainty realizations, providing rigorous probabilistic guarantees on out-of-sample performance without requiring knowledge of the underlying probability distribution.
 

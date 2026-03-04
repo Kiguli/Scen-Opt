@@ -1,16 +1,37 @@
 from jax.scipy.special import betainc
 
 def quantify_risk(k,N,beta):
-    """
-        calculates the upper and lower bounds on the risk given:
-        N (int) - number of samples
-        k (int) - length of support list
-        beta (float) - confidence
-        NOTE: betainc is the incomplete beta function, a naming coincidence with beta the confidence parameter in this approach
-                compared with MATLAB, betainc has the first argument as the last argument instead.
-        Outputs:
-        epsL (float) - lower bound of the risk
-        epsU (float) - upper bound of the risk
+    r"""Compute scenario approach risk bounds on constraint violation probability.
+
+    Uses the theory of Campi and Garatti with the regularized incomplete beta
+    function to compute distribution-free bounds on the probability of
+    out-of-sample constraint violation via bisection.
+
+    The true violation probability :math:`\varepsilon` satisfies
+    :math:`\varepsilon \in [\varepsilon_L, \varepsilon_U]` with confidence
+    at least :math:`1 - \beta`.
+
+    Parameters
+    ----------
+    k : int
+        Number of active (support) constraints from the scenario optimization.
+    N : int
+        Number of sampled scenarios.
+    beta : float
+        Confidence parameter (e.g. ``1e-6`` for high confidence).
+
+    Returns
+    -------
+    epsL : float
+        Lower bound on the constraint violation probability.
+    epsU : float
+        Upper bound on the constraint violation probability.
+
+    Notes
+    -----
+    The incomplete beta function ``betainc`` used here follows the JAX/SciPy
+    argument convention, which differs from MATLAB (the first argument appears
+    last in JAX).
     """
     t1 = 0.0
     t2 = k/N

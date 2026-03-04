@@ -1,7 +1,7 @@
 Solvers
 =======
 
-Each solver follows the scenario approach pattern:
+All solvers follow the scenario approach pattern:
 
 1. Collect *N* random scenarios :math:`\delta_1, \ldots, \delta_N`
 2. Formulate a convex program with soft scenario constraints :math:`A(\delta_i)x + b(\delta_i) \leq \zeta_i`
@@ -12,15 +12,21 @@ Each solver follows the scenario approach pattern:
 All solvers accept optional regularization (:math:`\tau \|x - x_\text{ref}\|_p`) and hard
 constraints that are not relaxed by slack variables.
 
+----
+
 Linear Programming
 ------------------
 
 .. autofunction:: src.LP.solve_lp
 
+----
+
 Quadratic Programming
 ---------------------
 
 .. autofunction:: src.QP.solve_qp
+
+----
 
 Semidefinite Programming
 ------------------------

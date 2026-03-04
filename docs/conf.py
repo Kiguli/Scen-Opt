@@ -46,9 +46,20 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = 'furo'
 html_title = 'Scen-O-Con'
 html_static_path = ['_static']
+html_css_files = ['custom.css']
 
 html_theme_options = {
-    "source_repository": "https://github.com/your-org/ScenarioApproachTool",
+    "light_logo": "logo.svg",
+    "dark_logo": "logo-dark.svg",
+    "source_repository": "https://github.com/Kiguli/Scen-O-Con",
     "source_branch": "master",
     "source_directory": "docs/",
+    "light_css_variables": {
+        "color-brand-primary": "#2962FF",
+        "color-brand-content": "#2962FF",
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#448AFF",
+        "color-brand-content": "#448AFF",
+    },
 }

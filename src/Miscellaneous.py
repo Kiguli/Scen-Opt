@@ -16,36 +16,53 @@ SOLVER_CAPABILITIES = {
 }
 
 def get_solvers():
-    """
-        Retrieves installed solvers and their supported problem types.
+    """Retrieve installed CVXPY solvers and their supported problem types.
 
-        Returns:
-        dict: Mapping of solver name -> list of supported types ('LP', 'QP', 'SDP').
+    Returns
+    -------
+    dict
+        Mapping of solver name to list of supported types
+        (``'LP'``, ``'QP'``, ``'SDP'``).
 
-        Full list: https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver
+    See Also
+    --------
+    `CVXPY solver list <https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver>`_
     """
     installed = cp.installed_solvers()
     return {s: SOLVER_CAPABILITIES.get(s, ['LP', 'QP', 'SDP']) for s in installed}
 
 def get_norm_types():
-    """
-        Retrieves a list of available norm types in cvxpy.
+    """Retrieve available norm types for the regularization term.
 
-        Returns:
-        list: A list of norm types including 1, 2, 'inf', 'fro', and 'nuc'.
+    Returns
+    -------
+    list
+        Supported CVXPY norm types: ``1`` (L1), ``2`` (L2), ``'inf'``
+        (L-infinity), ``'fro'`` (Frobenius), ``'nuc'`` (nuclear).
     """
     norm_types = [1, 2, "inf", "fro", "nuc"]
     return norm_types
 
 def load_file(file_path):
-    """
-    Reads a file (TXT, CSV, XLSX, JSON, etc.) and converts it into a NumPy array.
+    """Read a data file and convert it to a NumPy array.
 
-    Parameters:
-        file_path (str): Path to the file.
+    Supports CSV, TXT, XLSX, and JSON formats.
 
-    Returns:
-        np.ndarray: NumPy array containing the file's data.
+    Parameters
+    ----------
+    file_path : str
+        Path to the input file. Must have a supported extension
+        (``.csv``, ``.txt``, ``.xlsx``, ``.json``).
+
+    Returns
+    -------
+    numpy.ndarray or None
+        Array containing the file data, or ``None`` if an error occurred.
+
+    Raises
+    ------
+    ValueError
+        If the file extension is not supported.
     """
     try:
         if file_path.endswith('.csv'):
@@ -65,18 +82,30 @@ def load_file(file_path):
         return None
 
 def test_active(prob, objective, active, rho=0.0, solver=None):
-    """
-        Solves a convex optimization problem with optional robust and regularization constraints.
+    """Validate that a constraint subset produces the same optimal solution.
 
-        Parameters:
-        prob: CVXPY problem instance for optimal solution.
-        objective: CVXPY objective function.
-        active: list of active constraints.
-        rho (float): Penalty parameter for the slack variables in the objective function.
-        solver (str, optional): The solver to use for the optimization problem. Default is None.
+    Re-solves the problem using only the given constraints and checks that the
+    objective value and decision variables match the original solution. Used
+    internally by :func:`get_active` to verify support set correctness.
 
-        Returns:
-        bool: True if all assertions pass, False if any assertion fails.
+    Parameters
+    ----------
+    prob : cvxpy.Problem
+        The original solved CVXPY problem instance.
+    objective : cvxpy.Minimize
+        The CVXPY objective function.
+    active : list
+        List of candidate active CVXPY constraint objects.
+    rho : float, optional
+        Slack variable penalty. Default is ``0.0``.
+    solver : str or None, optional
+        CVXPY solver name. Default is ``None``.
+
+    Returns
+    -------
+    bool
+        ``True`` if the reduced problem matches the original solution,
+        ``False`` otherwise.
     """
     try:
         prob2 = cp.Problem(objective, active)
@@ -103,19 +132,45 @@ def test_active(prob, objective, active, rho=0.0, solver=None):
 
 
 def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solver=None, threshold=1e-8):
-    """
-        Finds the active constraints of the Convex optimization problem.
+    """Identify the support (active) constraints that define the optimal solution.
 
-        Parameters:
-        constraints (list): list of constraints.
-        non_risk_constraints (list): list of constraints that should not be included in the error calculation.
-        prob: CVXPY problem instance for optimal solution.
-        objective: CVXPY objective function.
-        rho (float,optional): Penalty parameter for the slack variables in the objective function. Default is 0.0.
-        solver (str, optional): The solver to use for the optimization problem. Default is None.
-        threshold (float, optional): Threshold for the solver checking active constraints. Default is 1e-8.
-        Returns:
-        active (list): list of active constraints.
+    Uses dual variable analysis with parallel constraint testing. A constraint
+    is initially flagged as active when its dual value exceeds *threshold*.
+    The candidate set is then validated and pruned to find a minimal support
+    set. Degeneracy is handled by iteratively removing constraints until the
+    minimal valid set is found.
+
+    Parameters
+    ----------
+    constraints : list
+        All scenario constraints from the optimization problem.
+    non_risk_constraints : list
+        Hard constraints to exclude from the support complexity count.
+    prob : cvxpy.Problem
+        The solved CVXPY problem instance.
+    objective : cvxpy.Minimize
+        The CVXPY objective function.
+    rho : float, optional
+        Slack variable penalty parameter. Default is ``0.0``.
+    solver : str or None, optional
+        CVXPY solver name. Default is ``None``.
+    threshold : float, optional
+        Dual value threshold for detecting active constraints.
+        Default is ``1e-8``.
+
+    Returns
+    -------
+    complexity : int
+        Number of active scenario constraints (*k* in the scenario approach).
+    active : list
+        List of active CVXPY constraint objects.
+    degeneracy : bool
+        ``True`` if degeneracy was detected during support identification.
+
+    Raises
+    ------
+    ValueError
+        If a valid support set cannot be determined.
     """
 
     #TODO: make threshold a global parameter?
