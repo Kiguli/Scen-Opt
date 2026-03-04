@@ -38,6 +38,9 @@ dt.sig {
     border-left: 3px solid var(--color-brand-primary) !important;
     padding: 8px 12px !important;
     border-radius: 0 4px 4px 0 !important;
+    overflow-x: auto;
+    word-wrap: break-word;
+    white-space: normal;
 }
 
 /* Admonition accent colors */
