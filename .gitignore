@@ -21,5 +21,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# Sphinx documentation
+docs/_build/
+
 # Misc
 *.log
+
+# Analytics (server-only, not part of open-source repo)
+analytics.db
+src/analytics.py
