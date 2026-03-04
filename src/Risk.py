@@ -7,9 +7,11 @@ def quantify_risk(k,N,beta):
     function to compute distribution-free bounds on the probability of
     out-of-sample constraint violation via bisection.
 
-    The true violation probability :math:`\varepsilon` satisfies
-    :math:`\varepsilon \in [\varepsilon_L, \varepsilon_U]` with confidence
-    at least :math:`1 - \beta`.
+    The true violation probability satisfies:
+
+    .. math::
+
+        \varepsilon \;\in\; [\varepsilon_L,\; \varepsilon_U] \quad \text{with confidence at least } 1 - \beta
 
     Parameters
     ----------

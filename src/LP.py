@@ -5,9 +5,17 @@ from src.Miscellaneous import get_active
 def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2,solver=None):
     r"""Solve a linear program with scenario constraints via the scenario approach.
 
-    Minimizes :math:`c^\top x + \tau \|x - x_{\text{ref}}\|_p + \rho \sum \zeta_i`
-    subject to scenario constraints :math:`A(\delta_i) x + b(\delta_i) \leq \zeta_i`
-    and hard constraints :math:`Gx + h \leq 0`.
+    .. math::
+
+        \min \quad c^\top x \;+\; \tau \|x - x_{\text{ref}}\|_p \;+\; \rho \sum_i \zeta_i
+
+    .. math::
+
+        \text{s.t.} \quad A(\delta_i)\, x + b(\delta_i) \;\leq\; \zeta_i, \quad i = 1,\ldots,N
+
+    .. math::
+
+        G\, x + h \;\leq\; 0
 
     Parameters
     ----------

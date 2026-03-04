@@ -6,10 +6,17 @@ from src.Miscellaneous import get_active
 def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
     r"""Solve a semidefinite program with LMI scenario constraints via the scenario approach.
 
-    Minimizes :math:`\tfrac{1}{2} x^\top Q x + c^\top x + \tau \|x - x_{\text{ref}}\|_p + \rho \sum \zeta_i`
-    subject to scenario LMI constraints
-    :math:`F_0(\delta_i) + \sum_j x_j F_j(\delta_i) \preceq \zeta_i I`
-    and a hard LMI constraint :math:`E_0 + \sum_j x_j E_j \preceq 0`.
+    .. math::
+
+        \min \quad \tfrac{1}{2}\, x^\top Q\, x \;+\; c^\top x \;+\; \tau \|x - x_{\text{ref}}\|_p \;+\; \rho \sum_i \zeta_i
+
+    .. math::
+
+        \text{s.t.} \quad F_0(\delta_i) + \sum_j x_j\, F_j(\delta_i) \;\preceq\; \zeta_i\, I, \quad i = 1,\ldots,N
+
+    .. math::
+
+        E_0 + \sum_j x_j\, E_j \;\preceq\; 0
 
     Parameters
     ----------
