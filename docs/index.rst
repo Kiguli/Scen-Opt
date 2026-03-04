@@ -27,6 +27,12 @@ assumptions required.
       Distribution-free violation probability bounds via the Campi--Garatti
       theory.
 
+   .. grid-item-card:: CVXPY Solvers
+      :link: cvxpy_solvers
+      :link-type: doc
+
+      Installed solvers on the server and the full CVXPY compatibility matrix.
+
    .. grid-item-card:: Utilities
       :link: utilities
       :link-type: doc
@@ -63,4 +69,5 @@ How It Works
 
    solvers
    risk
+   cvxpy_solvers
    utilities
