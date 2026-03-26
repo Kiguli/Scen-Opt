@@ -1589,14 +1589,14 @@ document.addEventListener('DOMContentLoaded', function() {
         relocateSharedElements();
         filterSolvers();
         updateDimensionVisibility();
-        updateConfidenceLabel();
+        updateLatexText(this.id.replace('-tab', ''));
         updateScenarioLabel();
     });
 
     // Initial filter on page load
     filterSolvers();
     updateDimensionVisibility();
-    updateConfidenceLabel();
+    updateLatexText('lp');
     updateScenarioLabel();
 
     // Update sweep counter when rho/tau fields change

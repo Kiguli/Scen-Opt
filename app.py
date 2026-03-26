@@ -306,8 +306,15 @@ def _solve_inner():
         [0.0])
     theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get(
         'theta_bar') else 0.0
-    p = float(request.form.get('p', 0)) if request.form.get(
-        'p') else 2  # TODO: add something to check for 'fro' or 'inf', and any number
+    p_raw = request.form.get('p', '').strip().strip("'\"")
+    if not p_raw:
+        p = 2
+    elif p_raw.lower() in ('inf', 'infinity', 'np.inf'):
+        p = np.inf
+    elif p_raw.lower() == 'fro':
+        p = 'fro'
+    else:
+        p = float(p_raw)
 
     # Initialize lists to collect results for each run
     optimal_x_list = []

@@ -132,7 +132,15 @@ def main():
         if form.get("theta_bar")
         else 0.0
     )
-    p = float(form["p"]) if form.get("p") else 2
+    p_raw = form.get("p", "").strip().strip("'\"")
+    if not p_raw:
+        p = 2
+    elif p_raw.lower() in ("inf", "infinity", "np.inf"):
+        p = np.inf
+    elif p_raw.lower() == "fro":
+        p = "fro"
+    else:
+        p = float(p_raw)
 
     # ---- solve loop (mirrors _solve_inner in app.py) ----
     conf = conf / (len(taus) * len(rhos))
