@@ -28,20 +28,99 @@
             <a class="nav-link" id="sdp-tab" data-toggle="tab" href="#sdp" role="tab" aria-controls="sdp"
                aria-selected="false">SDP</a>
         </li>
-        <li class="nav-item ml-2">
+        <li class="d-flex align-items-center ml-auto mr-1" style="list-style:none;">
+            <button type="button" class="btn btn-link p-0 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true"
+                    data-content="Upload a JSON or MAT file describing your optimisation problem. The tool auto-detects the program type (LP, QP, or SDP) and populates all fields for you.">
+                <span class="dim-help-icon">?</span>
+            </button>
+        </li>
+        <li class="nav-item">
             <button class="btn btn-outline-success" data-toggle="modal" data-target="#detectProgramModal">
                 Detect Program
             </button>
         </li>
     </ul>
+    <div class="d-flex align-items-center mt-3 mb-2" id="mode-toggle-row">
+        <div class="mode-switch" id="mode-switch">
+            <input type="radio" name="mode" id="mode-symbolic-radio" value="symbolic" checked>
+            <input type="radio" name="mode" id="mode-numeric-radio" value="numeric">
+            <label for="mode-symbolic-radio" class="mode-switch-label mode-switch-left">Symbolic</label>
+            <label for="mode-numeric-radio" class="mode-switch-label mode-switch-right">Numeric</label>
+            <span class="mode-switch-slider"></span>
+        </div>
+        <button type="button" class="btn btn-link ml-2 p-0" id="mode-help-btn"
+                data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true"
+                title="Input Mode"
+                data-content="">
+            <span class="dim-help-icon">?</span>
+        </button>
+    </div>
+    <div id="dimension-controls">
+        <div class="dim-group">
+            <label class="mb-0">\(d\):</label>
+            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                    data-content="Number of decision variables \(x\). Sets the dimension of \(x \in \mathbb{R}^d\).">
+                <span class="dim-help-icon">?</span>
+            </button>
+            <input type="number" id="dim-nx" class="form-control form-control-sm" min="1" value="2">
+        </div>
+        <div class="dim-group" id="dim-rows-a-group">
+            <label class="mb-0">\(\mathfrak{m}\):</label>
+            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                    data-content="Number of rows of the soft constraint matrices \(A\) and \(b\).">
+                <span class="dim-help-icon">?</span>
+            </button>
+            <input type="number" id="dim-rows-a" class="form-control form-control-sm" min="1" value="1">
+        </div>
+        <div class="dim-group" id="dim-rows-g-group">
+            <label class="mb-0">\(\mathfrak{n}\):</label>
+            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                    data-content="Number of rows of the hard constraint matrices \(G\) and \(h\).">
+                <span class="dim-help-icon">?</span>
+            </button>
+            <input type="number" id="dim-rows-g" class="form-control form-control-sm" min="0" value="0">
+        </div>
+        <div class="dim-group" id="dim-lmi-group" style="display:none;">
+            <label class="mb-0">\(\mathfrak{m}\):</label>
+            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                    data-content="Size of the square LMI matrices \(F_j\). Each \(F_j\) is \(\mathfrak{m} \times \mathfrak{m}\).">
+                <span class="dim-help-icon">?</span>
+            </button>
+            <input type="number" id="dim-lmi-size" class="form-control form-control-sm" min="1" value="2">
+        </div>
+        <div class="dim-group" id="dim-lmi-e-group" style="display:none;">
+            <label class="mb-0">\(\mathfrak{n}\):</label>
+            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                    data-content="Size of the square matrices \(E_j\). Each \(E_j\) is \(\mathfrak{n} \times \mathfrak{n}\).">
+                <span class="dim-help-icon">?</span>
+            </button>
+            <input type="number" id="dim-lmi-e-size" class="form-control form-control-sm" min="1" value="2">
+        </div>
+    </div>
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="lp" role="tabpanel" aria-labelledby="lp-tab">
-            <div class="card mt-4">
+            <div class="card mt-2">
                 <div class="card-body">
-                    <h5 class="card-title">Linear Program</h5>
+                    <div class="card-title-row">
+                        <h5 class="card-title mb-0">Linear Program</h5>
+                        <div class="mode-toggle-placeholder"></div>
+                    </div>
                     <form id="lp-form" action="/solve" method="post">
                         <div class="form-group">
-                            <label for="lp-options">Select Option:</label>
+                            <div class="d-flex align-items-center">
+                                <label class="mb-0" for="lp-options">Select Option:</label>
+                                <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                        data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                    <span class="dim-help-icon">?</span>
+                                </button>
+                            </div>
                             <select id="lp-options" class="form-control" name="option" onchange="updateLatexText('lp')">
                                 <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
                                     Robust
@@ -62,9 +141,8 @@
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{x} \quad c^\top x\)</p>
                                 <p>subject to:</p>
-                                <p>\(A(\delta_i)x+b(\delta_i) \leq 0\)</p>
+                                <p>\(A(\delta_i)\, x+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
                                 <p>\(Gx+h \leq 0\)</p>
-                                <p> where \(i=1,\ldots,N.\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -78,7 +156,7 @@
                                            value="{{ request.form.c }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 symbolic-only">
                                 <div class="form-group">
                                     <label for="lp-A_d">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
@@ -88,7 +166,7 @@
                                            value="{{ request.form.A_d }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 symbolic-only">
                                 <div class="form-group">
                                     <label for="lp-b_d">\(b(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
@@ -98,36 +176,52 @@
                                            value="{{ request.form.b_d }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
                                     <label for="lp-A">\(G\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
+                                    <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
                                             onclick="openMatrixModal('lp','A')">Edit \(G\)
                                     </button>
                                     <input type="hidden" id="lp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
                                     <label for="lp-b">\(h\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
+                                    <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
                                             onclick="openMatrixModal('lp','b')">Edit \(h\)
                                     </button>
                                     <input type="hidden" id="lp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
                                 </div>
                             </div>
+                        </div>
+                        <div class="row param-row">
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-tau-group" style="display: none;">
-                                    <label for="lp-tau">\(\tau \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="lp-tau">\(\tau \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Regularization weight(s). Comma-separated values to sweep over multiple \(\tau\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="lp-tau" class="form-control" name="tau" data-shared="true"
                                            value="{{ request.form.tau }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-theta-bar-group" style="display: none;">
-                                    <label for="lp-theta-bar">\(\bar{x}\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="lp-theta-bar">\(\bar{x}\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Reference point for regularization. The objective penalises deviation \(\lVert x - \bar{x}\rVert_p\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('lp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
@@ -138,14 +232,28 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-p-group" style="display: none;">
-                                    <label for="lp-p">\(p\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="lp-p">\(p\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Norm order for the regularization term \(\lVert x - \bar{x}\rVert_p\). Common values: 1, 2, or inf.">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="lp-p" class="form-control" name="p" data-shared="true"
                                            value="{{ request.form.p }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="lp-rho-group" style="display: none;">
-                                    <label for="lp-rho">\(\rho \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="lp-rho">\(\rho \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Relaxation penalty weight(s). Comma-separated values to sweep over multiple \(\rho\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="lp-rho" class="form-control" name="rho" data-shared="true"
                                            value="{{ request.form.rho }}">
                                 </div>
@@ -157,12 +265,22 @@
             </div>
         </div>
         <div class="tab-pane fade" id="qp" role="tabpanel" aria-labelledby="qp-tab">
-            <div class="card mt-4">
+            <div class="card mt-2">
                 <div class="card-body">
-                    <h5 class="card-title">Quadratic Program</h5>
+                    <div class="card-title-row">
+                        <h5 class="card-title mb-0">Quadratic Program</h5>
+                        <div class="mode-toggle-placeholder"></div>
+                    </div>
                     <form id="qp-form" action="/solve" method="post">
                         <div class="form-group">
-                            <label for="qp-options">Select Option:</label>
+                            <div class="d-flex align-items-center">
+                                <label class="mb-0" for="qp-options">Select Option:</label>
+                                <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                        data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                    <span class="dim-help-icon">?</span>
+                                </button>
+                            </div>
                             <select id="qp-options" class="form-control" name="option" onchange="updateLatexText('qp')">
                                 <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
                                     Robust
@@ -183,9 +301,8 @@
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{x} \quad c^\top x + \frac{1}{2}x^\top Qx\)</p>
                                 <p>subject to:</p>
-                                <p>\(A(\delta_i)x+b(\delta_i) \leq 0\)</p>
+                                <p>\(A(\delta_i)\, x+b(\delta_i) \leq 0, \quad i = 1, \ldots, N\)</p>
                                 <p>\(Gx+h \leq 0\)</p>
-                                <p> where \(i=1,\ldots,N.\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -201,7 +318,7 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="qp-Q">\(Q\):</label>
+                                    <label for="qp-Q">\(Q \succeq 0\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp', 'Q')">Edit \(Q\)
                                     </button>
@@ -209,7 +326,7 @@
                                            value="{{ request.form.Q }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 symbolic-only">
                                 <div class="form-group">
                                     <label for="qp-A_d">\(A(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
@@ -219,7 +336,7 @@
                                            value="{{ request.form.A_d }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 symbolic-only">
                                 <div class="form-group">
                                     <label for="qp-b_d">\(b(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
@@ -229,37 +346,52 @@
                                            value="{{ request.form.b_d }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
                                     <label for="qp-A">\(G\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
+                                    <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
                                             onclick="openMatrixModal('qp', 'A')">Edit \(G\)
                                     </button>
                                     <input type="hidden" id="qp-A" name="A" data-shared="true"
                                            value="{{ request.form.A }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
                                     <label for="qp-b">\(h\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
+                                    <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
                                             onclick="openMatrixModal('qp', 'b')">Edit \(h\)
                                     </button>
                                     <input type="hidden" id="qp-b" name="b" data-shared="true"
                                            value="{{ request.form.b }}">
                                 </div>
                             </div>
-
+                        </div>
+                        <div class="row param-row">
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-tau-group" style="display: none;">
-                                    <label for="qp-tau">\(\tau \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="qp-tau">\(\tau \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Regularization weight(s). Comma-separated values to sweep over multiple \(\tau\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="qp-tau" class="form-control" name="tau" data-shared="true"
                                            value="{{ request.form.tau }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-theta-bar-group" style="display: none;">
-                                    <label for="qp-theta-bar">\(\bar{x}\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="qp-theta-bar">\(\bar{x}\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Reference point for regularization. The objective penalises deviation \(\lVert x - \bar{x}\rVert_p\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
@@ -270,14 +402,28 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-p-group" style="display: none;">
-                                    <label for="qp-p">\(p\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="qp-p">\(p\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Norm order for the regularization term \(\lVert x - \bar{x}\rVert_p\). Common values: 1, 2, or inf.">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="qp-p" class="form-control" name="p" data-shared="true"
                                            value="{{ request.form.p }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="qp-rho-group" style="display: none;">
-                                    <label for="qp-rho">\(\rho \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="qp-rho">\(\rho \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Relaxation penalty weight(s). Comma-separated values to sweep over multiple \(\rho\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="qp-rho" class="form-control" name="rho" data-shared="true"
                                            value="{{ request.form.rho }}">
                                 </div>
@@ -289,12 +435,22 @@
             </div>
         </div>
         <div class="tab-pane fade" id="sdp" role="tabpanel" aria-labelledby="sdp-tab">
-            <div class="card mt-4">
+            <div class="card mt-2">
                 <div class="card-body">
-                    <h5 class="card-title">Semidefinite Program</h5>
+                    <div class="card-title-row">
+                        <h5 class="card-title mb-0">Semidefinite Program</h5>
+                        <div class="mode-toggle-placeholder"></div>
+                    </div>
                     <form id="sdp-form" action="/solve" method="post">
                         <div class="form-group">
-                            <label for="sdp-options">Select Option:</label>
+                            <div class="d-flex align-items-center">
+                                <label class="mb-0" for="sdp-options">Select Option:</label>
+                                <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                        data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                    <span class="dim-help-icon">?</span>
+                                </button>
+                            </div>
                             <select id="sdp-options" class="form-control" name="option"
                                     onchange="updateLatexText('sdp')">
                                 <option value="robust" {% if request.form.option=="robust" %}selected{% endif %}>
@@ -316,9 +472,8 @@
                             <div class="text-center">
                                 <p>\(\displaystyle\min_{x} \quad c^\top x + \frac{1}{2}x^\top Qx\)</p>
                                 <p>subject to: </p>
-                                <p>\(F_0 + \displaystyle\sum_{j=1}^{d}x_jF_j(\delta_i) \leq 0\)</p>
-                                <p>\(E_0 + \displaystyle\sum_{j=1}^{d}x_jE_j \leq 0\)</p>
-                                <p> where \(i=1,\ldots,N.\)</p>
+                                <p>\(F_0(\delta_i) + \displaystyle\sum_{j=1}^{d}x_jF_j(\delta_i) \preceq 0, \quad i = 1, \ldots, N\)</p>
+                                <p>\(E_0 + \displaystyle\sum_{j=1}^{d}x_jE_j \preceq 0\)</p>
                             </div>
                         </div>
                         <div class="row">
@@ -334,7 +489,7 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label for="sdp-Q">\(Q\):</label>
+                                    <label for="sdp-Q">\(Q \succeq 0\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('sdp', 'Q')">Edit \(Q\)
                                     </button>
@@ -342,7 +497,7 @@
                                            value="{{ request.form.Q }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 symbolic-only">
                                 <div class="form-group">
                                     <label for="sdp-F_d">\(F_{0,\ldots,d}(\delta)\):</label>
                                     <button type="button" class="btn btn-secondary btn-block"
@@ -352,26 +507,42 @@
                                            value="{{ request.form.F_d }}">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
                                     <label for="sdp-F">\(E_{0,\ldots,d}\):</label>
-                                    <button type="button" class="btn btn-secondary btn-block"
+                                    <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
                                             onclick="openSDPModal('sdp', 'F')">Edit \(E_{0,\ldots,d}\)
                                     </button>
                                     <input type="hidden" id="sdp-F" name="F" data-shared="true"
                                            value="{{ request.form.F }}">
                                 </div>
                             </div>
+                        </div>
+                        <div class="row param-row">
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp-tau-group" style="display: none;">
-                                    <label for="sdp-tau">\(\tau \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="sdp-tau">\(\tau \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Regularization weight(s). Comma-separated values to sweep over multiple \(\tau\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="sdp-tau" class="form-control" name="tau" data-shared="true"
                                            value="{{ request.form.tau }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp-theta-bar-group" style="display: none;">
-                                    <label for="sdp-theta-bar">\(\bar{x}\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="sdp-theta-bar">\(\bar{x}\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Reference point for regularization. The objective penalises deviation \(\lVert x - \bar{x}\rVert_p\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('sdp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
@@ -382,14 +553,28 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp-p-group" style="display: none;">
-                                    <label for="sdp-p">\(p\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="sdp-p">\(p\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Norm order for the regularization term \(\lVert x - \bar{x}\rVert_p\). Common values: 1, 2, or inf.">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="sdp-p" class="form-control" name="p" data-shared="true"
                                            value="{{ request.form.p }}">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" id="sdp-rho-group" style="display: none;">
-                                    <label for="sdp-rho">\(\rho \geq 0\):</label>
+                                    <div class="d-flex align-items-center">
+                                        <label class="mb-0" for="sdp-rho">\(\rho \geq 0\):</label>
+                                        <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                                data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                                data-content="Relaxation penalty weight(s). Comma-separated values to sweep over multiple \(\rho\).">
+                                            <span class="dim-help-icon">?</span>
+                                        </button>
+                                    </div>
                                     <input type="text" id="sdp-rho" class="form-control" name="rho" data-shared="true"
                                            value="{{ request.form.rho }}">
                                 </div>
@@ -407,11 +592,26 @@
                 <div class="card-body" style="height: 12rem">
                     <div class="form-group">
                         <form id="solver-form" action="/solve" method="post">
-                            <label for="confidence">Confidence (1-\(\frac{\beta}{n_\tau n_\rho}\)) where
-                                \(\beta\):</label>
+                            <small id="sweep-counter" class="text-muted" style="display:none;"></small>
+                            <div class="d-flex align-items-center">
+                                <label class="mb-0" for="confidence">Confidence <span id="confidence-formula">\(1 - \beta\)</span> where
+                                    \(\beta\):</label>
+                                <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                        data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                        data-content="The risk parameter \(\beta\). The solution satisfies constraints with confidence at least the displayed formula.">
+                                    <span class="dim-help-icon">?</span>
+                                </button>
+                            </div>
                             <input type="text" id="confidence" class="form-control" name="confidence" data-shared="true"
                                    value="{{ request.form.confidence }}">
-                            <label for="solver">Solver:</label>
+                            <div class="d-flex align-items-center">
+                                <label class="mb-0" for="solver">Solver:</label>
+                                <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
+                                        data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                        data-content="The optimization solver to use. Available solvers are filtered by the active problem type (LP, QP, or SDP). If MOSEK is selected, you will be prompted to upload a license file. The license is never stored on the server.">
+                                    <span class="dim-help-icon">?</span>
+                                </button>
+                            </div>
                             <select class="form-control" id="solver" name="solver">
                                 {% for solver_name, solver_types in solvers.items() %}
                                 <option value="{{ solver_name }}" data-types="{{ solver_types | join(',') }}"
@@ -436,7 +636,14 @@
             <div class="card" style="height: 12rem">
                 <div class="card-body d-flex flex-column justify-content-between">
                     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-                        <p>Scenarios \((\delta_1, \delta_2, \ldots)\):</p>
+                        <div class="d-flex align-items-center">
+                            <p class="mb-0" id="scenario-upload-label">Scenarios \((\delta_1, \delta_2, \ldots)\):</p>
+                            <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn" id="scenario-help-btn"
+                                    data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
+                                    data-content="">
+                                <span class="dim-help-icon">?</span>
+                            </button>
+                        </div>
                         <input type="file" name="file" id="file" class="form-control-file"
                                accept=".csv,.txt,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet">
                         <small class="form-text text-muted">Supported: CSV, TXT, JSON, NPY, MAT, Excel, Parquet</small>
@@ -476,45 +683,19 @@
                 </button>
             </div>
             <div class="modal-body">
+                <p id="sdpModalTip"></p>
                 <h6><b>Upload file:</b></h6>
                 <input type="file" name="modal-file" id="SDP-file" class="form-control-file mb-1"
                        accept=".json,.mat">
                 <small class="form-text text-muted mb-2">Supported: JSON, MAT (dict of matrices keyed by index)</small>
                 <h6><b>Or enter individually:</b></h6>
-                <div class="mt-2">
-                    <label for="SDPRows">\(n\):</label>
-                    <input type="number" id="SDPRows" class="form-control d-inline-block" style="width: 80px;"
-                           min="1" value="2">
-                    <label for="SDPColumns" class="ml-3">\(m\):</label>
-                    <input type="number" id="SDPColumns" class="form-control d-inline-block" style="width: 80px;"
-                           min="1" value="2">
-                    <button class="btn btn-primary ml-3" onclick="updateSDPButtons()">Select</button>
-                </div>
                 <div id="SDP-matrix-buttons" class="mb-2 mt-2">
                     <!-- Buttons for F_0 to F_n will be dynamically inserted here -->
                 </div>
                 <hr>
                 <details>
                     <summary><b>Input Format Reference</b></summary>
-                    <div class="mt-2">
-                        <p>SDP matrices are entered as a collection \(F_0, F_1, \ldots, F_d\) (or \(E_0, \ldots, E_d\)).
-                           Set \(n\) = number of decision variables and \(m\) = matrix dimension, then click Select
-                           to create buttons for each matrix.</p>
-                        <h6><b>File upload (all at once):</b></h6>
-                        <p>A collection requires a dict-of-matrices structure, so only JSON and MAT are supported here.</p>
-                        <ul>
-                            <li><b>JSON:</b> Dictionary keyed by index ("0", "1", ...), each value a 2D matrix.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;">{"0": [["delta[0]", "0"], ["0", "1"]],
- "1": [["1", "0"], ["0", "-1"]], ...}</pre></li>
-                            <li><b>MAT:</b> MATLAB <code>.mat</code> file where each variable is one matrix in the collection.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;">% MATLAB: save('F_d.mat', 'F0', 'F1', 'F2', 'F3')
-% Variable names become dict keys</pre></li>
-                        </ul>
-                        <h6><b>Individual entry:</b></h6>
-                        <p>Click each \(F_i\) / \(E_i\) button to open a matrix editor for that index.
-                           Individual matrices accept all formats (CSV, JSON, TXT, TSV, MAT, Excel, NPY, Parquet)
-                           and can contain numbers or expressions with <code>delta[i]</code>.</p>
-                    </div>
+                    <div class="mt-2" id="sdpFormatRef"></div>
                 </details>
             </div>
             <div class="modal-footer">
@@ -535,48 +716,16 @@
                 </button>
             </div>
             <div class="modal-body">
+                <p id="matrixModalTip"></p>
                 <h6><b>Upload file:</b></h6>
                 <input type="file" name="modal-file" id="modal-file" class="form-control-file mb-1"
                        accept=".csv,.txt,.tsv,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet">
                 <small class="form-text text-muted mb-2">Supported: CSV, JSON, TXT, TSV, MAT, Excel, NPY, Parquet</small>
-                <h6><b>Or enter manually:</b></h6>
-                <div class="mt-2 mb-2">
-                    <label for="matrixRows">Rows:</label>
-                    <input type="number" id="matrixRows" class="form-control d-inline-block" style="width: 80px;"
-                           min="1" value="2">
-                    <label for="matrixColumns" class="ml-3">Columns:</label>
-                    <input type="number" id="matrixColumns" class="form-control d-inline-block" style="width: 80px;"
-                           min="1" value="2">
-                    <button class="btn btn-primary ml-3" onclick="updateMatrixGrid()">Resize</button>
-                </div>
-                <div id="matrixGrid" class="d-flex flex-wrap"></div>
+                <div id="matrixGrid" class="d-flex flex-wrap mt-3"></div>
                 <hr>
                 <details>
                     <summary><b>Input Format Reference</b></summary>
-                    <div class="mt-2">
-                        <p>Matrices can contain numeric values or expressions using the <code>delta</code> variable
-                           (e.g., <code>delta[0] + 1</code>, <code>sin(delta[1])</code>).</p>
-                        <h6><b>Supported file formats:</b></h6>
-                        <ul>
-                            <li><b>CSV/TXT:</b> Comma-separated values, one row per line.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;">delta[0]+1, 0
-0, delta[1]</pre></li>
-                            <li><b>TSV:</b> Same as CSV but tab-separated.</li>
-                            <li><b>JSON:</b> 2D array of strings or numbers.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;">[["delta[0]+1", "0"], ["0", "delta[1]"]]</pre></li>
-                            <li><b>MAT:</b> MATLAB <code>.mat</code> file. The first non-metadata variable is used as the matrix.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;">% MATLAB: save('A_d.mat', 'A_d')
-% where A_d = [1 0; 0 -1]</pre></li>
-                            <li><b>Excel:</b> <code>.xlsx</code> / <code>.xls</code> file. Reads the first sheet with no header row. Each cell becomes a matrix entry.</li>
-                            <li><b>NPY:</b> NumPy <code>.npy</code> file containing a 2D array.
-                                <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;"># Python: np.save('A_d.npy', A_d)</pre></li>
-                            <li><b>NPZ:</b> NumPy <code>.npz</code> archive. The first array in the archive is used.</li>
-                            <li><b>Parquet:</b> Apache Parquet file. Columns become matrix columns; rows become matrix rows.</li>
-                        </ul>
-                        <h6><b>Manual entry:</b></h6>
-                        <p>Set the dimensions with Rows/Columns and click Resize, then fill in each cell.
-                           Cells accept numbers or expressions with <code>delta[i]</code>.</p>
-                    </div>
+                    <div class="mt-2" id="matrixFormatRef"></div>
                 </details>
             </div>
             <div class="modal-footer">
@@ -631,15 +780,23 @@
 }</pre>
                         <h6><b>MAT format:</b></h6>
                         <p>Each MATLAB variable maps to a field name. Variable names must match
-                           the required fields above.</p>
+                           the required fields above. Numeric matrices (e.g. <code>G</code>, <code>h</code>,
+                           <code>c</code>, <code>Q</code>, <code>E</code>) are saved as standard arrays.
+                           For fields with <code>delta[i]</code> expressions
+                           (<code>A_d</code>, <code>b_d</code>, <code>F_d</code>),
+                           use MATLAB <b>cell arrays of strings</b>.</p>
                         <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em;">% MATLAB example for LP:
 type = 'LP';
-A_d = [-1 0; 0 -1];  % numeric matrices
-b_d = [1; 1];
 c = [1; 1];
+G = [-1 0; 0 -1];  h = [0; 0];
 rho = 0; tau = 0; confidence = 0.01;
-save('benchmark.mat', 'type', 'A_d', 'b_d', 'c', ...
-     'rho', 'tau', 'confidence')</pre>
+
+% delta expressions as cell arrays of strings:
+A_d = {'-delta[0]', '0'; '0', '-delta[0]'};
+b_d = {'delta[0] - 1'; 'delta[0] - 1'};
+
+save('benchmark.mat', 'type', 'A_d', 'b_d', ...
+     'G', 'h', 'c', 'rho', 'tau', 'confidence')</pre>
                     </div>
                 </details>
             </div>
@@ -694,8 +851,8 @@ save('benchmark.mat', 'type', 'A_d', 'b_d', 'c', ...
 </div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}?v=6" defer></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v=12" defer></script>
 </body>
 </html>

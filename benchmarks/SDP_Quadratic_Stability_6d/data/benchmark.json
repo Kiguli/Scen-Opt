@@ -314,5 +314,6 @@
   },
   "rho": "0.0",
   "tau": "0",
-  "confidence": "1e-06"
+  "confidence": "1e-06",
+  "mode": "symbolic"
 }

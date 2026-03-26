@@ -20,3 +20,5 @@ main.tex
 take_screenshots.py
 setup.py
 .pytest_cache/
+analytics.db
+src/analytics.py

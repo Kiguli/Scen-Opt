@@ -29,6 +29,8 @@ from src.parsing import (
     generate_matrix,
     generate_tensor_function,
     generate_tensor,
+    generate_numeric_A_b,
+    generate_numeric_F,
 )
 
 
@@ -58,20 +60,49 @@ def main():
     # ---- build matrix functions / constants from raw form strings ----
     A_d = b_d = F_d = A_da = b_da = None
 
-    if form.get("A_d"):
-        A_d = generate_matrix_function(form["A_d"])
-    elif active_tab in ("lp-tab", "qp-tab"):
-        raise ValueError("\\(A(\\delta)\\) is ill-defined")
+    mode = form.get("mode", "symbolic")
+    n_x = int(form.get("n_x", 0)) if form.get("n_x") else 0
+    rows_A = int(form.get("rows_A", 0)) if form.get("rows_A") else 0
+    lmi_size = int(form.get("lmi_size", 0)) if form.get("lmi_size") else 0
 
-    if form.get("b_d"):
-        b_d = generate_matrix_function(form["b_d"])
-    elif active_tab in ("lp-tab", "qp-tab"):
-        raise ValueError("\\(b(\\delta)\\) is ill-defined")
+    if mode == "numeric":
+        if scenarios is None:
+            raise ValueError("Numeric mode requires an uploaded scenario data file.")
+        if active_tab in ("lp-tab", "qp-tab"):
+            if n_x <= 0 or rows_A <= 0:
+                raise ValueError("Numeric mode requires valid n_x and rows_A.")
+            expected_cols = rows_A * n_x + rows_A
+            if scenarios.shape[1] != expected_cols:
+                raise ValueError(
+                    f"Each scenario row must have {expected_cols} elements "
+                    f"(rows_A*n_x + rows_A = {rows_A}*{n_x} + {rows_A}), "
+                    f"but got {scenarios.shape[1]}.")
+            A_d, b_d = generate_numeric_A_b(rows_A, n_x)
+        elif active_tab == "sdp-tab":
+            if n_x <= 0 or lmi_size <= 0:
+                raise ValueError("Numeric mode requires valid n_x and lmi_size.")
+            expected_cols = (n_x + 1) * lmi_size ** 2
+            if scenarios.shape[1] != expected_cols:
+                raise ValueError(
+                    f"Each scenario row must have {expected_cols} elements "
+                    f"((n_x+1)*lmi_size² = {n_x + 1}*{lmi_size}² = {expected_cols}), "
+                    f"but got {scenarios.shape[1]}.")
+            F_d = generate_numeric_F(lmi_size, n_x)
+    else:
+        if form.get("A_d"):
+            A_d = generate_matrix_function(form["A_d"])
+        elif active_tab in ("lp-tab", "qp-tab"):
+            raise ValueError("\\(A(\\delta)\\) is ill-defined")
 
-    if form.get("F_d"):
-        F_d = generate_tensor_function(form["F_d"])
-    elif active_tab == "sdp-tab":
-        raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
+        if form.get("b_d"):
+            b_d = generate_matrix_function(form["b_d"])
+        elif active_tab in ("lp-tab", "qp-tab"):
+            raise ValueError("\\(b(\\delta)\\) is ill-defined")
+
+        if form.get("F_d"):
+            F_d = generate_tensor_function(form["F_d"])
+        elif active_tab == "sdp-tab":
+            raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
 
     if form.get("A_da"):
         A_da = generate_tensor_function(form["A_da"])

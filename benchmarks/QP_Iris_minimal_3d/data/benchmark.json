@@ -42,5 +42,6 @@
   ],
   "rho": "0",
   "tau": "0",
-  "confidence": "1.0000000000287557e-06"
+  "confidence": "1.0000000000287557e-06",
+  "mode": "symbolic"
 }

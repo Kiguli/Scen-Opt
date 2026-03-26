@@ -48,3 +48,40 @@ def generate_tensor(expr_matrix_str):
         key: np.array([[float(cell) for cell in row] for row in expr_dict[key]])
         for key in expr_dict
     }
+
+
+def generate_numeric_A_b(rows_A, n_x):
+    """Create callables that extract A and b matrices from a flattened scenario row.
+
+    In numeric mode each scenario row is the row-wise flattening of A_i
+    concatenated with the row-wise flattening of b_i:
+    ``[A_i_flat | b_i_flat]`` with length ``rows_A * n_x + rows_A``.
+    """
+    a_len = rows_A * n_x
+
+    def A_d(delta):
+        return delta[:a_len].reshape(rows_A, n_x)
+
+    def b_d(delta):
+        return delta[a_len:].reshape(rows_A, 1)
+
+    return A_d, b_d
+
+
+def generate_numeric_F(lmi_size, n_x):
+    """Create a callable that extracts F_0, ..., F_d LMI matrices from a flattened scenario row.
+
+    In numeric mode each scenario row contains ``n_x + 1`` symmetric matrices
+    (F_0, F_1, ..., F_{n_x}), each of size ``lmi_size x lmi_size``, flattened
+    row-wise and concatenated: ``[F_0_flat | F_1_flat | ... | F_d_flat]``
+    with total length ``(n_x + 1) * lmi_size ** 2``.
+    """
+    mat_elems = lmi_size * lmi_size
+
+    def F_d(delta):
+        return {
+            str(j): delta[j * mat_elems:(j + 1) * mat_elems].reshape(lmi_size, lmi_size)
+            for j in range(n_x + 1)
+        }
+
+    return F_d

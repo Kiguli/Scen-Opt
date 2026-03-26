@@ -13,7 +13,9 @@ from src.QP import solve_qp
 from src.SDP import solve_sdp
 from src.Risk import quantify_risk
 from src.Miscellaneous import get_solvers
-from src.parsing import generate_matrix_function, generate_matrix, generate_tensor_function, generate_tensor
+from src.parsing import (generate_matrix_function, generate_matrix,
+                         generate_tensor_function, generate_tensor,
+                         generate_numeric_A_b, generate_numeric_F)
 
 app = Flask(__name__)
 
@@ -232,21 +234,54 @@ def _solve_inner():
         else:
             scenarios = np.array(parsed, dtype=float)
 
-    if request.form.get('A_d'):
-        A_d = generate_matrix_function(request.form.get('A_d'))
+    mode = request.form.get('mode', 'symbolic')
+    n_x = int(request.form.get('n_x', 0)) if request.form.get('n_x') else 0
+    rows_A = int(request.form.get('rows_A', 0)) if request.form.get('rows_A') else 0
+    lmi_size = int(request.form.get('lmi_size', 0)) if request.form.get('lmi_size') else 0
+
+    A_d = None
+    b_d = None
+    F_d = None
+
+    if mode == 'numeric':
+        if scenarios is None:
+            raise ValueError("Numeric mode requires an uploaded scenario data file.")
+        if active_tab in ('lp-tab', 'qp-tab'):
+            if n_x <= 0 or rows_A <= 0:
+                raise ValueError("Numeric mode requires valid decision variable count (n_x) and soft constraint rows (rows_A).")
+            expected_cols = rows_A * n_x + rows_A
+            if scenarios.shape[1] != expected_cols:
+                raise ValueError(
+                    f"Each scenario row must have {expected_cols} elements "
+                    f"(rows_A*n_x + rows_A = {rows_A}*{n_x} + {rows_A}), "
+                    f"but got {scenarios.shape[1]}.")
+            A_d, b_d = generate_numeric_A_b(rows_A, n_x)
+        elif active_tab == 'sdp-tab':
+            if n_x <= 0 or lmi_size <= 0:
+                raise ValueError("Numeric mode requires valid decision variable count (n_x) and LMI matrix size.")
+            expected_cols = (n_x + 1) * lmi_size ** 2
+            if scenarios.shape[1] != expected_cols:
+                raise ValueError(
+                    f"Each scenario row must have {expected_cols} elements "
+                    f"((n_x+1)*lmi_size² = {n_x + 1}*{lmi_size}² = {expected_cols}), "
+                    f"but got {scenarios.shape[1]}.")
+            F_d = generate_numeric_F(lmi_size, n_x)
     else:
-        if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
-            raise ValueError("\\(A(\\delta)\\) is ill-defined")
-    if request.form.get('b_d'):
-        b_d = generate_matrix_function(request.form.get('b_d'))
-    else:
-        if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
-            raise ValueError("\\(b(\\delta)\\) is ill-defined")
-    if request.form.get('F_d'):
-        F_d = generate_tensor_function(request.form.get('F_d'))
-    else:
-        if (active_tab == 'sdp-tab'):
-            raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
+        if request.form.get('A_d'):
+            A_d = generate_matrix_function(request.form.get('A_d'))
+        else:
+            if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
+                raise ValueError("\\(A(\\delta)\\) is ill-defined")
+        if request.form.get('b_d'):
+            b_d = generate_matrix_function(request.form.get('b_d'))
+        else:
+            if (active_tab == 'lp-tab') or (active_tab == 'qp-tab'):
+                raise ValueError("\\(b(\\delta)\\) is ill-defined")
+        if request.form.get('F_d'):
+            F_d = generate_tensor_function(request.form.get('F_d'))
+        else:
+            if (active_tab == 'sdp-tab'):
+                raise ValueError("\\(F_j(\\delta)\\) is ill-defined")
     if request.form.get('A_da'):
         A_da = generate_tensor_function(request.form.get('A_da'))
     if request.form.get('b_da'):

@@ -5,6 +5,7 @@ window.sdpMatrixCollection4 = {};
 window.sdpCurrentMatrixIndex = null;
 let currentMatrix = '';
 let lastResultData = null;
+let currentMode = 'symbolic';
 
 // --- MOSEK License Session Caching ---
 const MOSEK_LICENSE_KEY = 'mosek_license_content';
@@ -59,7 +60,7 @@ function updateMosekCacheIndicator() {
 }
 
 function updateSDPButtons() {
-    const n = parseInt(document.getElementById('SDPRows').value, 10) || 2;
+    const n = parseInt(document.getElementById('dim-nx').value, 10) || 2;
     const container = document.getElementById('SDP-matrix-buttons');
     container.innerHTML = '';
     for (let i = 0; i <= n; i++) {
@@ -92,70 +93,30 @@ function openSDPModal(tab, matrix) {
     const matrixInput = document.getElementById(currentMatrix);
     let matrixValues;
 
-    document.getElementById('modal-file').value = '';
+    const sdpFileInput = document.getElementById('SDP-file');
+    sdpFileInput.value = '';
+    // Both soft (delta) and hard collections support JSON and MAT
+    const isSoft = ['F_d', 'A_da', 'b_da'].includes(matrix);
+    sdpFileInput.accept = '.json,.mat';
+    sdpFileInput.nextElementSibling.textContent = isSoft
+        ? 'Supported: JSON, MAT (cell arrays of strings for expressions)'
+        : 'Supported: JSON, MAT (dict of matrices keyed by index)';
 
     // Create dynamic buttons
     updateSDPButtons();
 
     // Set default dimensions based on the matrix
-    if (matrix === 'F_d') {
+    var titleMap = {
+        'F_d': `Edit \\(F_j(\\delta)\\)`, 'F': `Edit \\(E_j\\)`,
+        'A_da': `Edit \\(A_j(\\delta)\\)`, 'A_a': `Edit \\(G_j\\)`,
+        'b_da': `Edit \\(b_j(\\delta)\\)`, 'b_a': `Edit \\(h_j\\)`
+    };
+    if (titleMap[matrix]) {
         matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
         updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(F_j(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix === 'F') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(E_j\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix === 'A_da') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(A_j(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix === 'A_a') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(G_j\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix === 'b_da') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = 1;
-        document.getElementById('matrixColumns').disabled = true;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(b_j(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#SDPModal').modal('show');
-    } else if (matrix === 'b_a') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]];
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = 1;
-        document.getElementById('matrixColumns').disabled = true;
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(h_j\\) (${tab.toUpperCase()})`;
-        document.querySelector('#SDPModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        document.getElementById('matrixModalTitle').textContent = `${titleMap[matrix]} (${tab.toUpperCase()})`;
+        document.getElementById('sdpModalTip').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+        updateSDPFormatReference(matrix);
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
     }
@@ -163,208 +124,230 @@ function openSDPModal(tab, matrix) {
 
 function openSDPMatrixEditor(idx) {
 
-    if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-        if (!window.sdpMatrixCollection1) {
-            window.sdpMatrixCollection1 = {};
-        }
-
+    var collectionMap = {
+        'F_d': 'sdpMatrixCollection1', 'A_da': 'sdpMatrixCollection1',
+        'F': 'sdpMatrixCollection2', 'A_a': 'sdpMatrixCollection2',
+        'b_da': 'sdpMatrixCollection3', 'b_a': 'sdpMatrixCollection4'
+    };
+    var suffix = Object.keys(collectionMap).find(function(s) { return currentMatrix.endsWith(s); });
+    if (suffix) {
+        var collName = collectionMap[suffix];
+        if (!window[collName]) window[collName] = {};
         window.sdpCurrentMatrixIndex = idx;
-
-        let values = window.sdpMatrixCollection1[idx] ||
-            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
-                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
-        document.getElementById('matrixRows').value = values.length;
-        document.getElementById('matrixColumns').value = values[0].length;
-        document.getElementById('matrixColumns').disabled = false;
+        // F matrices use mathfrak{m} (dim-lmi-size), E matrices use mathfrak{n} (dim-lmi-e-size)
+        var isHardConstraint = (suffix === 'F' || suffix === 'A_a' || suffix === 'b_a');
+        var sizeInput = isHardConstraint ? 'dim-lmi-e-size' : 'dim-lmi-size';
+        var sdpCols = parseInt(document.getElementById(sizeInput).value) || 2;
+        var values = window[collName][idx] ||
+            Array.from({length: sdpCols}, function() { return Array(sdpCols).fill(0); });
         updateMatrixGrid(values);
-        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
+        document.getElementById('matrixModalTitle').textContent = 'Edit Matrix ' + idx;
         $('#matrixModal').modal('show');
-    } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-        if (!window.sdpMatrixCollection2) {
-            window.sdpMatrixCollection2 = {};
-        }
+    }
+}
 
-        window.sdpCurrentMatrixIndex = idx;
+function getDimDefaults(matrix) {
+    const nx = parseInt(document.getElementById('dim-nx').value) || 2;
+    const rowsA = parseInt(document.getElementById('dim-rows-a').value) || 1;
+    const rowsG = parseInt(document.getElementById('dim-rows-g').value) || 0;
+    const lmi = parseInt(document.getElementById('dim-lmi-size').value) || 2;
 
-        let values = window.sdpMatrixCollection2[idx] ||
-            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
-                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
-        document.getElementById('matrixRows').value = values.length;
-        document.getElementById('matrixColumns').value = values[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(values);
-        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
-        $('#matrixModal').modal('show');
-    } else if (currentMatrix.endsWith('b_da')) {
-        if (!window.sdpMatrixCollection3) {
-            window.sdpMatrixCollection3 = {};
-        }
-        window.sdpCurrentMatrixIndex = idx;
+    const zeros = (r, c) => Array.from({length: r}, () => Array(c).fill(0));
 
-        let values = window.sdpMatrixCollection3[idx] ||
-            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
-                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
-        document.getElementById('matrixRows').value = values.length;
-        document.getElementById('matrixColumns').value = values[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(values);
-        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
-        $('#matrixModal').modal('show');
-    } else if (currentMatrix.endsWith('b_a')) {
-        if (!window.sdpMatrixCollection4) {
-            window.sdpMatrixCollection4 = {};
-        }
-
-        window.sdpCurrentMatrixIndex = idx;
-
-        let values = window.sdpMatrixCollection4[idx] ||
-            Array.from({length: parseInt(document.getElementById('SDPColumns').value)},
-                () => Array(parseInt(document.getElementById('SDPColumns').value)).fill(0));
-        document.getElementById('matrixRows').value = values.length;
-        document.getElementById('matrixColumns').value = values[0].length;
-        document.getElementById('matrixColumns').disabled = false;
-        updateMatrixGrid(values);
-        document.getElementById('matrixModalTitle').textContent = `Edit Matrix ${idx}`;
-        $('#matrixModal').modal('show');
+    switch (matrix) {
+        case 'c':       return {rows: nx, cols: 1,   colDisabled: true,  vals: zeros(nx, 1)};
+        case 'Q':       return {rows: nx, cols: nx,  colDisabled: false, vals: zeros(nx, nx)};
+        case 'A_d':     return {rows: rowsA, cols: nx, colDisabled: false, vals: zeros(rowsA, nx)};
+        case 'b_d':     return {rows: rowsA, cols: 1,  colDisabled: true,  vals: zeros(rowsA, 1)};
+        case 'A':       return {rows: Math.max(rowsG, 1), cols: nx, colDisabled: false, vals: zeros(Math.max(rowsG, 1), nx)};
+        case 'b':       return {rows: Math.max(rowsG, 1), cols: 1,  colDisabled: true,  vals: zeros(Math.max(rowsG, 1), 1)};
+        case 'theta-bar': return {rows: nx, cols: 1, colDisabled: true, vals: zeros(nx, 1)};
+        case 'C':       return {rows: lmi, cols: lmi, colDisabled: false, vals: zeros(lmi, lmi)};
+        case 'Theta-bar': return {rows: nx, cols: nx, colDisabled: false, vals: zeros(nx, nx)};
+        default:        return {rows: 2, cols: 2, colDisabled: false, vals: zeros(2, 2)};
     }
 }
 
 function openMatrixModal(tab, matrix) {
     currentMatrix = `${tab}-${matrix}`;
     const matrixInput = document.getElementById(currentMatrix);
-    let matrixValues;
+    const def = getDimDefaults(matrix);
 
-    document.getElementById('modal-file').value = '';
-    // Set default dimensions based on the matrix
-    if (matrix === 'A_d') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 1 row, 2 columns
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit A(\\(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'b_d') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = true; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit b(\\(\\delta)\\) (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'c') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0], [0]]; // 1 row, 1 column
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit c (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'Q') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit Q (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'A') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0]]; // 2x2 by default
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit G (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'b') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0]]; // 1 row, 1 column
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit h (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'C') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit C (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'Theta-bar') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0, 0], [0, 0]]; // 2x2 by default
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = false; // Disable column input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(\\bar{X}\\) (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    } else if (matrix === 'theta-bar') {
-        matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : [[0], [0]]; // 1 row, 1 column
-        document.getElementById('matrixRows').value = matrixValues.length;
-        document.getElementById('matrixColumns').value = matrixValues[0].length;
-        document.getElementById('matrixColumns').disabled = true; // Disable row input to prevent changes
-        updateMatrixGrid(matrixValues);
-        document.getElementById('matrixModalTitle').textContent = `Edit \\(\\bar{x}\\) (${tab.toUpperCase()})`;
-        document.querySelector('#matrixModal .modal-body p').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
-        MathJax.typesetPromise();
-        $('#matrixModal').modal('show');
-    }
+    const fileInput = document.getElementById('modal-file');
+    fileInput.value = '';
+    // Restrict upload formats: delta matrices accept text formats + MAT (cell arrays)
+    const isDelta = ['A_d', 'b_d'].includes(matrix);
+    fileInput.accept = isDelta
+        ? '.csv,.txt,.tsv,.json,.mat'
+        : '.csv,.txt,.tsv,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet';
+    fileInput.nextElementSibling.textContent = isDelta
+        ? 'Supported: CSV, TXT, TSV, JSON, MAT (cell arrays)'
+        : 'Supported: CSV, JSON, TXT, TSV, MAT, Excel, NPY, Parquet';
+
+    let matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : def.vals;
+    updateMatrixGrid(matrixValues);
+
+    const titles = {
+        'A_d': `Edit A(\\(\\delta)\\)`, 'b_d': `Edit b(\\(\\delta)\\)`,
+        'c': 'Edit c', 'Q': 'Edit Q', 'A': 'Edit G', 'b': 'Edit h',
+        'C': 'Edit C', 'theta-bar': `Edit \\(\\bar{x}\\)`,
+        'Theta-bar': `Edit \\(\\bar{X}\\)`
+    };
+    document.getElementById('matrixModalTitle').textContent =
+        `${titles[matrix] || 'Edit ' + matrix} (${tab.toUpperCase()})`;
+    document.getElementById('matrixModalTip').innerHTML =
+        `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
+    updateFormatReference(matrix);
+    MathJax.typesetPromise();
+    $('#matrixModal').modal('show');
 }
 
 function getDynamicTip(matrix) {
     if (matrix === 'A_d') {
-        return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrix can accept any SymPy expressions, e.g., with +, -, *, /, **.  You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrix. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'b_d') {
-        return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the vector. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'Q') {
-        return "<i>Ensure Q is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrix. \\(Q\\) must be <b>symmetric</b> and <b>positive semidefinite</b> (\\(Q \\succeq 0\\)).";
     } else if (matrix === 'c') {
-        return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the cost vector.";
     } else if (matrix === 'A') {
-        return "You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the hard constraint matrix.";
     } else if (matrix === 'b') {
-        return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the hard constraint vector.";
     } else if (matrix === 'F_d') {
-        return "<i>Ensure \\(F_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrices. Each \\(F_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'F') {
-        return "<i>Ensure \\(E_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrices. Each \\(E_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'A_da') {
-        return "<i>Ensure \\(A_j(\\delta)\\) is a symmetric and positive semi-definite matrix. Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The matrices can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrices. Each \\(A_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'A_a') {
-        return "<i>Ensure \\(G_j\\) is a symmetric and positive semi-definite matrix.</i> You may manually create the matrices of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrices. Each \\(G_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'C') {
-        return "<i>Ensure C is a symmetric and positive semi-definite matrix.</i> You may manually create the matrix or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the matrix. \\(C\\) must be <b>symmetric</b> and <b>positive semidefinite</b>.";
     } else if (matrix === 'Theta-bar') {
-        return "You may manually create the matrices or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
-    }else if (matrix === 'theta-bar') {
-        return "You may manually create the vector or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the reference matrix.";
+    } else if (matrix === 'theta-bar') {
+        return "Manually enter or upload the reference vector.";
     } else if (matrix === 'b_da') {
-        return "<i>Use delta[0] for \\(\\delta_1\\), delta[1] for \\(\\delta_2\\), etc.</i> The vector can accept any SymPy expressions, e.g., with +, -, *, /, **. You may manually create the matrix of constraints or upload the constraints using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the vectors. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'b_a') {
-        return "You may manually create the vectors or upload using the 'Upload from File' button, accepted formats are .csv, .txt, .json.";
+        return "Manually enter or upload the vectors.";
     }
-    return "Provide valid input for the selected matrix.";
+    return "Manually enter or upload the data.";
 }
 
-function updateMatrixGrid(values = null) {
-    const rows = parseInt(document.getElementById('matrixRows').value);
-    const columns = parseInt(document.getElementById('matrixColumns').value);
+/* ── Bespoke Input Format Reference for the matrix modal ── */
+function updateFormatReference(matrix) {
+    const ref = document.getElementById('matrixFormatRef');
+    if (!ref) return;
+
+    const pre = 'style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;"';
+
+    // Determine category
+    const isDelta = ['A_d', 'b_d'].includes(matrix);
+    const isQ = (matrix === 'Q');
+    const exName = isQ ? 'Q' : matrix === 'c' ? 'c' : matrix === 'A' ? 'G' : matrix === 'b' ? 'h' : matrix;
+
+    // ── Manual entry ──
+    let manual = '<h6><b>Manual entry:</b></h6>';
+    if (isDelta) {
+        manual += '<p>The grid is auto-sized from the dimension controls (\\(d\\), \\(\\mathfrak{m}\\)). ' +
+                  'Cells accept numbers or any SymPy expressions with <code>delta[i]</code>, ' +
+                  'including operators +, -, *, /, ** and functions like <code>sin()</code>, <code>exp()</code> ' +
+                  '(e.g. <code>delta[0] + 1</code>, <code>sin(delta[1])</code>).</p>';
+    } else if (isQ) {
+        manual += '<p>The grid is auto-sized from the dimension control \\(d\\). ' +
+                  'Cells accept numeric values. \\(Q\\) must be symmetric and positive semidefinite (\\(Q \\succeq 0\\)).</p>';
+    } else {
+        manual += '<p>The grid is auto-sized from the dimension controls. Cells accept numeric values.</p>';
+    }
+
+    // ── File formats ──
+    let formats = '<h6><b>Supported file formats:</b></h6><ul>';
+    // Text-capable formats (always listed)
+    formats += `<li><b>CSV/TXT:</b> Comma-separated values, one row per line.
+        <pre ${pre}>${isDelta ? 'delta[0]+1, 0\n0, delta[1]' : '1.0, 0\n0, -1.5'}</pre></li>`;
+    formats += '<li><b>TSV:</b> Same as CSV but tab-separated.</li>';
+    formats += `<li><b>JSON:</b> 2D array of ${isDelta ? 'strings or numbers' : 'numbers'}.
+        <pre ${pre}>${isDelta ? '[["delta[0]+1", "0"], ["0", "delta[1]"]]' : '[[1.0, 0], [0, -1.5]]'}</pre></li>`;
+    // MAT: always supported (cell arrays for expressions, numeric arrays otherwise)
+    if (isDelta) {
+        formats += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. Use a <b>cell array of strings</b> for expressions.
+            <pre ${pre}>% MATLAB: ${exName} = {'delta[0]+1', '0'; '0', 'delta[1]'};
+% save('${exName}.mat', '${exName}')</pre></li>`;
+    } else {
+        formats += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. The first non-metadata variable is used.
+            <pre ${pre}>% MATLAB: save('${exName}.mat', '${exName}')
+% where ${exName} = [1 0; 0 -1]</pre></li>`;
+    }
+    // Binary formats (numeric only)
+    if (!isDelta) {
+        formats += '<li><b>Excel:</b> <code>.xlsx</code> / <code>.xls</code> file. Reads the first sheet with no header row.</li>';
+        formats += `<li><b>NPY:</b> NumPy <code>.npy</code> file containing a 2D array.
+            <pre ${pre}># Python: np.save('${exName}.npy', ${exName})</pre></li>`;
+        formats += '<li><b>NPZ:</b> NumPy <code>.npz</code> archive. The first array is used.</li>';
+        formats += '<li><b>Parquet:</b> Apache Parquet file. Columns become matrix columns; rows become rows.</li>';
+    }
+    formats += '</ul>';
+
+    ref.innerHTML = manual + formats;
+    MathJax.typesetPromise([ref]);
+}
+
+/* ── Bespoke Input Format Reference for the SDP collection modal ── */
+function updateSDPFormatReference(matrix) {
+    const ref = document.getElementById('sdpFormatRef');
+    if (!ref) return;
+
+    const pre = 'style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;"';
+    const isSoft = ['F_d', 'A_da', 'b_da'].includes(matrix);  // delta-capable collections
+
+    let html = '';
+
+    // ── Individual entry ──
+    html += '<h6><b>Individual entry:</b></h6>';
+    if (isSoft) {
+        html += '<p>Click each matrix button to open an editor. Each matrix should be symmetric. ' +
+                'Cells accept numbers or any SymPy expressions with <code>delta[i]</code>, ' +
+                'including operators +, -, *, /, ** and functions like <code>sin()</code>, <code>exp()</code>.</p>';
+    } else {
+        html += '<p>Click each matrix button to open an editor. Each matrix should be symmetric. ' +
+                'Cells accept numeric values.</p>';
+    }
+
+    // ── Collection upload ──
+    html += '<h6><b>File upload (all at once):</b></h6>';
+    if (isSoft) {
+        html += '<p>Supported: <b>JSON</b> and <b>MAT</b> (using cell arrays of strings for expressions).</p>';
+        html += '<ul>';
+        html += `<li><b>JSON:</b> Dictionary keyed by index ("0", "1", ...), each value a 2D array of strings.
+            <pre ${pre}>{"0": [["delta[0]", "0"], ["0", "1"]],
+ "1": [["1", "0"], ["0", "-1"]], ...}</pre></li>`;
+        html += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. Use <b>cell arrays of strings</b> for expressions.
+            <pre ${pre}>% MATLAB: F0 = {'delta[0]', '0'; '0', '1'};
+% F1 = {'1', '0'; '0', '-1'};
+% save('F_d.mat', 'F0', 'F1')</pre></li>`;
+        html += '</ul>';
+    } else {
+        html += '<p>Supported: <b>JSON</b> and <b>MAT</b>.</p>';
+        html += '<ul>';
+        html += `<li><b>JSON:</b> Dictionary keyed by index ("0", "1", ...), each value a 2D numeric array.
+            <pre ${pre}>{"0": [[1, 0], [0, 1]],
+ "1": [[0, 1], [1, 0]], ...}</pre></li>`;
+        html += `<li><b>MAT:</b> MATLAB <code>.mat</code> file where each variable is one matrix.
+            <pre ${pre}>% MATLAB: save('E.mat', 'E0', 'E1', 'E2')
+% Variable names become dict keys</pre></li>`;
+        html += '</ul>';
+    }
+
+    ref.innerHTML = html;
+    MathJax.typesetPromise([ref]);
+}
+
+function updateMatrixGrid(values = null, numRows = null, numCols = null) {
+    const rows = numRows || (values ? values.length : 2);
+    const columns = numCols || (values && values[0] ? values[0].length : 2);
     const grid = document.getElementById('matrixGrid');
 
     grid.innerHTML = ''; // Clear the grid
@@ -488,9 +471,10 @@ function applyMatrixFileValues(fileValues) {
 }
 
 function saveMatrix() {
-    const rows = parseInt(document.getElementById('matrixRows').value);
-    const columns = parseInt(document.getElementById('matrixColumns').value);
     const grid = document.getElementById('matrixGrid');
+    const rowDivs = grid.querySelectorAll('.matrix-row');
+    const rows = rowDivs.length;
+    const columns = rows > 0 ? rowDivs[0].querySelectorAll('input').length : 0;
     const fileInput = document.getElementById('modal-file');
     const values = Array.from({length: rows}, () => Array(columns).fill(0));
 
@@ -581,6 +565,13 @@ function executeSolve(mosekLicenseFile) {
 
     const activeForm = document.getElementById(formId);
     const formData = new FormData(activeForm);
+
+    // Append mode and dimension controls
+    formData.append('mode', currentMode);
+    formData.append('n_x', document.getElementById('dim-nx').value);
+    formData.append('rows_A', document.getElementById('dim-rows-a').value);
+    formData.append('rows_G', document.getElementById('dim-rows-g').value);
+    formData.append('lmi_size', document.getElementById('dim-lmi-size').value);
 
     // Add solver form data
     const solverForm = document.getElementById('solver-form');
@@ -981,111 +972,234 @@ function downloadResultsMAT() {
 
 function updateLatexText(tab) {
     const option = document.getElementById(`${tab}-options`).value;
-    let latexText1 = '';
-    let latexText2 = '';
-    let latexText3 = '';
-    let latexText4 = '';
+    const isNumeric = currentMode === 'numeric';
+    let latexObj = ''; // objective
+    let latexSoft = ''; // soft constraint with where-clause
+    let latexHard = ''; // hard constraint
 
-    // Show/Hide relevant input fields
-    document.getElementById(`${tab}-tau-group`).style.display = 'none';
-    document.getElementById(`${tab}-theta-bar-group`).style.display = 'none';
-    document.getElementById(`${tab}-rho-group`).style.display = 'none';
-    document.getElementById(`${tab}-p-group`).style.display = 'none';
+    // Show/Hide relevant input fields (toggle the parent column so hidden
+    // params don't occupy space in the row)
+    const hideParam = id => {
+        const el = document.getElementById(`${tab}-${id}`);
+        el.style.display = 'none';
+        el.parentElement.style.display = 'none';
+    };
+    const showParam = id => {
+        const el = document.getElementById(`${tab}-${id}`);
+        el.style.display = 'block';
+        el.parentElement.style.display = '';
+    };
+    hideParam('tau-group');
+    hideParam('theta-bar-group');
+    hideParam('rho-group');
+    hideParam('p-group');
 
-    if (tab === 'lp') {
+    // LP / QP constraint notation
+    const Ax = isNumeric ? 'A_{i}\\, x + b_{i}' : 'A(\\delta_i)\\, x+b(\\delta_i)';
+    // SDP constraint notation
+    const Fsum = isNumeric
+        ? 'F_{0,i} + \\displaystyle\\sum_{j=1}^{d}x_j F_{j,i}'
+        : 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_j F_j(\\delta_i)';
+
+    const showTau = () => {
+        showParam('tau-group');
+        showParam('theta-bar-group');
+        showParam('p-group');
+    };
+    const showRho = () => {
+        showParam('rho-group');
+    };
+
+    if (tab === 'lp' || tab === 'qp') {
+        const qTerm = tab === 'qp' ? ' + \\frac{1}{2}x^\\top Qx' : '';
+        latexHard = 'Gx+h \\leq 0';
         if (option === 'robust') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
-            latexText3 = 'i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
+            latexObj = `\\displaystyle\\min_{x} \\quad c^\\top x${qTerm}`;
+            latexSoft = `${Ax} \\leq 0, \\quad i = 1, \\ldots, N`;
         } else if (option === 'regularization') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
-            latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
+            latexObj = `\\displaystyle\\min_{x} \\quad c^\\top x${qTerm} + \\tau\\Vert x - \\bar{x}\\Vert_{p}`;
+            latexSoft = `${Ax} \\leq 0, \\quad \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            showTau();
         } else if (option === 'relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i,';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            latexObj = `\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x${qTerm} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
+            latexSoft = `${Ax} \\leq \\zeta_i, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ i = 1, \\ldots, N`;
+            showRho();
         } else if (option === 'regularization-relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
-        }
-    } else if (tab === 'qp') {
-        if (option === 'robust') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
-            latexText3 = 'i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-        } else if (option === 'regularization') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq 0';
-            latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
-        } else if (option === 'relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-        } else if (option === 'regularization-relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'A(\\delta_i)x+b(\\delta_i) \\leq \\zeta_i';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'Gx+h \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
+            latexObj = `\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x${qTerm} + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
+            latexSoft = `${Ax} \\leq \\zeta_i, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            showTau(); showRho();
         }
     } else if (tab === 'sdp') {
+        latexHard = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\preceq 0';
         if (option === 'robust') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx';
-            latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq 0';
-            latexText3 = ' i = 1, \\ldots, N.';
-            latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\leq 0';
+            latexObj = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx';
+            latexSoft = `${Fsum} \\preceq 0, \\quad i = 1, \\ldots, N`;
         } else if (option === 'regularization') {
-            latexText1 = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
-            latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq 0';
-            latexText3 = '\\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
+            latexObj = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
+            latexSoft = `${Fsum} \\preceq 0, \\quad \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            showTau();
         } else if (option === 'relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{d}x_jF_j(\\delta_i) \\leq \\zeta_i';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{d}x_jE_j \\leq 0';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
+            latexObj = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ i = 1, \\ldots, N`;
+            showRho();
         } else if (option === 'regularization-relaxation') {
-            latexText1 = '\\displaystyle\\min_{x,\\zeta_i}\\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexText4 = 'F_0(\\delta_i) + \\displaystyle\\sum_{j=1}^{n}x_jF_j(\\delta_i) \\leq \\zeta_i';
-            latexText3 = '\\zeta_i \\geq 0, \\rho\\geq 0, \\tau\\geq 0, \\text{and}~ i = 1, \\ldots, N.';
-            latexText2 = 'E_0 + \\displaystyle\\sum_{j=1}^{n}x_jE_j \\leq 0';
-            document.getElementById(`${tab}-tau-group`).style.display = 'block';
-            document.getElementById(`${tab}-theta-bar-group`).style.display = 'block';
-            document.getElementById(`${tab}-rho-group`).style.display = 'block';
-            document.getElementById(`${tab}-p-group`).style.display = 'block';
+            latexObj = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            showTau(); showRho();
         }
     }
 
-    document.getElementById(`${tab}-latex`).innerHTML = `<div class="text-center"><p>\\(${latexText1}\\)</p><p>subject to:</p><p>\\(${latexText4}\\)</p><p>\\(${latexText2}\\)</p><p>where \\(${latexText3}\\)</p></div>`;
+    document.getElementById(`${tab}-latex`).innerHTML =
+        `<div class="text-center"><p>\\(${latexObj}\\)</p><p>subject to:</p><p>\\(${latexSoft}\\)</p><p>\\(${latexHard}\\)</p></div>`;
     MathJax.typeset();
+    updateConfidenceLabel(option);
+}
+
+function updateConfidenceLabel(option) {
+    if (!option) {
+        const activeTab = document.querySelector('.nav-link.active');
+        const tab = activeTab ? activeTab.id.replace('-tab', '') : 'lp';
+        option = document.getElementById(`${tab}-options`).value;
+    }
+    const span = document.getElementById('confidence-formula');
+    if (option === 'robust') {
+        span.innerHTML = '\\(1 - \\beta\\)';
+    } else if (option === 'relaxation') {
+        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\rho}\\)';
+    } else if (option === 'regularization') {
+        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\tau}\\)';
+    } else {
+        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\tau \\cdot n_\\rho}\\)';
+    }
+    MathJax.typesetPromise();
+    updateSweepCounter(option);
+}
+
+function updateSweepCounter(option) {
+    const counter = document.getElementById('sweep-counter');
+    const activeTab = document.querySelector('.nav-link.active');
+    const tab = activeTab ? activeTab.id.replace('-tab', '') : 'lp';
+    if (!option) option = document.getElementById(`${tab}-options`).value;
+
+    const rhoField = document.getElementById(`${tab}-rho`);
+    const tauField = document.getElementById(`${tab}-tau`);
+    const nRho = rhoField && rhoField.value ? rhoField.value.split(',').filter(s => s.trim()).length : 1;
+    const nTau = tauField && tauField.value ? tauField.value.split(',').filter(s => s.trim()).length : 1;
+
+    const hasRho = option === 'relaxation' || option === 'regularization-relaxation';
+    const hasTau = option === 'regularization' || option === 'regularization-relaxation';
+
+    let parts = [];
+    if (hasTau) parts.push(`\\(n_\\tau = ${nTau}\\)`);
+    if (hasRho) parts.push(`\\(n_\\rho = ${nRho}\\)`);
+
+    if (parts.length > 0) {
+        counter.innerHTML = parts.join(', ');
+        counter.style.display = 'block';
+    } else {
+        counter.style.display = 'none';
+    }
+    MathJax.typesetPromise();
+}
+
+function onModeChange() {
+    document.querySelectorAll('.symbolic-only').forEach(el => {
+        el.style.display = currentMode === 'symbolic' ? '' : 'none';
+    });
+    updateScenarioLabel();
+    MathJax.typesetPromise();
+    // Re-render LaTeX for active tab
+    const activeTab = document.querySelector('.nav-link.active');
+    if (activeTab) {
+        updateLatexText(activeTab.id.replace('-tab', ''));
+    }
+}
+
+function updateModeHelpContent() {
+    var activeTab = document.querySelector('.nav-link.active');
+    var isSDP = activeTab && activeTab.id === 'sdp-tab';
+    var numericDesc = isSDP
+        ? '<b>Numeric:</b> Provide pre-computed constraint data directly. Each row of the uploaded dataset contains the row-wise flattened \\(F_{0,i}\\), \\(F_{1,i}\\), \\(\\ldots\\), \\(F_{d,i}\\) matrices concatenated together.'
+        : '<b>Numeric:</b> Provide pre-computed constraint data directly. Each row of the uploaded dataset contains the row-wise flattened \\(A_i\\) matrix concatenated with the row-wise flattened \\(b_i\\) vector.';
+    var content = '<b>Symbolic:</b> Enter constraint matrices as expressions using <code>delta[i]</code> variables. The matrices are evaluated at each scenario point.<br><br>' + numericDesc;
+    var btn = document.getElementById('mode-help-btn');
+    $(btn).attr('data-content', content);
+    // Update the popover instance if it exists
+    var popover = $(btn).data('bs.popover');
+    if (popover) {
+        popover.config.content = content;
+    }
+}
+
+function updateScenarioLabel() {
+    const label = document.getElementById('scenario-upload-label');
+    if (currentMode === 'numeric') {
+        const activeTab = document.querySelector('.nav-link.active');
+        const isSDP = activeTab && activeTab.id === 'sdp-tab';
+        if (isSDP) {
+            label.innerHTML = 'Scenario data rows \\([F_{0,i} \\mid F_{1,i} \\mid \\cdots \\mid F_{d,i}]\\):';
+        } else {
+            label.innerHTML = 'Scenario data rows \\([A_i \\mid b_i]\\):';
+        }
+    } else {
+        label.innerHTML = 'Scenarios \\((\\delta_1, \\delta_2, \\ldots)\\):';
+    }
+    MathJax.typesetPromise();
+    updateScenarioHelpContent();
+}
+
+function updateScenarioHelpContent() {
+    var activeTab = document.querySelector('.nav-link.active');
+    var isSDP = activeTab && activeTab.id === 'sdp-tab';
+    var content;
+    if (currentMode === 'numeric') {
+        if (isSDP) {
+            content = 'Upload scenario data as a file. Each row is one scenario sample containing the row-wise flattened matrices \\(F_{0,i},\\, F_{1,i},\\, \\ldots,\\, F_{d,i}\\) concatenated together.';
+        } else {
+            content = 'Upload scenario data as a file. Each row is one scenario sample containing the row-wise flattened \\(A_i\\) matrix concatenated with the row-wise flattened \\(b_i\\) vector.';
+        }
+    } else {
+        if (isSDP) {
+            content = 'Upload scenario data as a file. Each row is one scenario sample containing the uncertain parameter vector \\(\\delta\\) which is substituted into the symbolic expressions for \\(F_j(\\delta)\\).';
+        } else {
+            content = 'Upload scenario data as a file. Each row is one scenario sample containing the uncertain parameter vector \\(\\delta\\) which is substituted into the symbolic expressions for \\(A(\\delta)\\) and \\(b(\\delta)\\).';
+        }
+    }
+    var btn = document.getElementById('scenario-help-btn');
+    $(btn).attr('data-content', content);
+    var popover = $(btn).data('bs.popover');
+    if (popover) {
+        popover.config.content = content;
+    }
+}
+
+function updateDimensionVisibility() {
+    const activeTab = document.querySelector('.nav-link.active');
+    const isSDP = activeTab && activeTab.id === 'sdp-tab';
+    document.getElementById('dim-rows-a-group').style.display = isSDP ? 'none' : '';
+    document.getElementById('dim-rows-g-group').style.display = isSDP ? 'none' : '';
+    document.getElementById('dim-lmi-group').style.display = isSDP ? '' : 'none';
+    document.getElementById('dim-lmi-e-group').style.display = isSDP ? '' : 'none';
+    updateHardConstraintState();
+}
+
+function updateHardConstraintState() {
+    const activeTab = document.querySelector('.nav-link.active');
+    const isSDP = activeTab && activeTab.id === 'sdp-tab';
+    var nVal = isSDP
+        ? parseInt(document.getElementById('dim-lmi-e-size').value) || 0
+        : parseInt(document.getElementById('dim-rows-g').value) || 0;
+    var disabled = (nVal === 0);
+    document.querySelectorAll('.hard-constraint-btn').forEach(function(btn) {
+        btn.disabled = disabled;
+        if (disabled) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-outline-secondary');
+        } else {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary');
+        }
+    });
 }
 
 function loadProblemJSON() {
@@ -1130,6 +1244,17 @@ function loadProblemJSON() {
         const tabId = type.toLowerCase() + '-tab';
         document.getElementById(tabId).click();
 
+        // Set mode toggle (symbolic or numeric)
+        const isNumeric = (data.mode || 'symbolic').toLowerCase() === 'numeric';
+        if (isNumeric) {
+            document.getElementById('mode-numeric-radio').checked = true;
+            currentMode = 'numeric';
+        } else {
+            document.getElementById('mode-symbolic-radio').checked = true;
+            currentMode = 'symbolic';
+        }
+        onModeChange();
+
         // Determine the formulation option based on rho/tau
         const hasRho = data.rho !== undefined && parseFloat(data.rho) > 0;
         const hasTau = data.tau !== undefined && parseFloat(data.tau) > 0;
@@ -1145,24 +1270,163 @@ function loadProblemJSON() {
             updateLatexText(prefix);
         }
 
+        // ── Validation helpers ──
+        const errors = [];
+        const nRows = m => (Array.isArray(m) ? m.length : 0);
+        const nCols = m => (Array.isArray(m) && Array.isArray(m[0]) ? m[0].length : 0);
+        const isSquare = m => nRows(m) > 0 && nRows(m) === nCols(m);
+        const dictSize = d => (d ? Object.keys(d).length : 0);
+
         if (type === 'LP' || type === 'QP') {
-            // Set matrices: A_d, b_d, G(=A), h(=b), c
-            if (data.A_d) document.getElementById(prefix + '-A_d').value = JSON.stringify(data.A_d);
-            if (data.b_d) document.getElementById(prefix + '-b_d').value = JSON.stringify(data.b_d);
+            // ── Infer dimensions ──
+            const d = data.c ? nRows(data.c) : (data.n_x || 0);
+            const m = data.A_d ? nRows(data.A_d) : (data.rows_A || 0);
+            const n = data.G ? nRows(data.G) : 0;
+
+            // ── Validate ──
+            if (!data.c || d === 0) errors.push('c (cost vector) is missing or empty.');
+            if (isNumeric) {
+                if (d === 0) errors.push('n_x (decision variable count) is missing or zero.');
+                if (m === 0) errors.push('rows_A (soft constraint rows) is missing or zero.');
+            } else {
+                if (!data.A_d || m === 0) errors.push('A_d (soft constraint matrix) is missing or empty.');
+                if (!data.b_d || nRows(data.b_d) === 0) errors.push('b_d (soft constraint vector) is missing or empty.');
+
+                if (data.A_d && data.c && nCols(data.A_d) !== d)
+                    errors.push(`A_d has ${nCols(data.A_d)} columns but c has ${d} rows (d=${d}). Columns of A_d must equal d.`);
+                if (data.A_d && data.b_d && nRows(data.A_d) !== nRows(data.b_d))
+                    errors.push(`A_d has ${nRows(data.A_d)} rows but b_d has ${nRows(data.b_d)} rows. They must match (m).`);
+                if (data.b_d && nCols(data.b_d) !== 1)
+                    errors.push(`b_d should have 1 column but has ${nCols(data.b_d)}.`);
+            }
+            if (data.c && nCols(data.c) !== 1)
+                errors.push(`c should have 1 column but has ${nCols(data.c)}.`);
+
+            if (data.G && data.h) {
+                if (nRows(data.G) !== nRows(data.h))
+                    errors.push(`G has ${nRows(data.G)} rows but h has ${nRows(data.h)} rows. They must match (n).`);
+                if (nCols(data.G) !== d)
+                    errors.push(`G has ${nCols(data.G)} columns but d=${d}. Columns of G must equal d.`);
+                if (nCols(data.h) !== 1)
+                    errors.push(`h should have 1 column but has ${nCols(data.h)}.`);
+            } else if (data.G && !data.h) {
+                errors.push('G is provided but h is missing.');
+            } else if (!data.G && data.h) {
+                errors.push('h is provided but G is missing.');
+            }
+
+            if (type === 'QP' && data.Q) {
+                if (!isSquare(data.Q))
+                    errors.push(`Q must be square but is ${nRows(data.Q)}x${nCols(data.Q)}.`);
+                if (nRows(data.Q) !== d)
+                    errors.push(`Q is ${nRows(data.Q)}x${nRows(data.Q)} but d=${d}. Q must be dxd.`);
+            }
+
+            if (errors.length > 0) {
+                alert('Problem validation errors:\n\n' + errors.join('\n'));
+                return;
+            }
+
+            // ── Set form values ──
+            if (!isNumeric) {
+                if (data.A_d) document.getElementById(prefix + '-A_d').value = JSON.stringify(data.A_d);
+                if (data.b_d) document.getElementById(prefix + '-b_d').value = JSON.stringify(data.b_d);
+            }
             if (data.G) document.getElementById(prefix + '-A').value = JSON.stringify(data.G);
             if (data.h) document.getElementById(prefix + '-b').value = JSON.stringify(data.h);
             if (data.c) document.getElementById(prefix + '-c').value = JSON.stringify(data.c);
             if (type === 'QP' && data.Q) {
                 document.getElementById('qp-Q').value = JSON.stringify(data.Q);
             }
+
+            // ── Set dimension controls ──
+            document.getElementById('dim-nx').value = d;
+            document.getElementById('dim-rows-a').value = m;
+            document.getElementById('dim-rows-g').value = n;
+
         } else if (type === 'SDP') {
-            // F_d is a dict of expression matrices keyed by "0","1",...
-            if (data.F_d) document.getElementById('sdp-F_d').value = JSON.stringify(data.F_d);
-            // E is the hard constraint dict
-            if (data.E) document.getElementById('sdp-F').value = JSON.stringify(data.E);
+            // ── Infer dimensions ──
+            const d = data.c ? nRows(data.c) : (data.n_x || 0);
+            const lmiSize = (data.F_d && data.F_d["0"]) ? nRows(data.F_d["0"]) : (data.lmi_size || 0);
+            const lmiESize = (data.E && data.E["0"]) ? nRows(data.E["0"]) : 0;
+
+            // ── Validate ──
+            if (!data.c || d === 0) errors.push('c (cost vector) is missing or empty.');
+
+            if (data.c && nCols(data.c) !== 1)
+                errors.push(`c should have 1 column but has ${nCols(data.c)}.`);
+
+            if (isNumeric) {
+                if (d === 0) errors.push('n_x (decision variable count) is missing or zero.');
+                if (lmiSize === 0) errors.push('lmi_size (LMI matrix size) is missing or zero.');
+            } else {
+                if (!data.F_d) errors.push('F_d (soft LMI matrices) is missing.');
+                if (data.F_d) {
+                    const expectedCount = d + 1;
+                    const actualCount = dictSize(data.F_d);
+                    if (actualCount !== expectedCount)
+                        errors.push(`F_d should have ${expectedCount} matrices (F_0..F_d) but has ${actualCount}.`);
+                    for (const [key, mat] of Object.entries(data.F_d)) {
+                        if (!isSquare(mat))
+                            errors.push(`F_d["${key}"] must be square but is ${nRows(mat)}x${nCols(mat)}.`);
+                        else if (nRows(mat) !== lmiSize)
+                            errors.push(`F_d["${key}"] is ${nRows(mat)}x${nRows(mat)} but F_d["0"] is ${lmiSize}x${lmiSize}. All must be the same size.`);
+                    }
+                }
+            }
+
+            if (data.E) {
+                const expectedCount = d + 1;
+                const actualCount = dictSize(data.E);
+                if (actualCount !== expectedCount)
+                    errors.push(`E should have ${expectedCount} matrices (E_0..E_d) but has ${actualCount}.`);
+                for (const [key, mat] of Object.entries(data.E)) {
+                    if (!isSquare(mat))
+                        errors.push(`E["${key}"] must be square but is ${nRows(mat)}x${nCols(mat)}.`);
+                    else if (nRows(mat) !== lmiESize)
+                        errors.push(`E["${key}"] is ${nRows(mat)}x${nRows(mat)} but E["0"] is ${lmiESize}x${lmiESize}. All must be the same size.`);
+                }
+            }
+
+            if (data.Q) {
+                if (!isSquare(data.Q))
+                    errors.push(`Q must be square but is ${nRows(data.Q)}x${nCols(data.Q)}.`);
+                if (nRows(data.Q) !== d)
+                    errors.push(`Q is ${nRows(data.Q)}x${nRows(data.Q)} but d=${d}. Q must be dxd.`);
+            }
+
+            if (errors.length > 0) {
+                alert('Problem validation errors:\n\n' + errors.join('\n'));
+                return;
+            }
+
+            // ── Set form values ──
+            if (!isNumeric && data.F_d) {
+                document.getElementById('sdp-F_d').value = JSON.stringify(data.F_d);
+                // Populate SDP collection so individual buttons show data
+                window.sdpMatrixCollection1 = {};
+                for (const [key, mat] of Object.entries(data.F_d)) {
+                    window.sdpMatrixCollection1[parseInt(key)] = mat;
+                }
+            }
+            if (data.E) {
+                document.getElementById('sdp-F').value = JSON.stringify(data.E);
+                window.sdpMatrixCollection2 = {};
+                for (const [key, mat] of Object.entries(data.E)) {
+                    window.sdpMatrixCollection2[parseInt(key)] = mat;
+                }
+            }
             if (data.c) document.getElementById('sdp-c').value = JSON.stringify(data.c);
             if (data.Q) document.getElementById('sdp-Q').value = JSON.stringify(data.Q);
+
+            // ── Set dimension controls ──
+            document.getElementById('dim-nx').value = d;
+            document.getElementById('dim-lmi-size').value = lmiSize;
+            document.getElementById('dim-lmi-e-size').value = lmiESize || 0;
         }
+
+        // Update hard constraint button state based on new dimensions
+        updateHardConstraintState();
 
         // Set parameters
         if (data.rho !== undefined) {
@@ -1263,14 +1527,89 @@ function filterSolvers() {
     }
 }
 
+/**
+ * Move #mode-toggle-row and #dimension-controls into the active tab's card.
+ * Called on page load and after each tab transition completes.
+ */
+function relocateSharedElements() {
+    var activePane = document.querySelector('.tab-pane.active');
+    if (!activePane) return;
+
+    var popoverOpts = { trigger: 'hover', html: true };
+
+    // Move mode toggle into the active tab's title row
+    var modeToggle = document.getElementById('mode-toggle-row');
+    var placeholder = activePane.querySelector('.mode-toggle-placeholder');
+    if (modeToggle && placeholder) {
+        $(modeToggle).find('[data-toggle="popover"]').popover('dispose');
+        placeholder.appendChild(modeToggle);
+        $(modeToggle).find('[data-toggle="popover"]').popover(popoverOpts);
+    }
+
+    // Move dimension controls below the LaTeX div
+    var dimControls = document.getElementById('dimension-controls');
+    var activeTab = document.querySelector('.nav-link.active');
+    if (!dimControls || !activeTab) return;
+    var tabId = activeTab.id.replace('-tab', '');
+    var latexDiv = document.getElementById(tabId + '-latex');
+    if (latexDiv) {
+        $(dimControls).find('[data-toggle="popover"]').popover('dispose');
+        latexDiv.insertAdjacentElement('afterend', dimControls);
+        $(dimControls).find('[data-toggle="popover"]').popover(popoverOpts);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Filter solvers on tab change
+    // Initialize mode toggle
+    document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            currentMode = this.value;
+            onModeChange();
+        });
+    });
+
+    // Set initial mode help content, then move shared elements into active tab
+    updateModeHelpContent();
+    relocateSharedElements();
+
+    // Initialize popovers for static help icons (not relocated by JS)
+    $('.dim-help-btn').not('#mode-toggle-row .dim-help-btn, #dimension-controls .dim-help-btn').popover({
+        trigger: 'hover',
+        html: true
+    });
+
+    // Render LaTeX inside popovers when they appear
+    $(document).on('shown.bs.popover', function() {
+        MathJax.typesetPromise();
+    });
+
+    // Filter solvers and update dimension visibility on tab change
     $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
+        updateModeHelpContent();
+        relocateSharedElements();
         filterSolvers();
+        updateDimensionVisibility();
+        updateConfidenceLabel();
+        updateScenarioLabel();
     });
 
     // Initial filter on page load
     filterSolvers();
+    updateDimensionVisibility();
+    updateConfidenceLabel();
+    updateScenarioLabel();
+
+    // Update sweep counter when rho/tau fields change
+    ['lp', 'qp', 'sdp'].forEach(function(tab) {
+        var rhoEl = document.getElementById(tab + '-rho');
+        var tauEl = document.getElementById(tab + '-tau');
+        if (rhoEl) rhoEl.addEventListener('input', function() { updateSweepCounter(); });
+        if (tauEl) tauEl.addEventListener('input', function() { updateSweepCounter(); });
+    });
+
+    // Update hard constraint button state when dimension inputs change
+    document.getElementById('dim-rows-g').addEventListener('input', updateHardConstraintState);
+    document.getElementById('dim-lmi-e-size').addEventListener('input', updateHardConstraintState);
 
     // Initialize MOSEK cache indicator
     updateMosekCacheIndicator();

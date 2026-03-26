@@ -12664,5 +12664,6 @@
   ],
   "rho": "0",
   "tau": "0.1",
-  "confidence": "0.000001"
+  "confidence": "0.000001",
+  "mode": "symbolic"
 }
