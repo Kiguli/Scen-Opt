@@ -23,7 +23,7 @@
   <circle cx="52" cy="24" r="4.5" fill="#00BFA5"/>
   <!-- Title text -->
   <text x="82" y="38" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#1a1a2e" letter-spacing="-0.5">
-    Scen<tspan fill="#2962FF">-O-</tspan>Con
+    Scen<tspan fill="#2962FF">-</tspan>Opt
   </text>
   <text x="83" y="58" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="13" fill="#5f6368" letter-spacing="0.5">
     Scenario Optimization Toolbox
