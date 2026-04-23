@@ -27,8 +27,8 @@ QP_Iris_minimal_3d/
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── benchmark.json  One-shot program definition (JSON)
-│   ├── benchmark.mat   One-shot program definition (MATLAB)
+│   ├── program_symbolic.json  One-shot program definition (JSON)
+│   ├── program_symbolic.json   One-shot program definition (MATLAB)
 │   ├── A_d.csv         Scenario-dependent constraint (1 × 3 expression)
 │   ├── b_d.csv         Scenario-dependent RHS (constant = 1)
 │   ├── c.csv           Linear objective vector (3 × 1)
@@ -56,8 +56,8 @@ python plot.py
 ### One-Shot Method (Recommended)
 
 1. Start the web server: `python3 app.py`
-2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json` or `data/benchmark.mat`
+2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

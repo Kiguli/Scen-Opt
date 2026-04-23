@@ -51,7 +51,7 @@ Upper Bound (Always Valid)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The upper bound on risk holds under the sole assumption of **consistency** (which is guaranteed
-for all convex optimization problems handled by Scen-O-Con). For a prescribed confidence level
+for all convex optimization problems handled by Scen-Opt). For a prescribed confidence level
 :math:`1 - \beta`, the risk certificate of Garatti and Campi [GC2025]_ states:
 
 .. math::
@@ -97,15 +97,15 @@ and the two-sided risk certificate reads:
       \underline{\epsilon}(s_N^*) \;\leq\; V(x_N^*) \;\leq\; \overline{\epsilon}(s_N^*)
    \right\} \;\geq\; 1 - \beta
 
-Scen-O-Con computes these bounds numerically via bisection using the regularized incomplete beta
+Scen-Opt computes these bounds numerically via bisection using the regularized incomplete beta
 function, following the procedure described in [CGC2023]_.
 
 .. warning::
 
    The **lower bound** :math:`\underline{\epsilon}` is valid only when the non-degeneracy
-   assumption holds. If Scen-O-Con detects degeneracy during active constraint identification
+   assumption holds. If Scen-Opt detects degeneracy during active constraint identification
    (indicated by the ``degeneracy`` flag in the solver output), the lower bound should be
-   disregarded and only the **upper bound** :math:`\overline{\epsilon}` used. While Scen-O-Con
+   disregarded and only the **upper bound** :math:`\overline{\epsilon}` used. While Scen-Opt
    attempts to detect degeneracy automatically, such checks cannot cover out-of-sample
    scenarios — it is the user's responsibility to assess whether the lower bound remains
    applicable.

@@ -48,8 +48,8 @@ LP_inventory_11d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── benchmark.json  One-shot program definition (JSON)
-│   ├── benchmark.mat   One-shot program definition (MATLAB)
+│   ├── program_symbolic.json  One-shot program definition (JSON)
+│   ├── program_symbolic.json   One-shot program definition (MATLAB)
 │   ├── A_d.csv         Augmented scenario constraint matrix (6 x 11)
 │   ├── b_d.csv         Scenario-dependent RHS vector (6 x 1)
 │   ├── c.csv           Augmented cost vector (11 x 1, includes rho)
@@ -81,8 +81,8 @@ python plot.py
 ### One-Shot Method (Recommended)
 
 1. Start the web server: `python3 app.py`
-2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json` or `data/benchmark.mat`
+2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

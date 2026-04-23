@@ -15,6 +15,7 @@ import pandas as pd
 # Add project root to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.LP import solve_lp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -105,15 +106,10 @@ def main():
     data_dir = os.path.join(benchmark_dir, 'data')
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
-    G = load_matrix(os.path.join(data_dir, 'G.csv'))
-    h = load_vector(os.path.join(data_dir, 'h.csv'))
-
-    # Parse A_d and b_d expressions
-    A_d = parse_expression_matrix(os.path.join(data_dir, 'A_d.csv'))
-    b_d = parse_expression_vector(os.path.join(data_dir, 'b_d.csv'))
-
-    # Load parameters
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c, A_d, b_d = prog['c'], prog['A_d'], prog['b_d']
+    G, h = prog.get('G', np.array([])), prog.get('h', np.array([]))
     params = {}
     with open(os.path.join(benchmark_dir, 'parameters.txt'), 'r') as f:
         for line in f:

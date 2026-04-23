@@ -15,6 +15,7 @@ import numpy as np
 # Add project root to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.LP import solve_lp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -87,12 +88,10 @@ def main():
         scenarios = load_file(os.path.join(data_dir, 'growth_bound.csv'))
         print("  Using full dataset")
 
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
-    G = load_matrix(os.path.join(data_dir, 'G.csv'))
-    h = load_vector(os.path.join(data_dir, 'h.csv'))
-
-    A_d = parse_expression_matrix(os.path.join(data_dir, 'A_d.csv'))
-    b_d = parse_expression_matrix(os.path.join(data_dir, 'b_d.csv'))
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c, A_d, b_d = prog['c'], prog['A_d'], prog['b_d']
+    G, h = prog.get('G', np.array([])), prog.get('h', np.array([]))
 
     # Load parameters
     params = {}

@@ -50,8 +50,8 @@ Quadratic_Stability_6d/
 ├── run.py              Solve the SDP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── benchmark.json         One-shot program definition (JSON)
-│   ├── benchmark.mat          One-shot program definition (MATLAB)
+│   ├── program_symbolic.json         One-shot program definition (JSON)
+│   ├── program_symbolic.json          One-shot program definition (MATLAB)
 │   ├── F_0.csv ... F_6.csv   Scenario-dependent LMI matrices
 │   ├── E_0.csv ... E_6.csv   Hard constraint (P >= 0.01*I) matrices
 │   ├── c.csv                  Linear objective vector (trace)
@@ -82,8 +82,8 @@ python plot.py
 ### One-Shot Method (Recommended)
 
 1. Start the web server: `python3 app.py`
-2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json` or `data/benchmark.mat`
+2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
@@ -93,7 +93,7 @@ python plot.py
 2. Upload matrices using one of these approaches:
 
    **Option A — One-shot LMI upload:**
-   - Click **Edit F(delta)** -> upload `data/benchmark.json` (the F_d section) as a JSON file, or enter the F_d dict
+   - Click **Edit F(delta)** -> upload `data/program_symbolic.json` (the F_d section) as a JSON file, or enter the F_d dict
    - Click **Edit E** -> upload the E matrices similarly
 
    **Option B — Individual matrix entry:**

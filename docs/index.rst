@@ -1,11 +1,11 @@
 :hide-toc:
 
-Scen-O-Con
+Scen-Opt
 ==========
 
 **Data-driven convex optimization using the scenario approach.**
 
-Scen-O-Con solves Linear Programs (LP), Quadratic Programs (QP), and Semidefinite
+Scen-Opt solves Linear Programs (LP), Quadratic Programs (QP), and Semidefinite
 Programs (SDP) using only sampled uncertainty realizations, providing rigorous
 probabilistic guarantees on out-of-sample performance — no distributional
 assumptions required.
@@ -51,7 +51,7 @@ Or with Docker:
 
 .. code-block:: bash
 
-   docker run -p 5000:5000 ghcr.io/kiguli/scen-o-con:latest
+   docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
 
 How It Works
 ------------

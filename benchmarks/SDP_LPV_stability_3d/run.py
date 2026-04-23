@@ -16,6 +16,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -79,47 +80,24 @@ def main():
     # Load data
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c = prog['c']
+    Q = prog.get('Q', np.array([]))
+    F_d = prog['F_d']
+    E = prog.get('E', {})
     if scenarios.ndim == 2 and scenarios.shape[1] == 1:
         scenarios = scenarios.flatten()
 
-    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
-
-    F_0_func = parse_expression_matrix(os.path.join(data_dir, 'F_0.csv'))
-    F_1_func = parse_expression_matrix(os.path.join(data_dir, 'F_1.csv'))
-    F_2_func = parse_expression_matrix(os.path.join(data_dir, 'F_2.csv'))
-    F_3_func = parse_expression_matrix(os.path.join(data_dir, 'F_3.csv'))
-
-    E_0 = load_matrix(os.path.join(data_dir, 'E_0.csv'))
-    E_1 = load_matrix(os.path.join(data_dir, 'E_1.csv'))
-    E_2 = load_matrix(os.path.join(data_dir, 'E_2.csv'))
-    E_3 = load_matrix(os.path.join(data_dir, 'E_3.csv'))
-
     N = len(scenarios)
     n_vars = Q.shape[0]
-    m = F_0_func([0]).shape[0]
+    m = next(iter(F_d(scenarios[0]).values())).shape[0]
 
     print(f"  Scenarios (parameter samples): {N}")
     print(f"  Decision variables: {n_vars}")
     print(f"  Matrix dimension: {m}x{m}")
     print(f"  Parameter range: [{scenarios.min():.4f}, {scenarios.max():.4f}]")
     print()
-
-    def F_d(delta):
-        if np.isscalar(delta):
-            delta = np.array([delta])
-        elif isinstance(delta, np.ndarray):
-            delta = delta.flatten()
-            if delta.size == 1:
-                delta = np.array([delta.item()])
-        return {
-            '0': F_0_func(delta),
-            '1': F_1_func(delta),
-            '2': F_2_func(delta),
-            '3': F_3_func(delta)
-        }
-
-    E = {'0': E_0, '1': E_1, '2': E_2, '3': E_3}
 
     # Solve
     print("Solving SDP with MOSEK...")

@@ -44,8 +44,8 @@ QP_radiation_therapy_50d/
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── benchmark.json  One-shot program definition (JSON)
-│   ├── benchmark.mat   One-shot program definition (MATLAB)
+│   ├── program_symbolic.json  One-shot program definition (JSON)
+│   ├── program_symbolic.json   One-shot program definition (MATLAB)
 │   ├── anatomy.txt     Structure definitions (voxel counts, dose limits)
 │   ├── scenarios.csv   200 x 3 catheter shift scenarios
 │   ├── A_d.csv         Affine constraint coefficients (80 x 50, with delta expressions)
@@ -80,8 +80,8 @@ python plot.py
 ### One-Shot Method (Recommended)
 
 1. Start the web server: `python3 app.py`
-2. Click **"Detect Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/benchmark.json` or `data/benchmark.mat`
+2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
+3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 

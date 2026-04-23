@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
-LABEL org.opencontainers.image.title="Scen-O-Con" \
+LABEL org.opencontainers.image.title="Scen-Opt" \
       org.opencontainers.image.description="A Scenario Optimization Toolbox for Data-Driven Convex Programming. Solves LP, QP, and SDP problems using the scenario approach with rigorous probabilistic guarantees." \
-      org.opencontainers.image.source="https://github.com/Kiguli/Scen-O-Con" \
+      org.opencontainers.image.source="https://github.com/Kiguli/Scen-Opt" \
       org.opencontainers.image.licenses="MIT"
 
 # System dependencies for scientific Python packages

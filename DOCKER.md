@@ -1,6 +1,6 @@
 # Docker Deployment
 
-The easiest way to run Scen-O-Con locally is with Docker. No Python installation or dependency management required.
+The easiest way to run Scen-Opt locally is with Docker. No Python installation or dependency management required.
 
 ## Prerequisites
 
@@ -11,13 +11,13 @@ The easiest way to run Scen-O-Con locally is with Docker. No Python installation
 Build the image:
 
 ```bash
-docker build -t scen-o-con .
+docker build -t scen-opt .
 ```
 
 Run the container:
 
 ```bash
-docker run -p 5000:5000 scen-o-con
+docker run -p 5000:5000 scen-opt
 ```
 
 Open your browser at **http://localhost:5000**.
@@ -29,7 +29,7 @@ MOSEK is a commercial solver included in the dependencies. It works without a li
 ```bash
 docker run -p 5000:5000 \
   -v /path/to/mosek.lic:/home/appuser/mosek/mosek.lic:ro \
-  scen-o-con
+  scen-opt
 ```
 
 Alternatively, you can upload your MOSEK license through the web UI when solving a problem.
@@ -41,7 +41,7 @@ Alternatively, you can upload your MOSEK license through the web UI when solving
 To run on a different port (e.g. 8080):
 
 ```bash
-docker run -p 8080:5000 scen-o-con
+docker run -p 8080:5000 scen-opt
 ```
 
 Then open http://localhost:8080.
@@ -51,7 +51,7 @@ Then open http://localhost:8080.
 For handling more concurrent requests:
 
 ```bash
-docker run -p 5000:5000 -e GUNICORN_CMD_ARGS="--workers 4" scen-o-con
+docker run -p 5000:5000 -e GUNICORN_CMD_ARGS="--workers 4" scen-opt
 ```
 
 ## Rebuilding
@@ -59,5 +59,5 @@ docker run -p 5000:5000 -e GUNICORN_CMD_ARGS="--workers 4" scen-o-con
 After pulling new changes or modifying code, rebuild the image:
 
 ```bash
-docker build -t scen-o-con .
+docker build -t scen-opt .
 ```

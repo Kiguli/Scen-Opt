@@ -23,6 +23,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -90,9 +91,13 @@ def main():
     # Load data
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c = prog['c']
+    Q = prog.get('Q', np.array([]))
+    F_d = prog['F_d']
+    E = prog.get('E', {})
     center = load_vector(os.path.join(data_dir, 'center.csv'))
-    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
     data_all = load_matrix(os.path.join(data_dir, 'data_standardized.csv'))
     free_entries = load_matrix(os.path.join(data_dir, 'free_entries.csv')).astype(int)
 
@@ -102,16 +107,6 @@ def main():
     n_vars = len(c)
     N = len(scenarios)
     p = int(free_entries.max()) + 1  # matrix dimension (5x5)
-
-    # Load F_d expression matrices (scenario LMI)
-    F_funcs = {}
-    for i in range(n_vars + 1):
-        F_funcs[str(i)] = parse_expression_matrix(os.path.join(data_dir, f'F_{i}.csv'))
-
-    # Load E matrices (hard constraint: -P << 0)
-    E = {}
-    for i in range(n_vars + 1):
-        E[str(i)] = load_matrix(os.path.join(data_dir, f'E_{i}.csv'))
 
     params = load_parameters(os.path.join(benchmark_dir, 'parameters.txt'))
     beta = 1.0 - params.get('confidence', 0.999999)

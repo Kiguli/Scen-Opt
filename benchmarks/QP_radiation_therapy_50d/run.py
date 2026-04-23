@@ -21,6 +21,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.QP import solve_qp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -170,11 +171,10 @@ def main():
     # Load data
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
-    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
-    G = load_matrix(os.path.join(data_dir, 'G.csv'))
-    h = load_vector(os.path.join(data_dir, 'h.csv'))
-
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c, Q, A_d, b_d = prog['c'], prog['Q'], prog['A_d'], prog['b_d']
+    G, h = prog.get('G', np.array([])), prog.get('h', np.array([]))
     print("Compiling constraint expressions...")
     A_d = compile_expression_matrix(os.path.join(data_dir, 'A_d.csv'))
     b_d = compile_expression_vector(os.path.join(data_dir, 'b_d.csv'))

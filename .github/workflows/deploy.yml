@@ -43,7 +43,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           ssh target << 'EOF'
-            cd /srv/scen-o-con.woodingben.com/current
+            cd /srv/scen-opt.woodingben.com/current
             git reset --hard HEAD
             git pull
             cd ..
@@ -57,6 +57,6 @@ jobs:
       - name: Restart services
         run: |
           ssh target << 'EOF'
-            sudo systemctl restart scen-o-con
+            sudo systemctl restart scen-opt
             sudo nginx -s reload
           EOF

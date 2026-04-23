@@ -1,15 +1,15 @@
 CVXPY Solvers
 =============
 
-Scen-O-Con delegates all optimization to `CVXPY <https://www.cvxpy.org/>`_, which
+Scen-Opt delegates all optimization to `CVXPY <https://www.cvxpy.org/>`_, which
 provides a unified interface to a wide range of open-source and commercial solvers.
-This page lists the solvers bundled with the Scen-O-Con server and the full set of
+This page lists the solvers bundled with the Scen-Opt server and the full set of
 solvers supported by CVXPY.
 
 Installed Solvers
 -----------------
 
-The following solvers are installed on the Scen-O-Con server and available
+The following solvers are installed on the Scen-Opt server and available
 out of the box. Any of these can be passed via the **solver** dropdown in the
 web interface or the ``solver`` argument in the Python API.
 
@@ -150,7 +150,7 @@ that can be installed separately. The full compatibility matrix is shown below.
 .. note::
 
    Only LP, QP, and SDP columns are shown — these are the problem types supported
-   by Scen-O-Con. Solvers already listed in the Installed Solvers table above are
+   by Scen-Opt. Solvers already listed in the Installed Solvers table above are
    omitted here.
 
 For installation instructions and solver-specific options, see the

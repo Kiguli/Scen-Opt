@@ -5,9 +5,9 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------
-project = 'Scen-O-Con'
-copyright = '2025, Scen-O-Con Contributors'
-author = 'Scen-O-Con Contributors'
+project = 'Scen-Opt'
+copyright = '2025, Scen-Opt Contributors'
+author = 'Scen-Opt Contributors'
 
 # -- General configuration ---------------------------------------------
 extensions = [
@@ -51,7 +51,7 @@ html_css_files = ['custom.css']
 html_theme_options = {
     "light_logo": "logo.svg",
     "dark_logo": "logo-dark.svg",
-    "source_repository": "https://github.com/Kiguli/Scen-O-Con",
+    "source_repository": "https://github.com/Kiguli/Scen-Opt",
     "source_branch": "master",
     "source_directory": "docs/",
     "light_css_variables": {

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/_static/logo.svg" alt="Scen-O-Con" width="400">
+  <img src="docs/_static/logo.svg" alt="Scen-Opt" width="400">
 </p>
 
 <h1 align="center">A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
 
-Scen-O-Con is an open-source software tool for data-driven convex optimization using the scenario approach of Campi and Garatti. It solves **Linear Programs (LP)**, **Quadratic Programs (QP)**, and **Semidefinite Programs (SDP)** using only sampled uncertainty realizations, providing rigorous probabilistic guarantees on out-of-sample performance without requiring knowledge of the underlying probability distribution.
+Scen-Opt is an open-source software tool for data-driven convex optimization using the scenario approach of Campi and Garatti. It solves **Linear Programs (LP)**, **Quadratic Programs (QP)**, and **Semidefinite Programs (SDP)** using only sampled uncertainty realizations, providing rigorous probabilistic guarantees on out-of-sample performance without requiring knowledge of the underlying probability distribution.
 
 The tool is implemented as a Python Flask web application with a modern JavaScript frontend, offering an intuitive graphical interface for specifying problems, uploading data, and inspecting results. It supports 27+ convex optimization solvers through CVXPY, including MOSEK, CLARABEL, SCS, and OSQP.
 
@@ -14,8 +14,8 @@ The tool is implemented as a Python Flask web application with a modern JavaScri
 
 ```bash
 # Clone the repository
-git clone https://github.com/Kiguli/Scen-O-Con.git
-cd Scen-O-Con
+git clone https://github.com/Kiguli/Scen-Opt.git
+cd Scen-Opt
 
 # Install dependencies
 pip install -r requirements.txt
@@ -41,10 +41,17 @@ The server starts at `http://127.0.0.1:5000`. Open this URL in a browser to acce
 
 ### One-Shot Benchmark Upload
 
-1. Click the **Detect Program** button (next to the LP/QP/SDP tabs)
-2. Upload a `benchmark.json` or `benchmark.mat` file from any benchmark's `data/` folder
-3. Upload the corresponding `scenarios.csv`
-4. Press **Solve**
+Every benchmark under `benchmarks/*/data/` ships two self-contained JSON files that can be pasted straight into the UI:
+
+- **`program_symbolic.json`** — matrices use `delta[k]` expressions. Pair with the benchmark's `scenarios.csv` and pick **Symbolic** input mode.
+- **`program_numeric.json`** — matrices are pre-evaluated per sample. Pair with `scenarios_numeric.csv` (each row carries row-wise flattened `A_i | b_i` for LP/QP, or `F_{0,i} | F_{1,i} | … | F_{d,i}` for SDP) and pick **Numeric** input mode.
+
+Steps:
+
+1. Click **Upload Program** (next to the LP/QP/SDP tabs).
+2. Paste the contents of `program_symbolic.json` (or `program_numeric.json`) into the paste box, or select the file in the upload input.
+3. Under **Scenarios**, upload the matching `scenarios.csv` (symbolic) or `scenarios_numeric.csv` (numeric).
+4. Press **Solve**.
 
 ## Problem Formulations
 
@@ -159,10 +166,10 @@ Each benchmark follows a standardized layout:
 ├── run.py              Solve the program and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── benchmark.json  One-shot program definition (JSON)
-│   ├── benchmark.mat   One-shot program definition (MATLAB)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── scenarios.csv   Sampled uncertainty realizations
-│   ├── A_d.csv / F_0.csv...  Constraint matrices
+│   ├── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 │   ├── c.csv           Objective vector
 │   └── ...             Additional problem-specific data
 └── results/
@@ -189,7 +196,7 @@ python plot.py
 ## Project Structure
 
 ```
-Scen-O-Con/
+Scen-Opt/
 ├── app.py                  Flask application (routes, matrix parsing, solver dispatch)
 ├── requirements.txt        Python dependencies
 ├── Dockerfile              Container image for local deployment
@@ -258,7 +265,7 @@ Identifies support constraints (active constraints that define the optimal solut
 
 ## MOSEK Support
 
-[MOSEK](https://www.mosek.com/) is a commercial solver with free academic licenses that is particularly effective for SDP problems. Scen-O-Con supports MOSEK with the following features:
+[MOSEK](https://www.mosek.com/) is a commercial solver with free academic licenses that is particularly effective for SDP problems. Scen-Opt supports MOSEK with the following features:
 
 - **License upload:** When MOSEK is selected as the solver, a modal prompts you to upload your `mosek.lic` file. The license is **not** stored on the server.
 - **Browser caching:** After the first upload, the license is cached in your browser's session storage. Subsequent solves skip the modal automatically. A cache indicator and "Clear" button appear below the solver dropdown.
@@ -267,14 +274,14 @@ Identifies support constraints (active constraints that define the optimal solut
 
 ## Docker
 
-The easiest way to run Scen-O-Con locally without managing Python dependencies is with Docker.
+The easiest way to run Scen-Opt locally without managing Python dependencies is with Docker.
 
 ```bash
 # Build the image
-docker build -t scen-o-con .
+docker build -t scen-opt .
 
 # Run the container
-docker run -p 5000:5000 scen-o-con
+docker run -p 5000:5000 scen-opt
 ```
 
 Open `http://localhost:5000` in your browser. See [DOCKER.md](DOCKER.md) for MOSEK license mounting, custom port mapping, and worker configuration.
@@ -292,17 +299,46 @@ To publish the Docker image to GitHub Container Registry so others can pull it d
 
 3. Build, tag, and push:
    ```bash
-   docker build -t ghcr.io/kiguli/scen-o-con:latest .
-   docker push ghcr.io/kiguli/scen-o-con:latest
+   docker build -t ghcr.io/kiguli/scen-opt:latest .
+   docker push ghcr.io/kiguli/scen-opt:latest
    ```
 
-4. Make the package public (optional): go to the package settings at `https://github.com/users/Kiguli/packages/container/package/scen-o-con` and set visibility to **Public**.
+4. Make the package public (optional): go to the package settings at `https://github.com/users/Kiguli/packages/container/package/scen-opt` and set visibility to **Public**.
 
 Users can then run the tool with a single command:
 
 ```bash
-docker run -p 5000:5000 ghcr.io/kiguli/scen-o-con:latest
+docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
 ```
+
+## Renaming the GitHub Repository (from Scen-O-Con to Scen-Opt)
+
+The codebase, docs, CI, and Docker labels have all been moved to the name **Scen-Opt**. The GitHub repository itself still needs to be renamed on the web side. One-off migration steps:
+
+1. **Rename on GitHub.** Go to `https://github.com/Kiguli/Scen-O-Con/settings` → top of the page → change the repository name to `Scen-Opt` → **Rename**. GitHub will keep the old `Scen-O-Con` URL working indefinitely via automatic redirects, but prefer the new name going forward.
+2. **Update your local remote URL.**
+   ```bash
+   cd path/to/local/checkout
+   git remote set-url origin https://github.com/Kiguli/Scen-Opt.git
+   git remote -v   # verify
+   ```
+3. **Update any open forks / clones.** Collaborators should run the same `git remote set-url` command once.
+4. **Update Docker / ghcr image tags** if you've published images — rebuild and push under the new name:
+   ```bash
+   docker build -t ghcr.io/kiguli/scen-opt:latest .
+   docker push ghcr.io/kiguli/scen-opt:latest
+   ```
+   (The package appears as a new one under `Scen-Opt`; delete the old `scen-o-con` package from GitHub → Packages if desired.)
+5. **Deployment host (if used).** The deploy workflow at `.github/workflows/deploy.yml` and the systemd unit are already named `scen-opt`. If an older `scen-o-con.*` systemd unit or nginx server name is still live, rename them:
+   ```bash
+   sudo systemctl stop scen-o-con && sudo systemctl disable scen-o-con
+   sudo mv /srv/scen-o-con.woodingben.com /srv/scen-opt.woodingben.com
+   sudo mv /etc/systemd/system/scen-o-con.service /etc/systemd/system/scen-opt.service
+   sudo systemctl daemon-reload && sudo systemctl enable --now scen-opt
+   ```
+6. **Browser bookmarks, pip/poetry caches, IDE workspace references** — update anywhere that hard-codes the old URL. The GitHub redirect covers cloning and browsing; it does **not** cover `pip install git+...` pinning or CI secrets tied to the old name.
+
+Sphinx docs, the web UI title (`templates/index.html`), Dockerfile labels, and the README are all updated already — no further code changes are needed after step 1 on GitHub.
 
 ## Testing
 

@@ -16,6 +16,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from benchmarks._loader import load_symbolic_program
 from src.SDP import solve_sdp
 from src.Miscellaneous import load_file
 from src.Risk import quantify_risk
@@ -79,23 +80,17 @@ def main():
     # Load data
     print("Loading data files...")
     scenarios = load_file(os.path.join(data_dir, 'scenarios.csv'))
-
+    # ── Load program definition (via shared _loader) ──
+    prog = load_symbolic_program(data_dir)
+    c = prog['c']
+    Q = prog.get('Q', np.array([]))
+    F_d = prog['F_d']
+    E = prog.get('E', {})
     N = len(scenarios)
     n_delta = scenarios.shape[1] if scenarios.ndim > 1 else 1
-
-    Q = load_matrix(os.path.join(data_dir, 'Q.csv'))
-    c = load_vector(os.path.join(data_dir, 'c.csv'))
     n_vars = len(c)
-
-    F_funcs = []
-    for i in range(n_vars + 1):
-        F_funcs.append(parse_expression_matrix(os.path.join(data_dir, f'F_{i}.csv')))
-
-    E_mats = {}
-    for i in range(n_vars + 1):
-        E_mats[str(i)] = load_matrix(os.path.join(data_dir, f'E_{i}.csv'))
-
-    m = F_funcs[0]([0, 0]).shape[0]
+    E_mats = E
+    m = next(iter(F_d(scenarios[0]).values())).shape[0]
 
     print(f"  Scenarios: {N}")
     print(f"  Decision variables: {n_vars}")
@@ -104,13 +99,6 @@ def main():
     print(f"  delta[0] range: [{scenarios[:,0].min():.4f}, {scenarios[:,0].max():.4f}]")
     print(f"  delta[1] range: [{scenarios[:,1].min():.4f}, {scenarios[:,1].max():.4f}]")
     print()
-
-    def F_d(delta):
-        if np.isscalar(delta):
-            delta = np.array([delta, 0])
-        elif isinstance(delta, np.ndarray):
-            delta = delta.flatten()
-        return {str(i): F_funcs[i](delta) for i in range(n_vars + 1)}
 
     # Solve
     print("Solving SDP with MOSEK...")

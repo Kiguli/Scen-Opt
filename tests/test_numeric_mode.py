@@ -43,7 +43,7 @@ def _to_csv_bytes(arr):
 # ── LP: half_width_2d ────────────────────────────────────────────────
 
 def _lp_benchmark():
-    with open("benchmarks/LP_half_width_2d/data/benchmark.json") as f:
+    with open("benchmarks/LP_half_width_2d/data/program_symbolic.json") as f:
         bm = json.load(f)
     scenarios_raw = np.loadtxt("benchmarks/LP_half_width_2d/data/scenarios.csv",
                                 delimiter=",", ndmin=2)
@@ -130,7 +130,7 @@ def test_lp_symbolic_vs_numeric(client):
 # ── QP: Iris_minimal_3d ──────────────────────────────────────────────
 
 def _qp_benchmark():
-    with open("benchmarks/QP_Iris_minimal_3d/data/benchmark.json") as f:
+    with open("benchmarks/QP_Iris_minimal_3d/data/program_symbolic.json") as f:
         bm = json.load(f)
     scenarios_raw = np.loadtxt("benchmarks/QP_Iris_minimal_3d/data/scenarios.csv",
                                 delimiter=",", ndmin=2)
@@ -219,7 +219,7 @@ def test_qp_symbolic_vs_numeric(client):
 # ── SDP: LPV_stability_3d ────────────────────────────────────────────
 
 def _sdp_benchmark():
-    with open("benchmarks/SDP_LPV_stability_3d/data/benchmark.json") as f:
+    with open("benchmarks/SDP_LPV_stability_3d/data/program_symbolic.json") as f:
         bm = json.load(f)
     scenarios_raw = np.loadtxt("benchmarks/SDP_LPV_stability_3d/data/scenarios.csv",
                                 delimiter=",", ndmin=2)
@@ -318,7 +318,7 @@ def test_sdp_symbolic_vs_numeric(client):
 
 def test_detect_program_lp(client):
     """Detect Program with LP benchmark JSON loads and solves correctly."""
-    with open("benchmarks/LP_half_width_2d/data/benchmark.json") as f:
+    with open("benchmarks/LP_half_width_2d/data/program_symbolic.json") as f:
         bm = json.load(f)
 
     scenarios_raw = np.loadtxt("benchmarks/LP_half_width_2d/data/scenarios.csv",
@@ -352,7 +352,7 @@ def test_detect_program_lp(client):
 
 def test_detect_program_sdp(client):
     """Detect Program with SDP benchmark JSON loads and solves correctly."""
-    with open("benchmarks/SDP_LPV_stability_3d/data/benchmark.json") as f:
+    with open("benchmarks/SDP_LPV_stability_3d/data/program_symbolic.json") as f:
         bm = json.load(f)
 
     scenarios_raw = np.loadtxt("benchmarks/SDP_LPV_stability_3d/data/scenarios.csv",
@@ -387,7 +387,7 @@ def test_detect_program_sdp(client):
 def test_detect_program_sdp_numeric(client):
     """Detect Program with numeric SDP benchmark loads and matches symbolic results."""
     # Load numeric benchmark
-    with open("benchmarks/SDP_LPV_stability_3d_numeric/data/benchmark.json") as f:
+    with open("benchmarks/SDP_LPV_stability_3d_numeric/data/program_symbolic.json") as f:
         num_bm = json.load(f)
     num_scenarios = np.loadtxt("benchmarks/SDP_LPV_stability_3d_numeric/data/scenarios.csv",
                                 delimiter=",", ndmin=2)
@@ -415,7 +415,7 @@ def test_detect_program_sdp_numeric(client):
     assert "optimal_x" in num_data, f"Numeric SDP no optimal_x: {num_data}"
 
     # Compare against symbolic benchmark
-    with open("benchmarks/SDP_LPV_stability_3d/data/benchmark.json") as f:
+    with open("benchmarks/SDP_LPV_stability_3d/data/program_symbolic.json") as f:
         sym_bm = json.load(f)
     sym_scenarios = np.loadtxt("benchmarks/SDP_LPV_stability_3d/data/scenarios.csv",
                                 delimiter=",", ndmin=2)
