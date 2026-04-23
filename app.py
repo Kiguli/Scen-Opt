@@ -213,6 +213,29 @@ def solve():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+def compute_base_cost(active_tab, x, c, Q):
+    """Compute c'x (LP) or c'x + ½x'Qx (QP/SDP) from the optimal x.
+
+    Regularization (τ·‖x − x̄‖) and relaxation (ρ·Σζ_i) penalty terms are
+    numerical tools for informing the solution; they are not part of the
+    underlying problem's objective and must not leak into reported cost.
+    """
+    if x is None:
+        return None
+    x_arr = np.asarray(x, dtype=float).ravel()
+    if x_arr.size == 0:
+        return None
+    c_arr = np.asarray(c, dtype=float).ravel() if c is not None and getattr(c, 'size', 0) else None
+    if c_arr is None or c_arr.size != x_arr.size:
+        return None
+    base = float(c_arr @ x_arr)
+    if active_tab in ('qp-tab', 'sdp-tab') and Q is not None and getattr(Q, 'size', 0):
+        Q_arr = np.asarray(Q, dtype=float)
+        if Q_arr.shape == (x_arr.size, x_arr.size):
+            base += 0.5 * float(x_arr @ Q_arr @ x_arr)
+    return base
+
+
 def _solve_inner():
     option = request.form.get('option')
     active_tab = request.form.get('active_tab')
@@ -287,12 +310,14 @@ def _solve_inner():
     if request.form.get('b_da'):
         b_da = generate_tensor_function(request.form.get('b_da'))
 
-    A = generate_matrix(request.form.get('A')) if request.form.get('A') else np.array([])
-    b = generate_matrix(request.form.get('b')) if request.form.get('b') else np.array([])
+    # Hard LP/QP constraints use G, h (form fields renamed from legacy A, b).
+    G = generate_matrix(request.form.get('G')) if request.form.get('G') else np.array([])
+    h_vec = generate_matrix(request.form.get('h')) if request.form.get('h') else np.array([])
     c = generate_matrix(request.form.get('c')) if request.form.get('c') else np.array([])
     Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
     C = generate_matrix(request.form.get('C')) if request.form.get('C') else np.array([])
-    F = generate_tensor(request.form.get('F')) if request.form.get('F') else {}
+    # Hard SDP LMI collection uses E (form field renamed from legacy F).
+    E = generate_tensor(request.form.get('E')) if request.form.get('E') else {}
     A_a = generate_tensor(request.form.get('A_a')) if request.form.get('A_a') else {}
     b_a = generate_matrix(request.form.get('b_a')) if request.form.get('b_a') else np.array([])
 
@@ -331,8 +356,11 @@ def _solve_inner():
     solve_time_list = []
     risk_time_list = []
 
-    # update confidence based on number of tau and rho
-    conf = conf / (len(taus) * len(rhos))
+    # Overall confidence after q sweep attempts is 1 − β·q (union bound).
+    # Pass the user-entered β directly to the per-attempt risk computation;
+    # only the *reported* confidence folds in q.
+    n_attempts = len(taus) * len(rhos)
+    conf_reported = conf * n_attempts
 
     for j in range(len(taus)):
         tau = taus[j]
@@ -356,15 +384,20 @@ def _solve_inner():
                 t0 = time.perf_counter()
                 if active_tab == 'lp-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
-                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver)
+                        scenarios, A_d, b_d, G, h_vec, c, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'qp-tab':
                     Q = generate_matrix(request.form.get('Q')) if request.form.get('Q') else np.array([])
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_qp(
-                        scenarios, A_d, b_d, A, b, c, Q, tau, theta_bar, rho, p, solver)
+                        scenarios, A_d, b_d, G, h_vec, c, Q, tau, theta_bar, rho, p, solver)
                 elif active_tab == 'sdp-tab':
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp(
-                        scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver)
+                        scenarios, F_d, E, c, Q, tau, theta_bar, rho, p, solver)
                 solve_time = time.perf_counter() - t0
+
+                # Replace full-objective cost (which includes τ·‖x−x̄‖_p and
+                # ρ·Σζ_i penalty terms used only as solver guidance) with the
+                # base cost: c'x for LP, c'x + ½x'Qx for QP/SDP.
+                optimal_cost = compute_base_cost(active_tab, optimal_x, c, Q)
 
                 t1 = time.perf_counter()
                 risk = np.array(quantify_risk(complexity, N, conf))
@@ -404,13 +437,14 @@ def _solve_inner():
         "tot_con": constraints_list,
         "active_con": active_list,
         "risk": risk_list,
-        "conf": 1 - conf,
+        "conf": 1 - conf_reported,
         "tau_": tau_list,
         "rho_": rho_list,
         "errorcode": e_list,
         "degeneracy": degeneracy_list,
         "solve_time": solve_time_list,
-        "risk_time": risk_time_list
+        "risk_time": risk_time_list,
+        "n_attempts": n_attempts,
     }
 
     print(result)

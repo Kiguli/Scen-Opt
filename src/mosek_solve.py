@@ -109,11 +109,13 @@ def main():
     if form.get("b_da"):
         b_da = generate_tensor_function(form["b_da"])
 
-    A = generate_matrix(form["A"]) if form.get("A") else np.array([])
-    b = generate_matrix(form["b"]) if form.get("b") else np.array([])
+    # Hard LP/QP constraints are G, h (form fields renamed from legacy A, b).
+    G = generate_matrix(form["G"]) if form.get("G") else np.array([])
+    h_vec = generate_matrix(form["h"]) if form.get("h") else np.array([])
     c = generate_matrix(form["c"]) if form.get("c") else np.array([])
     Q = generate_matrix(form["Q"]) if form.get("Q") else np.array([])
-    F = generate_tensor(form["F"]) if form.get("F") else {}
+    # Hard SDP LMI collection is E (form field renamed from legacy F).
+    E = generate_tensor(form["E"]) if form.get("E") else {}
 
     conf = float(form["confidence"]) if form.get("confidence") else 0.0
 
@@ -171,16 +173,16 @@ def main():
                 t0 = time.perf_counter()
                 if active_tab == "lp-tab":
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
-                        scenarios, A_d, b_d, A, b, c, tau, theta_bar, rho, p, solver
+                        scenarios, A_d, b_d, G, h_vec, c, tau, theta_bar, rho, p, solver
                     )
                 elif active_tab == "qp-tab":
                     Q_inner = generate_matrix(form["Q"]) if form.get("Q") else np.array([])
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_qp(
-                        scenarios, A_d, b_d, A, b, c, Q_inner, tau, theta_bar, rho, p, solver
+                        scenarios, A_d, b_d, G, h_vec, c, Q_inner, tau, theta_bar, rho, p, solver
                     )
                 elif active_tab == "sdp-tab":
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp(
-                        scenarios, F_d, F, c, Q, tau, theta_bar, rho, p, solver
+                        scenarios, F_d, E, c, Q, tau, theta_bar, rho, p, solver
                     )
                 solve_time = time.perf_counter() - t0
 

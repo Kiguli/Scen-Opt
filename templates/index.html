@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scen-O-Con </title>
+    <title>Scen-Opt </title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
@@ -12,9 +12,9 @@
 </head>
 <body>
 <div class="container mt-5">
-    <h1 class="text-center"><i><b>Scen-O-Con</b></i></h1>
+    <h1 class="text-center"><i><b>Scen-Opt</b></i></h1>
     <h4 class="text-center">A Scenario Optimization Toolbox for
-        Data-Driven Convex Programming </h4>
+        Data-Driven Programming </h4>
     <ul class="nav nav-tabs mt-4 d-flex" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="lp-tab" data-toggle="tab" href="#lp" role="tab" aria-controls="lp"
@@ -37,7 +37,7 @@
         </li>
         <li class="nav-item">
             <button class="btn btn-outline-success" data-toggle="modal" data-target="#detectProgramModal">
-                Detect Program
+                Upload Program
             </button>
         </li>
     </ul>
@@ -70,7 +70,7 @@
             <label class="mb-0">\(\mathfrak{m}\):</label>
             <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
                     data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
-                    data-content="Number of rows of the soft constraint matrices \(A\) and \(b\).">
+                    data-content="Number of rows of the scenario constraint matrices \(A(\delta)\) and \(b(\delta)\).">
                 <span class="dim-help-icon">?</span>
             </button>
             <input type="number" id="dim-rows-a" class="form-control form-control-sm" min="1" value="1">
@@ -79,10 +79,10 @@
             <label class="mb-0">\(\mathfrak{n}\):</label>
             <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
                     data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
-                    data-content="Number of rows of the hard constraint matrices \(G\) and \(h\).">
+                    data-content="Number of rows of the constraint matrices \(G\) and \(h\).">
                 <span class="dim-help-icon">?</span>
             </button>
-            <input type="number" id="dim-rows-g" class="form-control form-control-sm" min="0" value="0">
+            <input type="number" id="dim-rows-g" class="form-control form-control-sm" min="0" value="1">
         </div>
         <div class="dim-group" id="dim-lmi-group" style="display:none;">
             <label class="mb-0">\(\mathfrak{m}\):</label>
@@ -100,7 +100,7 @@
                     data-content="Size of the square matrices \(E_j\). Each \(E_j\) is \(\mathfrak{n} \times \mathfrak{n}\).">
                 <span class="dim-help-icon">?</span>
             </button>
-            <input type="number" id="dim-lmi-e-size" class="form-control form-control-sm" min="1" value="2">
+            <input type="number" id="dim-lmi-e-size" class="form-control form-control-sm" min="0" value="1">
         </div>
     </div>
     <div class="tab-content" id="myTabContent">
@@ -117,7 +117,7 @@
                                 <label class="mb-0" for="lp-options">Select Option:</label>
                                 <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
                                         data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
-                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                        data-content="<b>Robust:</b> standard scenario optimization.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> relaxes constraints by adding slack variables \(\zeta_i\).<br><b>Reg + Relax:</b> combines both.">
                                     <span class="dim-help-icon">?</span>
                                 </button>
                             </div>
@@ -178,22 +178,22 @@
                             </div>
                             <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
-                                    <label for="lp-A">\(G\):</label>
+                                    <label for="lp-G">\(G\):</label>
                                     <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
-                                            onclick="openMatrixModal('lp','A')">Edit \(G\)
+                                            onclick="openMatrixModal('lp','G')">Edit \(G\)
                                     </button>
-                                    <input type="hidden" id="lp-A" name="A" data-shared="true"
-                                           value="{{ request.form.A }}">
+                                    <input type="hidden" id="lp-G" name="G" data-shared="true"
+                                           value="{{ request.form.G }}">
                                 </div>
                             </div>
                             <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
-                                    <label for="lp-b">\(h\):</label>
+                                    <label for="lp-h">\(h\):</label>
                                     <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
-                                            onclick="openMatrixModal('lp','b')">Edit \(h\)
+                                            onclick="openMatrixModal('lp','h')">Edit \(h\)
                                     </button>
-                                    <input type="hidden" id="lp-b" name="b" data-shared="true"
-                                           value="{{ request.form.b }}">
+                                    <input type="hidden" id="lp-h" name="h" data-shared="true"
+                                           value="{{ request.form.h }}">
                                 </div>
                             </div>
                         </div>
@@ -277,7 +277,7 @@
                                 <label class="mb-0" for="qp-options">Select Option:</label>
                                 <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
                                         data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
-                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                        data-content="<b>Robust:</b> standard scenario optimization.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> relaxes constraints by adding slack variables \(\zeta_i\).<br><b>Reg + Relax:</b> combines both.">
                                     <span class="dim-help-icon">?</span>
                                 </button>
                             </div>
@@ -348,22 +348,22 @@
                             </div>
                             <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
-                                    <label for="qp-A">\(G\):</label>
+                                    <label for="qp-G">\(G\):</label>
                                     <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
-                                            onclick="openMatrixModal('qp', 'A')">Edit \(G\)
+                                            onclick="openMatrixModal('qp', 'G')">Edit \(G\)
                                     </button>
-                                    <input type="hidden" id="qp-A" name="A" data-shared="true"
-                                           value="{{ request.form.A }}">
+                                    <input type="hidden" id="qp-G" name="G" data-shared="true"
+                                           value="{{ request.form.G }}">
                                 </div>
                             </div>
                             <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
-                                    <label for="qp-b">\(h\):</label>
+                                    <label for="qp-h">\(h\):</label>
                                     <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
-                                            onclick="openMatrixModal('qp', 'b')">Edit \(h\)
+                                            onclick="openMatrixModal('qp', 'h')">Edit \(h\)
                                     </button>
-                                    <input type="hidden" id="qp-b" name="b" data-shared="true"
-                                           value="{{ request.form.b }}">
+                                    <input type="hidden" id="qp-h" name="h" data-shared="true"
+                                           value="{{ request.form.h }}">
                                 </div>
                             </div>
                         </div>
@@ -447,7 +447,7 @@
                                 <label class="mb-0" for="sdp-options">Select Option:</label>
                                 <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn"
                                         data-toggle="popover" data-trigger="hover" data-placement="top" data-html="true"
-                                        data-content="<b>Robust:</b> standard scenario approach.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> adds slack variable \(\zeta\) penalised by \(\rho\).<br><b>Reg + Relax:</b> combines both.">
+                                        data-content="<b>Robust:</b> standard scenario optimization.<br><b>Regularization:</b> adds \(\tau\lVert x - \bar{x}\rVert_p\) to the objective.<br><b>Relaxation:</b> relaxes constraints by adding slack variables \(\zeta_i\).<br><b>Reg + Relax:</b> combines both.">
                                     <span class="dim-help-icon">?</span>
                                 </button>
                             </div>
@@ -509,12 +509,12 @@
                             </div>
                             <div class="col-md-2 hard-constraint-group">
                                 <div class="form-group">
-                                    <label for="sdp-F">\(E_{0,\ldots,d}\):</label>
+                                    <label for="sdp-E">\(E_{0,\ldots,d}\):</label>
                                     <button type="button" class="btn btn-secondary btn-block hard-constraint-btn"
-                                            onclick="openSDPModal('sdp', 'F')">Edit \(E_{0,\ldots,d}\)
+                                            onclick="openSDPModal('sdp', 'E')">Edit \(E_{0,\ldots,d}\)
                                     </button>
-                                    <input type="hidden" id="sdp-F" name="F" data-shared="true"
-                                           value="{{ request.form.F }}">
+                                    <input type="hidden" id="sdp-E" name="E" data-shared="true"
+                                           value="{{ request.form.E }}">
                                 </div>
                             </div>
                         </div>
@@ -648,6 +648,7 @@
                                accept=".csv,.txt,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet">
                         <small class="form-text text-muted">Supported: CSV, TXT, JSON, NPY, MAT, Excel, Parquet</small>
                     </form>
+                    <div id="solve-error" class="text-danger small mt-2" style="display:none;"></div>
                     <div class="mt-4">
                         <button class="btn btn-success btn-block text-center" onclick="solve()">Solve</button>
                     </div>
@@ -684,14 +685,15 @@
             </div>
             <div class="modal-body">
                 <p id="sdpModalTip"></p>
-                <h6><b>Upload file:</b></h6>
-                <input type="file" name="modal-file" id="SDP-file" class="form-control-file mb-1"
-                       accept=".json,.mat">
-                <small class="form-text text-muted mb-2">Supported: JSON, MAT (dict of matrices keyed by index)</small>
-                <h6><b>Or enter individually:</b></h6>
+                <h6><b>Enter each matrix individually:</b></h6>
                 <div id="SDP-matrix-buttons" class="mb-2 mt-2">
                     <!-- Buttons for F_0 to F_n will be dynamically inserted here -->
                 </div>
+                <hr>
+                <h6 id="sdpPasteHeading"><b>Or paste JSON content for the full collection:</b></h6>
+                <textarea id="sdp-paste" class="form-control" rows="6"></textarea>
+                <small id="sdpPasteCaption" class="form-text text-muted"></small>
+                <div id="sdpPasteError" class="text-danger small mt-2" style="display:none;"></div>
                 <hr>
                 <details>
                     <summary><b>Input Format Reference</b></summary>
@@ -717,11 +719,13 @@
             </div>
             <div class="modal-body">
                 <p id="matrixModalTip"></p>
-                <h6><b>Upload file:</b></h6>
-                <input type="file" name="modal-file" id="modal-file" class="form-control-file mb-1"
-                       accept=".csv,.txt,.tsv,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet">
-                <small class="form-text text-muted mb-2">Supported: CSV, JSON, TXT, TSV, MAT, Excel, NPY, Parquet</small>
                 <div id="matrixGrid" class="d-flex flex-wrap mt-3"></div>
+                <div id="matrixModalError" class="text-danger small mt-2" style="display:none;"></div>
+                <hr>
+                <h6 id="matrixPasteHeading"><b>Or paste JSON content:</b></h6>
+                <textarea id="matrix-paste" class="form-control" rows="4"></textarea>
+                <small id="matrixPasteCaption" class="form-text text-muted">Loads into the grid above on Save.</small>
+                <div id="matrixPasteError" class="text-danger small mt-2" style="display:none;"></div>
                 <hr>
                 <details>
                     <summary><b>Input Format Reference</b></summary>
@@ -741,7 +745,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Detect Program</h5>
+                <h5 class="modal-title">Upload Program</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -782,7 +786,7 @@
                         <p>Each MATLAB variable maps to a field name. Variable names must match
                            the required fields above. Numeric matrices (e.g. <code>G</code>, <code>h</code>,
                            <code>c</code>, <code>Q</code>, <code>E</code>) are saved as standard arrays.
-                           For fields with <code>delta[i]</code> expressions
+                           For fields with <code>delta[k]</code> expressions
                            (<code>A_d</code>, <code>b_d</code>, <code>F_d</code>),
                            use MATLAB <b>cell arrays of strings</b>.</p>
                         <pre style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em;">% MATLAB example for LP:
@@ -853,6 +857,6 @@ save('benchmark.mat', 'type', 'A_d', 'b_d', ...
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}?v=12" defer></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v=28" defer></script>
 </body>
 </html>

@@ -70,7 +70,7 @@ function updateSDPButtons() {
         let label = '';
         if (currentMatrix === 'sdp-F_d') {
             label = `\\(F_{${i}}(\\delta)\\)`;
-        } else if (currentMatrix === 'sdp-F') {
+        } else if (currentMatrix === 'sdp-E') {
             label = `\\(E_{${i}}\\)`;
         // NOTE: A_da/A_a branches for SDP2 (standard form) were removed.
         // The SDP modal infrastructure (openSDPModal, openSDPMatrixEditor, etc.) retains
@@ -93,21 +93,18 @@ function openSDPModal(tab, matrix) {
     const matrixInput = document.getElementById(currentMatrix);
     let matrixValues;
 
-    const sdpFileInput = document.getElementById('SDP-file');
-    sdpFileInput.value = '';
-    // Both soft (delta) and hard collections support JSON and MAT
-    const isSoft = ['F_d', 'A_da', 'b_da'].includes(matrix);
-    sdpFileInput.accept = '.json,.mat';
-    sdpFileInput.nextElementSibling.textContent = isSoft
-        ? 'Supported: JSON, MAT (cell arrays of strings for expressions)'
-        : 'Supported: JSON, MAT (dict of matrices keyed by index)';
-
     // Create dynamic buttons
     updateSDPButtons();
 
+    // Clear SDP JSON paste box so a stale prior paste doesn't override individual entries.
+    const sdpPasteBox = document.getElementById('sdp-paste');
+    if (sdpPasteBox) sdpPasteBox.value = '';
+    clearModalErrors();
+    setSDPPasteHints(matrix);
+
     // Set default dimensions based on the matrix
     var titleMap = {
-        'F_d': `Edit \\(F_j(\\delta)\\)`, 'F': `Edit \\(E_j\\)`,
+        'F_d': `Edit \\(F_j(\\delta)\\)`, 'E': `Edit \\(E_j\\)`,
         'A_da': `Edit \\(A_j(\\delta)\\)`, 'A_a': `Edit \\(G_j\\)`,
         'b_da': `Edit \\(b_j(\\delta)\\)`, 'b_a': `Edit \\(h_j\\)`
     };
@@ -119,6 +116,7 @@ function openSDPModal(tab, matrix) {
         updateSDPFormatReference(matrix);
         MathJax.typesetPromise();
         $('#SDPModal').modal('show');
+        if (typeof validateSolveInputs === 'function') validateSolveInputs();
     }
 }
 
@@ -126,7 +124,7 @@ function openSDPMatrixEditor(idx) {
 
     var collectionMap = {
         'F_d': 'sdpMatrixCollection1', 'A_da': 'sdpMatrixCollection1',
-        'F': 'sdpMatrixCollection2', 'A_a': 'sdpMatrixCollection2',
+        'E': 'sdpMatrixCollection2', 'A_a': 'sdpMatrixCollection2',
         'b_da': 'sdpMatrixCollection3', 'b_a': 'sdpMatrixCollection4'
     };
     var suffix = Object.keys(collectionMap).find(function(s) { return currentMatrix.endsWith(s); });
@@ -138,11 +136,19 @@ function openSDPMatrixEditor(idx) {
         var isHardConstraint = (suffix === 'F' || suffix === 'A_a' || suffix === 'b_a');
         var sizeInput = isHardConstraint ? 'dim-lmi-e-size' : 'dim-lmi-size';
         var sdpCols = parseInt(document.getElementById(sizeInput).value) || 2;
-        var values = window[collName][idx] ||
+        var existing = window[collName][idx] ||
             Array.from({length: sdpCols}, function() { return Array(sdpCols).fill(0); });
+        // Always reshape to current LMI size so dim changes are reflected
+        var values = reshapeMatrix(existing, sdpCols, sdpCols);
         updateMatrixGrid(values);
         document.getElementById('matrixModalTitle').textContent = 'Edit Matrix ' + idx;
+        // Reset paste/error state and show bespoke paste hints for this F_j/E_j.
+        var mpaste = document.getElementById('matrix-paste');
+        if (mpaste) mpaste.value = '';
+        clearModalErrors();
+        setMatrixPasteHints(suffix);
         $('#matrixModal').modal('show');
+        if (typeof validateSolveInputs === 'function') validateSolveInputs();
     }
 }
 
@@ -159,8 +165,8 @@ function getDimDefaults(matrix) {
         case 'Q':       return {rows: nx, cols: nx,  colDisabled: false, vals: zeros(nx, nx)};
         case 'A_d':     return {rows: rowsA, cols: nx, colDisabled: false, vals: zeros(rowsA, nx)};
         case 'b_d':     return {rows: rowsA, cols: 1,  colDisabled: true,  vals: zeros(rowsA, 1)};
-        case 'A':       return {rows: Math.max(rowsG, 1), cols: nx, colDisabled: false, vals: zeros(Math.max(rowsG, 1), nx)};
-        case 'b':       return {rows: Math.max(rowsG, 1), cols: 1,  colDisabled: true,  vals: zeros(Math.max(rowsG, 1), 1)};
+        case 'G':       return {rows: Math.max(rowsG, 1), cols: nx, colDisabled: false, vals: zeros(Math.max(rowsG, 1), nx)};
+        case 'h':       return {rows: Math.max(rowsG, 1), cols: 1,  colDisabled: true,  vals: zeros(Math.max(rowsG, 1), 1)};
         case 'theta-bar': return {rows: nx, cols: 1, colDisabled: true, vals: zeros(nx, 1)};
         case 'C':       return {rows: lmi, cols: lmi, colDisabled: false, vals: zeros(lmi, lmi)};
         case 'Theta-bar': return {rows: nx, cols: nx, colDisabled: false, vals: zeros(nx, nx)};
@@ -173,23 +179,20 @@ function openMatrixModal(tab, matrix) {
     const matrixInput = document.getElementById(currentMatrix);
     const def = getDimDefaults(matrix);
 
-    const fileInput = document.getElementById('modal-file');
-    fileInput.value = '';
-    // Restrict upload formats: delta matrices accept text formats + MAT (cell arrays)
-    const isDelta = ['A_d', 'b_d'].includes(matrix);
-    fileInput.accept = isDelta
-        ? '.csv,.txt,.tsv,.json,.mat'
-        : '.csv,.txt,.tsv,.json,.npy,.npz,.mat,.xlsx,.xls,.parquet';
-    fileInput.nextElementSibling.textContent = isDelta
-        ? 'Supported: CSV, TXT, TSV, JSON, MAT (cell arrays)'
-        : 'Supported: CSV, JSON, TXT, TSV, MAT, Excel, NPY, Parquet';
-
     let matrixValues = matrixInput.value ? JSON.parse(matrixInput.value) : def.vals;
+    // Reshape stored values to current dimension controls: pad with 0s or truncate
+    matrixValues = reshapeMatrix(matrixValues, def.rows, def.cols);
     updateMatrixGrid(matrixValues);
+
+    // Clear JSON paste box so a stale prior paste doesn't override the grid.
+    const pasteBox = document.getElementById('matrix-paste');
+    if (pasteBox) pasteBox.value = '';
+    clearModalErrors();
+    setMatrixPasteHints(matrix);
 
     const titles = {
         'A_d': `Edit A(\\(\\delta)\\)`, 'b_d': `Edit b(\\(\\delta)\\)`,
-        'c': 'Edit c', 'Q': 'Edit Q', 'A': 'Edit G', 'b': 'Edit h',
+        'c': 'Edit c', 'Q': 'Edit Q', 'G': 'Edit G', 'h': 'Edit h',
         'C': 'Edit C', 'theta-bar': `Edit \\(\\bar{x}\\)`,
         'Theta-bar': `Edit \\(\\bar{X}\\)`
     };
@@ -200,41 +203,43 @@ function openMatrixModal(tab, matrix) {
     updateFormatReference(matrix);
     MathJax.typesetPromise();
     $('#matrixModal').modal('show');
+    // Re-run validation on every modal open so G/h toggle and banner are fresh.
+    if (typeof validateSolveInputs === 'function') validateSolveInputs();
 }
 
 function getDynamicTip(matrix) {
     if (matrix === 'A_d') {
-        return "Manually enter or upload the matrix. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
+        return "Manually enter the matrix. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'b_d') {
-        return "Manually enter or upload the vector. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
+        return "Manually enter the vector. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'Q') {
-        return "Manually enter or upload the matrix. \\(Q\\) must be <b>symmetric</b> and <b>positive semidefinite</b> (\\(Q \\succeq 0\\)).";
+        return "Manually enter the matrix. \\(Q\\) must be <b>symmetric</b> and <b>positive semidefinite</b> (\\(Q \\succeq 0\\)).";
     } else if (matrix === 'c') {
-        return "Manually enter or upload the cost vector.";
-    } else if (matrix === 'A') {
-        return "Manually enter or upload the hard constraint matrix.";
-    } else if (matrix === 'b') {
-        return "Manually enter or upload the hard constraint vector.";
+        return "Manually enter the cost vector.";
+    } else if (matrix === 'G') {
+        return "Manually enter the hard constraint matrix.";
+    } else if (matrix === 'h') {
+        return "Manually enter the hard constraint vector.";
     } else if (matrix === 'F_d') {
-        return "Manually enter or upload the matrices. Each \\(F_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
-    } else if (matrix === 'F') {
-        return "Manually enter or upload the matrices. Each \\(E_j\\) must be <b>symmetric</b>.";
+        return "Manually enter the matrices. Each \\(F_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+    } else if (matrix === 'E') {
+        return "Manually enter the matrices. Each \\(E_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'A_da') {
-        return "Manually enter or upload the matrices. Each \\(A_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
+        return "Manually enter the matrices. Each \\(A_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'A_a') {
-        return "Manually enter or upload the matrices. Each \\(G_j\\) must be <b>symmetric</b>.";
+        return "Manually enter the matrices. Each \\(G_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'C') {
-        return "Manually enter or upload the matrix. \\(C\\) must be <b>symmetric</b> and <b>positive semidefinite</b>.";
+        return "Manually enter the matrix. \\(C\\) must be <b>symmetric</b> and <b>positive semidefinite</b>.";
     } else if (matrix === 'Theta-bar') {
-        return "Manually enter or upload the reference matrix.";
+        return "Manually enter the reference matrix.";
     } else if (matrix === 'theta-bar') {
-        return "Manually enter or upload the reference vector.";
+        return "Manually enter the reference vector.";
     } else if (matrix === 'b_da') {
-        return "Manually enter or upload the vectors. Cells accept SymPy expressions with <code>delta[i]</code> (delta[0] = \\(\\delta_1\\), delta[1] = \\(\\delta_2\\), ...) including +, -, *, /, **.";
+        return "Manually enter the vectors. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
     } else if (matrix === 'b_a') {
-        return "Manually enter or upload the vectors.";
+        return "Manually enter the vectors.";
     }
-    return "Manually enter or upload the data.";
+    return "Manually enter the data.";
 }
 
 /* ── Bespoke Input Format Reference for the matrix modal ── */
@@ -244,54 +249,82 @@ function updateFormatReference(matrix) {
 
     const pre = 'style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;"';
 
-    // Determine category
+    // Category — delta-capable matrices only exist in Symbolic mode.
     const isDelta = ['A_d', 'b_d'].includes(matrix);
     const isQ = (matrix === 'Q');
-    const exName = isQ ? 'Q' : matrix === 'c' ? 'c' : matrix === 'A' ? 'G' : matrix === 'b' ? 'h' : matrix;
+    const isRef = (matrix === 'theta-bar' || matrix === 'Theta-bar');
 
-    // ── Manual entry ──
-    let manual = '<h6><b>Manual entry:</b></h6>';
+    const dims = (function () {
+        switch (matrix) {
+            case 'c':         return '\\(d \\times 1\\) (column vector of length \\(d\\))';
+            case 'Q':         return '\\(d \\times d\\) (symmetric, \\(Q \\succeq 0\\))';
+            case 'A_d':       return '\\(\\mathfrak{m} \\times d\\) (one row per scenario constraint)';
+            case 'b_d':       return '\\(\\mathfrak{m} \\times 1\\) (column vector)';
+            case 'G':         return '\\(\\mathfrak{n} \\times d\\) (hard constraint coefficients)';
+            case 'h':         return '\\(\\mathfrak{n} \\times 1\\) (hard constraint right-hand side)';
+            case 'theta-bar': return '\\(d \\times 1\\) (reference vector \\(\\bar{x}\\) for regularization)';
+            case 'Theta-bar': return '\\(d \\times d\\)';
+            default:          return 'auto-sized from the dimension controls';
+        }
+    })();
+
+    // ── Cell content rules ──
+    let html = '<h6><b>Cell content:</b></h6>';
     if (isDelta) {
-        manual += '<p>The grid is auto-sized from the dimension controls (\\(d\\), \\(\\mathfrak{m}\\)). ' +
-                  'Cells accept numbers or any SymPy expressions with <code>delta[i]</code>, ' +
-                  'including operators +, -, *, /, ** and functions like <code>sin()</code>, <code>exp()</code> ' +
-                  '(e.g. <code>delta[0] + 1</code>, <code>sin(delta[1])</code>).</p>';
+        html += '<p>This matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> SymPy expressions that reference ' +
+                '<code>delta[k]</code> (<code>delta[0]</code> = 1st component of \\(\\delta\\), <code>delta[1]</code> = 2nd component of \\(\\delta\\), \\(\\ldots\\)). ' +
+                'Operators <code>+ - * / **</code> and functions like <code>sin()</code>, <code>exp()</code> are allowed. ' +
+                'Example cells: <code>delta[0] + 1</code>, <code>sin(delta[1])</code>, <code>2.5</code>.</p>';
+        html += '<p><b>Mode note:</b> this matrix is only editable when the <b>Symbolic</b> input mode is selected. ' +
+                'In <b>Numeric</b> mode, \\(A(\\delta_i)\\) and \\(b(\\delta_i)\\) come directly from the uploaded scenario data ' +
+                '(each row = row-wise flattened \\(A_i\\) concatenated with \\(b_i\\)), so this editor is hidden.</p>';
     } else if (isQ) {
-        manual += '<p>The grid is auto-sized from the dimension control \\(d\\). ' +
-                  'Cells accept numeric values. \\(Q\\) must be symmetric and positive semidefinite (\\(Q \\succeq 0\\)).</p>';
+        html += '<p>This matrix is <b>numeric-only</b>: cells accept only numeric values. ' +
+                '\\(Q\\) must additionally be <b>symmetric</b> and <b>positive semidefinite</b> (\\(Q \\succeq 0\\)). ' +
+                '<code>delta[k]</code> expressions are <b>not</b> permitted here.</p>';
+    } else if (isRef) {
+        html += '<p>This vector is <b>numeric-only</b>: cells accept only numeric values. ' +
+                'It is the reference point for the regularization term \\(\\tau\\,\\lVert x - \\bar{x}\\rVert_p\\). ' +
+                '<code>delta[k]</code> expressions are <b>not</b> permitted here.</p>';
     } else {
-        manual += '<p>The grid is auto-sized from the dimension controls. Cells accept numeric values.</p>';
+        html += '<p>This matrix is <b>numeric-only</b>: cells accept only numeric values. ' +
+                '<code>delta[k]</code> expressions are <b>not</b> permitted here.</p>';
     }
 
-    // ── File formats ──
-    let formats = '<h6><b>Supported file formats:</b></h6><ul>';
-    // Text-capable formats (always listed)
-    formats += `<li><b>CSV/TXT:</b> Comma-separated values, one row per line.
-        <pre ${pre}>${isDelta ? 'delta[0]+1, 0\n0, delta[1]' : '1.0, 0\n0, -1.5'}</pre></li>`;
-    formats += '<li><b>TSV:</b> Same as CSV but tab-separated.</li>';
-    formats += `<li><b>JSON:</b> 2D array of ${isDelta ? 'strings or numbers' : 'numbers'}.
-        <pre ${pre}>${isDelta ? '[["delta[0]+1", "0"], ["0", "delta[1]"]]' : '[[1.0, 0], [0, -1.5]]'}</pre></li>`;
-    // MAT: always supported (cell arrays for expressions, numeric arrays otherwise)
+    html += `<h6><b>Expected shape:</b></h6><p>${dims}. The grid is auto-sized from the dimension controls (\\(d\\), \\(\\mathfrak{m}\\), \\(\\mathfrak{n}\\)).</p>`;
+
+    // ── JSON paste format ──
+    html += '<h6><b>JSON paste format:</b></h6>';
+    html += `<p>A 2-D JSON array whose outer length is the number of rows and whose inner arrays are the columns. ` +
+            `Each cell is ${isDelta
+                ? 'either a <b>number</b> (e.g. <code>1.5</code>) or a <b>string</b> containing a <code>delta[k]</code> expression (e.g. <code>"delta[0]+1"</code>)'
+                : 'a <b>number</b> (e.g. <code>1.5</code>) — <b>no strings, no <code>delta[k]</code></b>'}. ` +
+            `If a non-empty paste is present on Save, it replaces the grid contents.</p>`;
     if (isDelta) {
-        formats += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. Use a <b>cell array of strings</b> for expressions.
-            <pre ${pre}>% MATLAB: ${exName} = {'delta[0]+1', '0'; '0', 'delta[1]'};
-% save('${exName}.mat', '${exName}')</pre></li>`;
+        html += `<pre ${pre}>[
+  ["delta[0] + 1",  0,              "sin(delta[1])"],
+  [0,               "2 * delta[0]", -1.5]
+]</pre>`;
+    } else if (isQ) {
+        html += `<pre ${pre}>[
+  [2.0, 0.5],
+  [0.5, 3.0]
+]</pre>`;
+    } else if (matrix === 'c' || matrix === 'h' || isRef) {
+        html += `<pre ${pre}>[
+  [1.0],
+  [-2.0]
+]</pre>`;
     } else {
-        formats += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. The first non-metadata variable is used.
-            <pre ${pre}>% MATLAB: save('${exName}.mat', '${exName}')
-% where ${exName} = [1 0; 0 -1]</pre></li>`;
+        html += `<pre ${pre}>[
+  [1.0, 0.0],
+  [0.0, -1.5]
+]</pre>`;
     }
-    // Binary formats (numeric only)
-    if (!isDelta) {
-        formats += '<li><b>Excel:</b> <code>.xlsx</code> / <code>.xls</code> file. Reads the first sheet with no header row.</li>';
-        formats += `<li><b>NPY:</b> NumPy <code>.npy</code> file containing a 2D array.
-            <pre ${pre}># Python: np.save('${exName}.npy', ${exName})</pre></li>`;
-        formats += '<li><b>NPZ:</b> NumPy <code>.npz</code> archive. The first array is used.</li>';
-        formats += '<li><b>Parquet:</b> Apache Parquet file. Columns become matrix columns; rows become rows.</li>';
-    }
-    formats += '</ul>';
 
-    ref.innerHTML = manual + formats;
+    html += '<p class="text-muted"><small>For file-based matrix input (CSV / MAT / NPY / …), use the <b>Upload Program</b> button at the top of the page.</small></p>';
+
+    ref.innerHTML = html;
     MathJax.typesetPromise([ref]);
 }
 
@@ -303,46 +336,337 @@ function updateSDPFormatReference(matrix) {
     const pre = 'style="background:#f8f9fa; padding:6px; border-radius:4px; font-size:0.85em; margin:4px 0;"';
     const isSoft = ['F_d', 'A_da', 'b_da'].includes(matrix);  // delta-capable collections
 
-    let html = '';
+    // Symbol names for descriptions
+    const symbolName = isSoft ? '\\(F_j(\\delta)\\)' : '\\(E_j\\)';
+    const sizeSym = isSoft ? '\\(\\mathfrak{m} \\times \\mathfrak{m}\\)' : '\\(\\mathfrak{n} \\times \\mathfrak{n}\\)';
 
-    // ── Individual entry ──
-    html += '<h6><b>Individual entry:</b></h6>';
+    let html = '<h6><b>What is being edited:</b></h6>';
+    html += `<p>A <b>collection</b> of matrices <code>${symbolName.replace(/\\\\/g, '\\')}</code> for ` +
+            '\\(j = 0, 1, \\ldots, d\\) — i.e. <b>\\(d+1\\) square matrices</b> of size ' + sizeSym +
+            ` that together define the LMI constraint ${isSoft
+                ? '\\(F_0(\\delta_i) + \\sum_{j=1}^{d} x_j F_j(\\delta_i) \\preceq 0\\)'
+                : '\\(E_0 + \\sum_{j=1}^{d} x_j E_j \\preceq 0\\)'}.</p>`;
+
+    html += '<h6><b>Cell content:</b></h6>';
     if (isSoft) {
-        html += '<p>Click each matrix button to open an editor. Each matrix should be symmetric. ' +
-                'Cells accept numbers or any SymPy expressions with <code>delta[i]</code>, ' +
-                'including operators +, -, *, /, ** and functions like <code>sin()</code>, <code>exp()</code>.</p>';
+        html += '<p>Each matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> SymPy expressions that reference ' +
+                '<code>delta[k]</code> (<code>delta[0]</code> = 1st component of \\(\\delta\\), <code>delta[1]</code> = 2nd component of \\(\\delta\\), \\(\\ldots\\)). ' +
+                'Operators <code>+ - * / **</code> and functions like <code>sin()</code>, <code>exp()</code> are allowed. ' +
+                'Every matrix must be <b>symmetric</b>.</p>';
+        html += '<p><b>Mode note:</b> scenario LMI matrices \\(F_j(\\delta)\\) are only editable when the <b>Symbolic</b> input mode is selected. ' +
+                'In <b>Numeric</b> mode, \\(F_{0,i}, F_{1,i}, \\ldots, F_{d,i}\\) come directly from the uploaded scenario data ' +
+                '(each row = row-wise flattened \\(F_{0,i}\\) then \\(F_{1,i}\\) then \\(\\ldots\\) then \\(F_{d,i}\\) concatenated), so this editor is hidden.</p>';
     } else {
-        html += '<p>Click each matrix button to open an editor. Each matrix should be symmetric. ' +
-                'Cells accept numeric values.</p>';
+        html += '<p>Each matrix is <b>numeric-only</b>: cells accept only numeric values. ' +
+                'Every matrix must be <b>symmetric</b>. <code>delta[k]</code> expressions are <b>not</b> permitted here.</p>';
     }
 
-    // ── Collection upload ──
-    html += '<h6><b>File upload (all at once):</b></h6>';
+    html += `<h6><b>Expected shape:</b></h6><p>Exactly <b>\\(d+1\\)</b> matrices (indexed <code>"0"</code> through <code>"d"</code>), each ${sizeSym}. ` +
+            'The per-matrix editor grid is auto-sized from the LMI dimension control.</p>';
+
+    // ── JSON paste format ──
+    html += '<h6><b>JSON paste format (full collection):</b></h6>';
+    html += `<p>A <b>dictionary / JSON object</b> keyed by stringified matrix index — <code>"0"</code>, <code>"1"</code>, \\(\\ldots\\), <code>"d"</code>. ` +
+            `Each value is a 2-D JSON array where each cell is ${isSoft
+                ? 'either a <b>number</b> or a <b>string</b> containing a <code>delta[k]</code> expression'
+                : 'a <b>number</b> — <b>no strings, no <code>delta[k]</code></b>'}. ` +
+            'If a non-empty paste is present on Save, it <b>replaces the entire collection</b> (overriding any per-matrix entries made via the buttons above).</p>';
     if (isSoft) {
-        html += '<p>Supported: <b>JSON</b> and <b>MAT</b> (using cell arrays of strings for expressions).</p>';
-        html += '<ul>';
-        html += `<li><b>JSON:</b> Dictionary keyed by index ("0", "1", ...), each value a 2D array of strings.
-            <pre ${pre}>{"0": [["delta[0]", "0"], ["0", "1"]],
- "1": [["1", "0"], ["0", "-1"]], ...}</pre></li>`;
-        html += `<li><b>MAT:</b> MATLAB <code>.mat</code> file. Use <b>cell arrays of strings</b> for expressions.
-            <pre ${pre}>% MATLAB: F0 = {'delta[0]', '0'; '0', '1'};
-% F1 = {'1', '0'; '0', '-1'};
-% save('F_d.mat', 'F0', 'F1')</pre></li>`;
-        html += '</ul>';
+        html += `<pre ${pre}>{
+  "0": [["delta[0]",       0], [0,               1]],
+  "1": [[1,                0], [0,              -1]],
+  "2": [[0,     "delta[1]"], ["delta[1]",       0]]
+}</pre>`;
     } else {
-        html += '<p>Supported: <b>JSON</b> and <b>MAT</b>.</p>';
-        html += '<ul>';
-        html += `<li><b>JSON:</b> Dictionary keyed by index ("0", "1", ...), each value a 2D numeric array.
-            <pre ${pre}>{"0": [[1, 0], [0, 1]],
- "1": [[0, 1], [1, 0]], ...}</pre></li>`;
-        html += `<li><b>MAT:</b> MATLAB <code>.mat</code> file where each variable is one matrix.
-            <pre ${pre}>% MATLAB: save('E.mat', 'E0', 'E1', 'E2')
-% Variable names become dict keys</pre></li>`;
-        html += '</ul>';
+        html += `<pre ${pre}>{
+  "0": [[1, 0], [0,  1]],
+  "1": [[0, 1], [1,  0]],
+  "2": [[-1, 0], [0, -1]]
+}</pre>`;
     }
+
+    html += '<p class="text-muted"><small>For file-based collection input (MAT / JSON-file), use the <b>Upload Program</b> button at the top of the page.</small></p>';
 
     ref.innerHTML = html;
     MathJax.typesetPromise([ref]);
+}
+
+/* ── Cell validation for matrix modals ─────────────────────────────────── */
+
+/**
+ * Is `currentMatrix` one that is allowed to contain delta[k] expressions?
+ * Delta-capable kinds: A(δ), b(δ), and any SDP scenario collection (F_d / A_da / b_da).
+ * Everything else (c, Q, G=A, h=b, x̄, E_j=F, etc.) is numeric-only.
+ */
+function isCurrentMatrixDeltaCapable() {
+    if (!currentMatrix) return false;
+    // currentMatrix format is "<tab>-<kind>" (e.g. "lp-A_d", "sdp-F_d").
+    const kind = currentMatrix.split('-').slice(1).join('-');
+    return ['A_d', 'b_d', 'F_d', 'A_da', 'b_da'].includes(kind);
+}
+
+/**
+ * Validate a single cell's text against the delta-capable rule:
+ *   • numeric-only → must parse as a finite number
+ *   • delta-capable → either a finite number, or a SymPy-ish expression
+ * Returns '' if valid, otherwise a short reason.
+ */
+function validateCellText(text, deltaCapable) {
+    const s = String(text == null ? '' : text).trim();
+    if (s === '') return 'Empty cell.';
+    // Accept things parseable as a number
+    const n = Number(s);
+    if (Number.isFinite(n)) return '';
+    if (deltaCapable) {
+        // Allow any non-numeric text — parser will validate on solve.
+        // Flag only blatantly empty / nonsense content.
+        return '';
+    }
+    // Numeric-only path: reject delta[...] and any non-numeric string.
+    if (/delta\s*\[/i.test(s)) {
+        return 'delta[k] is not allowed in a numeric-only matrix.';
+    }
+    return 'Cell must be a number (e.g. 1.5, -2, 0).';
+}
+
+/**
+ * Apply validation to every <input> in the matrix grid: toggle red outline,
+ * collect errors, and surface a summary message. Returns {valid, message}.
+ */
+function validateMatrixGrid() {
+    const grid = document.getElementById('matrixGrid');
+    const errBox = document.getElementById('matrixModalError');
+    if (!grid) return {valid: true, message: ''};
+    const deltaCapable = isCurrentMatrixDeltaCapable();
+    const inputs = Array.from(grid.querySelectorAll('input'));
+    let firstReason = '';
+    let badCount = 0;
+    inputs.forEach(inp => {
+        const reason = validateCellText(inp.value, deltaCapable);
+        if (reason) {
+            inp.classList.add('cell-invalid');
+            badCount++;
+            if (!firstReason) firstReason = reason;
+        } else {
+            inp.classList.remove('cell-invalid');
+        }
+    });
+    if (errBox) {
+        if (badCount > 0) {
+            errBox.textContent = `Invalid entries (${badCount}): ${firstReason}`;
+            errBox.style.display = 'block';
+        } else {
+            errBox.textContent = '';
+            errBox.style.display = 'none';
+        }
+    }
+    return {valid: badCount === 0, message: firstReason};
+}
+
+/**
+ * Wire up live validation on the matrix grid. Called after updateMatrixGrid().
+ */
+function attachGridValidationListeners() {
+    const grid = document.getElementById('matrixGrid');
+    if (!grid) return;
+    grid.querySelectorAll('input').forEach(inp => {
+        // Avoid double-binding
+        if (inp.dataset.validationBound === '1') return;
+        inp.dataset.validationBound = '1';
+        ['input', 'blur'].forEach(evt => inp.addEventListener(evt, validateMatrixGrid));
+    });
+    // Run initial pass so the state reflects whatever is loaded into the grid.
+    validateMatrixGrid();
+}
+
+/**
+ * Set bespoke placeholder + caption for the per-matrix JSON paste box, tuned
+ * to the specific matrix kind being edited.
+ */
+function setMatrixPasteHints(kind) {
+    const ta = document.getElementById('matrix-paste');
+    const cap = document.getElementById('matrixPasteCaption');
+    if (!ta || !cap) return;
+    const hints = {
+        'c':          {
+            placeholder: '[[1], [-2]]',
+            caption: 'Cost vector \\(c\\) — a \\(d \\times 1\\) 2-D JSON array of <b>numbers only</b>. Loads into the grid above on Save.'
+        },
+        'Q':          {
+            placeholder: '[[2, 0.5], [0.5, 3]]',
+            caption: 'Quadratic cost matrix \\(Q\\) — a \\(d \\times d\\) 2-D JSON array of <b>numbers only</b>; must be symmetric and \\(\\succeq 0\\). Loads into the grid above on Save.'
+        },
+        'A_d':        {
+            placeholder: '[["-delta[0]", 0], [0, "-delta[0]"]]',
+            caption: 'Scenario constraint matrix \\(A(\\delta)\\) — a \\(\\mathfrak{m} \\times d\\) 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions. Loads into the grid above on Save.'
+        },
+        'b_d':        {
+            placeholder: '[["delta[0] - 1"], ["delta[0] - 1"]]',
+            caption: 'Scenario constraint vector \\(b(\\delta)\\) — a \\(\\mathfrak{m} \\times 1\\) 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions. Loads into the grid above on Save.'
+        },
+        'G':          {
+            placeholder: '[[-1, 0], [0, -1]]',
+            caption: 'Hard constraint matrix \\(G\\) — a \\(\\mathfrak{n} \\times d\\) 2-D JSON array of <b>numbers only</b>. Loads into the grid above on Save.'
+        },
+        'h':          {
+            placeholder: '[[0], [0]]',
+            caption: 'Hard constraint vector \\(h\\) — a \\(\\mathfrak{n} \\times 1\\) 2-D JSON array of <b>numbers only</b>. Loads into the grid above on Save.'
+        },
+        'theta-bar':  {
+            placeholder: '[[0], [0]]',
+            caption: 'Regularization reference point \\(\\bar{x}\\) — a \\(d \\times 1\\) 2-D JSON array of <b>numbers only</b>. Loads into the grid above on Save.'
+        }
+    };
+    // Per-F_j / E_j editing opens the matrix modal too, via the SDP flow.
+    // We detect that via window.sdpCurrentMatrixIndex being non-null.
+    if (window.sdpCurrentMatrixIndex !== null) {
+        const isHard = ['E', 'A_a', 'b_a'].includes(kind);
+        const lmiId = isHard ? 'dim-lmi-e-size' : 'dim-lmi-size';
+        const sz = parseInt(document.getElementById(lmiId).value) || 2;
+        if (isHard) {
+            ta.placeholder = '[[1, 0], [0, -1]]';
+            cap.innerHTML = `Hard LMI matrix \\(E_{${window.sdpCurrentMatrixIndex}}\\) — a ${sz}×${sz} 2-D JSON array of <b>numbers only</b>; must be symmetric. Loads into the grid above on Save.`;
+        } else {
+            ta.placeholder = '[["delta[0]", 0], [0, 1]]';
+            cap.innerHTML = `Scenario LMI matrix \\(F_{${window.sdpCurrentMatrixIndex}}(\\delta)\\) — a ${sz}×${sz} 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions; must be symmetric. Loads into the grid above on Save.`;
+        }
+        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+        return;
+    }
+    const h = hints[kind] || {
+        placeholder: '[[1, 0], [0, 1]]',
+        caption: 'Paste a 2-D JSON array. Loads into the grid above on Save.'
+    };
+    ta.placeholder = h.placeholder;
+    cap.innerHTML = h.caption;
+    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+}
+
+/**
+ * Set bespoke placeholder + caption for the SDP collection JSON paste box.
+ */
+function setSDPPasteHints(kind) {
+    const ta = document.getElementById('sdp-paste');
+    const cap = document.getElementById('sdpPasteCaption');
+    if (!ta || !cap) return;
+    const nx = parseInt(document.getElementById('dim-nx').value) || 0;
+    const isHard = ['E', 'A_a', 'b_a'].includes(kind);
+    const sizeId = isHard ? 'dim-lmi-e-size' : 'dim-lmi-size';
+    const sz = parseInt(document.getElementById(sizeId).value) || 0;
+    const dMax = Math.max(nx, 0);
+
+    if (kind === 'F_d') {
+        ta.placeholder = '{\n  "0": [["delta[0]", 0], [0, 1]],\n  "1": [[1, 0], [0, -1]]\n}';
+        cap.innerHTML = `Scenario LMI collection \\(F_j(\\delta)\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a <b>${sz || 'm'}×${sz || 'm'}</b> 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions; each matrix must be symmetric.`;
+    } else if (kind === 'E') {
+        ta.placeholder = '{\n  "0": [[1, 0], [0, 1]],\n  "1": [[0, 1], [1, 0]]\n}';
+        cap.innerHTML = `Hard LMI collection \\(E_j\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a <b>${sz || 'n'}×${sz || 'n'}</b> 2-D JSON array of <b>numbers only</b>; each matrix must be symmetric.`;
+    } else if (kind === 'A_da') {
+        ta.placeholder = '{\n  "0": [["delta[0]", 0], [0, 1]],\n  "1": [[1, 0], [0, -1]]\n}';
+        cap.innerHTML = `Scenario collection \\(A_j(\\delta)\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions; each matrix must be symmetric.`;
+    } else if (kind === 'A_a') {
+        ta.placeholder = '{\n  "0": [[1, 0], [0, 1]],\n  "1": [[0, 1], [1, 0]]\n}';
+        cap.innerHTML = `Hard collection \\(G_j\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a 2-D JSON array of <b>numbers only</b>; each matrix must be symmetric.`;
+    } else if (kind === 'b_da') {
+        ta.placeholder = '{\n  "0": [["delta[0]"], [1]],\n  "1": [[1], [-1]]\n}';
+        cap.innerHTML = `Scenario vector collection \\(b_j(\\delta)\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions.`;
+    } else if (kind === 'b_a') {
+        ta.placeholder = '{\n  "0": [[1], [0]],\n  "1": [[0], [1]]\n}';
+        cap.innerHTML = `Hard vector collection \\(h_j\\) for \\(j = 0, 1, \\ldots, d\\) — a dictionary with <b>${dMax + 1}</b> entries keyed <code>"0"</code>…<code>"${dMax}"</code>. Each value is a 2-D JSON array of <b>numbers only</b>.`;
+    } else {
+        ta.placeholder = '{"0": [[1, 0], [0, 1]], "1": [[0, 1], [1, 0]]}';
+        cap.innerHTML = 'Dictionary keyed by matrix index. Each value is a 2-D JSON array.';
+    }
+    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+}
+
+/** Clear any error display in a modal when it opens. */
+function clearModalErrors() {
+    ['matrixModalError', 'matrixPasteError', 'sdpPasteError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+}
+
+/**
+ * Reshape a 2-D array to (rows x cols): truncate rows/columns that overflow
+ * and pad missing ones with 0. Keeps existing cell values where possible so
+ * that resizing dimensions preserves the user's entered data.
+ */
+function reshapeMatrix(vals, rows, cols) {
+    const out = [];
+    for (let i = 0; i < rows; i++) {
+        const srcRow = (Array.isArray(vals) && Array.isArray(vals[i])) ? vals[i] : [];
+        const row = [];
+        for (let j = 0; j < cols; j++) {
+            row.push(srcRow[j] !== undefined ? srcRow[j] : 0);
+        }
+        out.push(row);
+    }
+    return out;
+}
+
+/**
+ * Reshape every stored matrix/collection hidden input to match current dim
+ * controls. Keeps existing values where possible, pads with 0s. Called when
+ * any dim-* input changes so the next modal open reflects the new dims.
+ */
+function reshapeAllStoredMatrices() {
+    const rowsG = parseInt(document.getElementById('dim-rows-g').value) || 0;
+
+    // When n = 0 (LP/QP), the hard constraints G, h are not part of the
+    // problem. Clear any previously stored values so they aren't submitted
+    // to the server and aren't carried as stale state in the hidden input.
+    if (rowsG === 0) {
+        ['lp', 'qp'].forEach(function(tab) {
+            ['G', 'h'].forEach(function(m) {
+                var el = document.getElementById(tab + '-' + m);
+                if (el) el.value = '';
+            });
+        });
+    }
+
+    const simpleMatrices = ['c', 'Q', 'A_d', 'b_d', 'G', 'h', 'theta-bar'];
+    ['lp', 'qp', 'sdp'].forEach(function(tab) {
+        simpleMatrices.forEach(function(m) {
+            var el = document.getElementById(tab + '-' + m);
+            if (!el || !el.value) return;
+            var parsed;
+            try { parsed = JSON.parse(el.value); } catch (e) { return; }
+            var def = getDimDefaults(m);
+            var resized = reshapeMatrix(parsed, def.rows, def.cols);
+            el.value = JSON.stringify(resized);
+        });
+    });
+
+    // SDP matrix collections (F_d, E). Re-key to run 0..d and resize each to lmi_size².
+    const nx = parseInt(document.getElementById('dim-nx').value) || 0;
+    const lmi = parseInt(document.getElementById('dim-lmi-size').value) || 2;
+    const lmiE = parseInt(document.getElementById('dim-lmi-e-size').value) || 0;
+    function reshapeCollection(inputId, collectionVar, size) {
+        var el = document.getElementById(inputId);
+        if (!el || !el.value) return;
+        var parsed;
+        try { parsed = JSON.parse(el.value); } catch (e) { return; }
+        if (typeof parsed !== 'object' || Array.isArray(parsed)) return;
+        var newColl = {};
+        for (var j = 0; j <= nx; j++) {
+            var existing = parsed[String(j)] || parsed[j] || [];
+            newColl[j] = reshapeMatrix(existing, size, size);
+        }
+        window[collectionVar] = newColl;
+        el.value = JSON.stringify(newColl);
+    }
+    reshapeCollection('sdp-F_d', 'sdpMatrixCollection1', lmi);
+    if (lmiE > 0) {
+        reshapeCollection('sdp-E', 'sdpMatrixCollection2', lmiE);
+    } else {
+        // n = 0 for SDP → drop the hard LMI collection E so it isn't
+        // included as a constraint on solve.
+        var sdpEEl = document.getElementById('sdp-E');
+        if (sdpEEl) sdpEEl.value = '';
+        window.sdpMatrixCollection2 = {};
+    }
 }
 
 function updateMatrixGrid(values = null, numRows = null, numCols = null) {
@@ -369,13 +693,15 @@ function updateMatrixGrid(values = null, numRows = null, numCols = null) {
 
         grid.appendChild(rowDiv); // Append the row div to the grid
     }
+    // Attach live validation (uses currentMatrix to decide numeric vs delta-capable).
+    attachGridValidationListeners();
 }
 
 function applyCollectionValues(fileValues) {
     if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
         window.sdpMatrixCollection1 = fileValues;
         document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection1);
-    } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
+    } else if (currentMatrix.endsWith('E') || currentMatrix.endsWith('A_a')) {
         window.sdpMatrixCollection2 = fileValues;
         document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection2);
     } else if (currentMatrix.endsWith('b_da')) {
@@ -386,34 +712,94 @@ function applyCollectionValues(fileValues) {
         document.getElementById(currentMatrix).value = JSON.stringify(window.sdpMatrixCollection4);
     }
     $('#SDPModal').modal('hide');
+    validateSolveInputs();
 }
 
 function saveCollection() {
-    const fileInput = document.getElementById('SDP-file');
+    const pasteBox = document.getElementById('sdp-paste');
+    const errBox = document.getElementById('sdpPasteError');
+    const showErr = (msg) => {
+        if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; }
+        else alert(msg);
+    };
+    const clearErr = () => {
+        if (errBox) { errBox.textContent = ''; errBox.style.display = 'none'; }
+    };
+    clearErr();
 
-    if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const ext = file.name.split('.').pop().toLowerCase();
-
-        if (BINARY_FORMATS.includes(ext)) {
-            parseBinaryFile(file)
-                .then(fileValues => applyCollectionValues(fileValues))
-                .catch(error => alert('Error parsing file: ' + error.message));
-        } else {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                try {
-                    const fileValues = parseTextFile(file, event.target.result);
-                    applyCollectionValues(fileValues);
-                } catch (error) {
-                    alert('Invalid file format: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        }
-    } else {
+    const pasted = pasteBox && pasteBox.value.trim();
+    if (!pasted) {
         applyCollectionValues(undefined);
+        return;
     }
+
+    let parsed;
+    try { parsed = JSON.parse(pasted); }
+    catch (err) { showErr('Invalid JSON: ' + err.message); return; }
+    if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+        showErr('Pasted JSON must be a dictionary keyed by matrix index ("0", "1", …).');
+        return;
+    }
+
+    // Expected count and size from dimension controls
+    const nx = parseInt(document.getElementById('dim-nx').value) || 0;
+    const expectedCount = nx + 1;
+    const kind = currentMatrix ? currentMatrix.split('-').slice(1).join('-') : '';
+    const isHard = ['E', 'A_a', 'b_a'].includes(kind);
+    const sizeId = isHard ? 'dim-lmi-e-size' : 'dim-lmi-size';
+    const expectedSize = parseInt(document.getElementById(sizeId).value) || 0;
+    const deltaCapable = isCurrentMatrixDeltaCapable();
+
+    // Key-count check
+    const keys = Object.keys(parsed);
+    if (keys.length !== expectedCount) {
+        showErr(`Expected ${expectedCount} matrices (indices "0"…"${nx}") but received ${keys.length}. Adjust the dimension \\(d\\) or the JSON to match.`);
+        return;
+    }
+    // Key-range check
+    for (let j = 0; j <= nx; j++) {
+        if (!(String(j) in parsed) && !(j in parsed)) {
+            showErr(`Missing matrix at key "${j}". Keys must be "0" through "${nx}".`);
+            return;
+        }
+    }
+
+    // Per-matrix shape + cell-content checks
+    for (const [key, mat] of Object.entries(parsed)) {
+        if (!Array.isArray(mat) || mat.length === 0 || !Array.isArray(mat[0])) {
+            showErr(`Entry "${key}" must be a 2-D array (e.g. [[1,0],[0,1]]).`);
+            return;
+        }
+        const r = mat.length;
+        const c = mat[0].length;
+        // Rectangular?
+        for (let i = 0; i < r; i++) {
+            if (!Array.isArray(mat[i]) || mat[i].length !== c) {
+                showErr(`Entry "${key}" row ${i} has length ${mat[i] ? mat[i].length : 'n/a'}, expected ${c}.`);
+                return;
+            }
+        }
+        // Size check
+        if (expectedSize > 0 && (r !== expectedSize || c !== expectedSize)) {
+            showErr(`Entry "${key}" is ${r}×${c} but expected ${expectedSize}×${expectedSize} from the LMI size control.`);
+            return;
+        }
+        // Cell-content rules
+        for (let i = 0; i < r; i++) {
+            for (let j = 0; j < c; j++) {
+                const reason = validateCellText(mat[i][j], deltaCapable);
+                if (reason) {
+                    showErr(`Entry "${key}" cell [${i}][${j}] = ${JSON.stringify(mat[i][j])} — ${reason}`);
+                    return;
+                }
+            }
+        }
+    }
+
+    // Normalise keys to integers and rebuild a clean object
+    const clean = {};
+    for (const [key, mat] of Object.entries(parsed)) clean[parseInt(key, 10)] = mat;
+    applyCollectionValues(clean);
 }
 
 // Text-based formats that can be parsed client-side
@@ -448,94 +834,344 @@ function parseBinaryFile(file) {
         });
 }
 
-function applyMatrixFileValues(fileValues) {
-    // If editing from SDP modal, store in collection
-    if (window.sdpCurrentMatrixIndex !== null) {
-        if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-            window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = fileValues;
-        } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-            window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = fileValues;
-        } else if (currentMatrix.endsWith('b_da')) {
-            window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = fileValues;
-        } else if (currentMatrix.endsWith('b_a')) {
-            window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = fileValues;
-        }
-        window.sdpCurrentMatrixIndex = null;
-        $('#matrixModal').modal('hide');
-        document.getElementById('SDP-file').value = '';
-        return;
-    }
-    document.getElementById(currentMatrix).value = JSON.stringify(fileValues);
-    $('#matrixModal').modal('hide');
-    document.getElementById('SDP-file').value = '';
-}
-
 function saveMatrix() {
     const grid = document.getElementById('matrixGrid');
     const rowDivs = grid.querySelectorAll('.matrix-row');
     const rows = rowDivs.length;
     const columns = rows > 0 ? rowDivs[0].querySelectorAll('input').length : 0;
-    const fileInput = document.getElementById('modal-file');
-    const values = Array.from({length: rows}, () => Array(columns).fill(0));
+    let values = Array.from({length: rows}, () => Array(columns).fill(0));
 
-    // Check if a file is uploaded
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const ext = file.name.split('.').pop().toLowerCase();
-
-        if (BINARY_FORMATS.includes(ext)) {
-            // Binary file — send to server for parsing
-            parseBinaryFile(file)
-                .then(fileValues => applyMatrixFileValues(fileValues))
-                .catch(error => alert('Error parsing file: ' + error.message));
-        } else {
-            // Text file — parse client-side
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                try {
-                    const fileValues = parseTextFile(file, event.target.result);
-                    applyMatrixFileValues(fileValues);
-                } catch (error) {
-                    alert('Invalid file format: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        }
+    // Expected shape for shape validation: prefer dim-default when known; for
+    // SDP per-matrix edits (F_j / E_j / etc.) fall back to the grid's shape.
+    const kind = currentMatrix ? currentMatrix.split('-').slice(1).join('-') : '';
+    let expectedRows = null, expectedCols = null;
+    if (window.sdpCurrentMatrixIndex === null) {
+        const def = getDimDefaults(kind);
+        expectedRows = def.rows;
+        expectedCols = def.cols;
     } else {
-        // Save manually entered values
+        // Per-F_j editing in SDP collection: expect square, LMI-size.
+        const isHard = ['E', 'A_a', 'b_a'].includes(kind);
+        const sizeId = isHard ? 'dim-lmi-e-size' : 'dim-lmi-size';
+        const sz = parseInt(document.getElementById(sizeId).value) || 2;
+        expectedRows = sz;
+        expectedCols = sz;
+    }
+
+    const deltaCapable = isCurrentMatrixDeltaCapable();
+    const pasteErrBox = document.getElementById('matrixPasteError');
+    const gridErrBox = document.getElementById('matrixModalError');
+
+    function showPasteErr(msg) {
+        if (pasteErrBox) {
+            pasteErrBox.textContent = msg;
+            pasteErrBox.style.display = 'block';
+        } else {
+            alert(msg);
+        }
+    }
+    function showGridErr(msg) {
+        if (gridErrBox) {
+            gridErrBox.textContent = msg;
+            gridErrBox.style.display = 'block';
+        } else {
+            alert(msg);
+        }
+    }
+
+    // JSON paste box takes priority over the grid when non-empty.
+    const pasteBox = document.getElementById('matrix-paste');
+    const pasted = pasteBox && pasteBox.value.trim();
+    if (pasted) {
+        let parsed;
+        try { parsed = JSON.parse(pasted); }
+        catch (err) { showPasteErr('Invalid JSON: ' + err.message); return; }
+
+        if (!Array.isArray(parsed) || parsed.length === 0 || !Array.isArray(parsed[0])) {
+            showPasteErr('Pasted JSON must be a 2-D array (e.g. [[1,0],[0,1]]).');
+            return;
+        }
+        // Rectangular?
+        const rCols = parsed[0].length;
+        for (let r = 0; r < parsed.length; r++) {
+            if (!Array.isArray(parsed[r]) || parsed[r].length !== rCols) {
+                showPasteErr(`Row ${r} has length ${parsed[r] ? parsed[r].length : 'n/a'}, expected ${rCols}. All rows must have the same number of columns.`);
+                return;
+            }
+        }
+        // Shape check
+        if (expectedRows != null && (parsed.length !== expectedRows || rCols !== expectedCols)) {
+            showPasteErr(`Shape mismatch: pasted matrix is ${parsed.length}×${rCols} but expected ${expectedRows}×${expectedCols} from the dimension controls.`);
+            return;
+        }
+        // Cell-content rules
+        for (let r = 0; r < parsed.length; r++) {
+            for (let c = 0; c < parsed[r].length; c++) {
+                const reason = validateCellText(parsed[r][c], deltaCapable);
+                if (reason) {
+                    showPasteErr(`Cell [${r}][${c}] = ${JSON.stringify(parsed[r][c])} — ${reason}`);
+                    return;
+                }
+            }
+        }
+        values = parsed;
+        // Refresh grid view to match pasted shape
+        updateMatrixGrid(values);
+    } else {
+        // Live-validate the grid before accepting it.
+        const check = validateMatrixGrid();
+        if (!check.valid) {
+            showGridErr(`Fix the highlighted cell(s) before saving. ${check.message}`);
+            return;
+        }
+        // Shape sanity on the grid too (catches out-of-sync state).
+        if (expectedRows != null && (rows !== expectedRows || columns !== expectedCols)) {
+            showGridErr(`Shape mismatch: grid is ${rows}×${columns} but expected ${expectedRows}×${expectedCols} from the dimension controls.`);
+            return;
+        }
         Array.from(grid.querySelectorAll('input')).forEach(input => {
             const row = parseInt(input.dataset.row);
             const column = parseInt(input.dataset.column);
-            values[row][column] = input.value; // Save text value
+            values[row][column] = input.value;
         });
-
-        // If editing from SDP modal, store in collection
-        if (window.sdpCurrentMatrixIndex !== null) {
-
-
-            // If no file is uploaded, just save the current matrix collection to the hidden input and close the modal
-            if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
-                window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = values;
-            } else if (currentMatrix.endsWith('F') || currentMatrix.endsWith('A_a')) {
-                window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = values;
-            } else if (currentMatrix.endsWith('b_da')) {
-                window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = values;
-            } else if (currentMatrix.endsWith('b_a')) {
-                window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = values;
-            }
-
-            window.sdpCurrentMatrixIndex = null;
-            $('#matrixModal').modal('hide');
-            document.getElementById('SDP-file').value = '';
-            return;
-        }
-        document.getElementById(currentMatrix).value = JSON.stringify(values);
-        $('#matrixModal').modal('hide');
-        document.getElementById('SDP-file').value = '';
     }
+
+    // If editing from SDP modal, store in collection
+    if (window.sdpCurrentMatrixIndex !== null) {
+        if (currentMatrix.endsWith('F_d') || currentMatrix.endsWith('A_da')) {
+            window.sdpMatrixCollection1[window.sdpCurrentMatrixIndex] = values;
+        } else if (currentMatrix.endsWith('E') || currentMatrix.endsWith('A_a')) {
+            window.sdpMatrixCollection2[window.sdpCurrentMatrixIndex] = values;
+        } else if (currentMatrix.endsWith('b_da')) {
+            window.sdpMatrixCollection3[window.sdpCurrentMatrixIndex] = values;
+        } else if (currentMatrix.endsWith('b_a')) {
+            window.sdpMatrixCollection4[window.sdpCurrentMatrixIndex] = values;
+        }
+        // Persist collection to the hidden input so server receives latest state
+        const prefix = currentMatrix;
+        if (prefix.endsWith('F_d') || prefix.endsWith('A_da')) {
+            document.getElementById(prefix).value = JSON.stringify(window.sdpMatrixCollection1);
+        } else if (prefix.endsWith('E') || prefix.endsWith('A_a')) {
+            document.getElementById(prefix).value = JSON.stringify(window.sdpMatrixCollection2);
+        } else if (prefix.endsWith('b_da')) {
+            document.getElementById(prefix).value = JSON.stringify(window.sdpMatrixCollection3);
+        } else if (prefix.endsWith('b_a')) {
+            document.getElementById(prefix).value = JSON.stringify(window.sdpMatrixCollection4);
+        }
+        window.sdpCurrentMatrixIndex = null;
+        $('#matrixModal').modal('hide');
+        validateSolveInputs();
+        return;
+    }
+    document.getElementById(currentMatrix).value = JSON.stringify(values);
+    $('#matrixModal').modal('hide');
+    validateSolveInputs();
+}
+
+/* ── Pre-solve validation ──────────────────────────────────────────────── */
+
+/**
+ * Validate that every stored matrix/collection on the active tab has a shape
+ * consistent with the current dimension controls (d, m, n, lmi, lmi_e).
+ * Returns {valid: bool, message: string}. `message` is the first mismatch.
+ */
+function validateSolveInputs() {
+    const errEl = document.getElementById('solve-error');
+    const setMsg = (msg) => {
+        if (!errEl) return;
+        if (msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        else { errEl.textContent = ''; errEl.style.display = 'none'; }
+    };
+
+    const activeTab = document.querySelector('.nav-link.active');
+    if (!activeTab) { setMsg(''); return {valid: true, message: ''}; }
+    const tabId = activeTab.id;
+    const tab = tabId.replace('-tab', '');
+    const d = parseInt(document.getElementById('dim-nx').value) || 0;
+    const m = parseInt(document.getElementById('dim-rows-a').value) || 0;
+    const n = parseInt(document.getElementById('dim-rows-g').value) || 0;
+    const lmi = parseInt(document.getElementById('dim-lmi-size').value) || 0;
+    const lmiE = parseInt(document.getElementById('dim-lmi-e-size').value) || 0;
+
+    // Drive the Edit G / Edit h toggle from the same authoritative n check
+    // that this validator uses — so every trigger of validateSolveInputs()
+    // (modal save, tab switch, dim change, option change, page load, …)
+    // also re-evaluates the button state. This matches the behaviour the
+    // user confirmed was working previously.
+    const hardNeeded = (tabId === 'sdp-tab') ? (lmiE > 0) : (n > 0);
+    setHardConstraintButtonsEnabled(hardNeeded);
+    const mode = currentMode;
+    const option = (document.getElementById(tab + '-options') || {}).value || 'robust';
+    const hasReg = (option === 'regularization' || option === 'regularization-relaxation');
+    const hasRelax = (option === 'relaxation' || option === 'regularization-relaxation');
+
+    // ── Scalar parameter sign checks, gated on the active option ──
+    function checkNonNegatives(fieldId, label) {
+        const el = document.getElementById(fieldId);
+        const raw = el && el.value ? el.value.trim() : '';
+        if (raw === '') return `${label} must be provided (comma-separated values ≥ 0).`;
+        const parts = raw.split(',').map(s => s.trim()).filter(s => s !== '');
+        if (parts.length === 0) return `${label} must be provided (comma-separated values ≥ 0).`;
+        for (const part of parts) {
+            const v = Number(part);
+            if (!Number.isFinite(v)) return `${label} value "${part}" is not a number.`;
+            if (v < 0) return `${label} value ${v} is negative — must be ≥ 0.`;
+        }
+        return '';
+    }
+    if (hasReg) {
+        const err = checkNonNegatives(tab + '-tau', 'τ (regularization weight)');
+        if (err) { setMsg(err); return {valid: false, message: err}; }
+    }
+    if (hasRelax) {
+        const err = checkNonNegatives(tab + '-rho', 'ρ (relaxation penalty)');
+        if (err) { setMsg(err); return {valid: false, message: err}; }
+    }
+
+    function parseJSON(id) {
+        const el = document.getElementById(id);
+        if (!el || !el.value) return null;
+        try { return JSON.parse(el.value); } catch (e) { return {__parseError: true}; }
+    }
+    function shape(mat) {
+        if (!Array.isArray(mat)) return [0, 0];
+        const r = mat.length;
+        const c = r > 0 && Array.isArray(mat[0]) ? mat[0].length : 0;
+        return [r, c];
+    }
+    function checkShape(id, label, expectedRows, expectedCols) {
+        const parsed = parseJSON(id);
+        if (parsed === null) return `${label} is not set.`;
+        if (parsed.__parseError) return `${label} has invalid JSON.`;
+        const [r, c] = shape(parsed);
+        if (r !== expectedRows || c !== expectedCols) {
+            return `${label} is ${r}×${c} but expected ${expectedRows}×${expectedCols}.`;
+        }
+        return '';
+    }
+    // Optional-matrix variant: "empty" is OK. Used for G/h that are only
+    // required when n > 0.
+    function checkOptional(id, label, expectedRows, expectedCols) {
+        const el = document.getElementById(id);
+        if (!el || !el.value) return '';
+        return checkShape(id, label, expectedRows, expectedCols);
+    }
+
+    if (d <= 0) { setMsg('Decision variable count d must be ≥ 1.'); return {valid: false, message: errEl ? errEl.textContent : ''}; }
+
+    // ── LP / QP ──
+    if (tabId === 'lp-tab' || tabId === 'qp-tab') {
+        // c (d × 1) always required
+        let err = checkShape(`${tab}-c`, 'c', d, 1);
+        if (err) { setMsg(err); return {valid: false, message: err}; }
+        if (tabId === 'qp-tab') {
+            err = checkShape(`${tab}-Q`, 'Q', d, d);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+        }
+        if (mode === 'symbolic') {
+            if (m <= 0) { setMsg('Soft constraint row count 𝔪 must be ≥ 1 in symbolic mode.'); return {valid: false, message: 'm=0'}; }
+            err = checkShape(`${tab}-A_d`, 'A(δ)', m, d);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+            err = checkShape(`${tab}-b_d`, 'b(δ)', m, 1);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+        }
+        if (n > 0) {
+            err = checkShape(`${tab}-G`, 'G', n, d);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+            err = checkShape(`${tab}-h`, 'h', n, 1);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+        } else {
+            // If n == 0, G and h must not be set either (or must be empty).
+            // Accept any stored value silently — backend ignores when n=0.
+        }
+        if (hasReg) {
+            err = checkOptional(`${tab}-theta-bar`, 'x̄', d, 1);
+            if (err) { setMsg(err); return {valid: false, message: err}; }
+        }
+    }
+    // ── SDP ──
+    else if (tabId === 'sdp-tab') {
+        let err = checkShape('sdp-c', 'c', d, 1);
+        if (err) { setMsg(err); return {valid: false, message: err}; }
+        err = checkOptional('sdp-Q', 'Q', d, d);
+        if (err) { setMsg(err); return {valid: false, message: err}; }
+
+        if (mode === 'symbolic') {
+            if (lmi <= 0) { setMsg('LMI size 𝔪 must be ≥ 1 in symbolic mode.'); return {valid: false, message: 'lmi=0'}; }
+            const parsed = parseJSON('sdp-F_d');
+            if (parsed === null) { setMsg('F(δ) collection is not set.'); return {valid: false, message: 'F missing'}; }
+            if (parsed.__parseError) { setMsg('F(δ) collection has invalid JSON.'); return {valid: false, message: 'F bad json'}; }
+            if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                const msg = 'F(δ) must be a dict of matrices keyed "0"…"d".';
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            const expectedKeys = d + 1;
+            const keys = Object.keys(parsed);
+            if (keys.length !== expectedKeys) {
+                const msg = `F(δ) collection has ${keys.length} matrices but expected ${expectedKeys} (one per j = 0…${d}).`;
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            for (let j = 0; j <= d; j++) {
+                if (!(String(j) in parsed) && !(j in parsed)) {
+                    const msg = `F(δ) is missing key "${j}".`;
+                    setMsg(msg); return {valid: false, message: msg};
+                }
+                const mat = parsed[String(j)] !== undefined ? parsed[String(j)] : parsed[j];
+                const [r, c] = shape(mat);
+                if (r !== lmi || c !== lmi) {
+                    const msg = `F_${j}(δ) is ${r}×${c} but expected ${lmi}×${lmi}.`;
+                    setMsg(msg); return {valid: false, message: msg};
+                }
+            }
+        }
+        if (lmiE > 0) {
+            const parsed = parseJSON('sdp-E');
+            if (parsed === null) {
+                const msg = 'E collection is not set (LMI-E size 𝔫 > 0).';
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            if (parsed.__parseError) { setMsg('E collection has invalid JSON.'); return {valid: false, message: 'E bad json'}; }
+            const expectedKeys = d + 1;
+            const keys = Object.keys(parsed);
+            if (keys.length !== expectedKeys) {
+                const msg = `E collection has ${keys.length} matrices but expected ${expectedKeys} (one per j = 0…${d}).`;
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            for (let j = 0; j <= d; j++) {
+                const k = (String(j) in parsed) ? String(j) : j;
+                const mat = parsed[k];
+                const [r, c] = shape(mat);
+                if (r !== lmiE || c !== lmiE) {
+                    const msg = `E_${j} is ${r}×${c} but expected ${lmiE}×${lmiE}.`;
+                    setMsg(msg); return {valid: false, message: msg};
+                }
+            }
+        }
+        if (hasReg) {
+            const err2 = checkOptional('sdp-theta-bar', 'x̄', d, 1);
+            if (err2) { setMsg(err2); return {valid: false, message: err2}; }
+        }
+    }
+
+    // Final (non-optional) check: scenarios file must be uploaded. Placed
+    // last so every other input issue surfaces first, but still mandatory.
+    const scenarioFileInput = document.getElementById('file');
+    if (!scenarioFileInput || !scenarioFileInput.files || scenarioFileInput.files.length === 0) {
+        const msg = 'No scenarios file uploaded. Upload a scenario data file (CSV, JSON, MAT, …) under "Scenarios" before solving.';
+        setMsg(msg);
+        return {valid: false, message: msg};
+    }
+
+    // All good — clear any previous error.
+    setMsg('');
+    return {valid: true, message: ''};
 }
 
 function solve() {
+    // Gate on pre-solve validation first; red banner appears above Solve.
+    const check = validateSolveInputs();
+    if (!check.valid) return;
+
     const selectedSolver = document.getElementById('solver').value;
 
     if (selectedSolver === 'MOSEK') {
@@ -565,6 +1201,17 @@ function executeSolve(mosekLicenseFile) {
 
     const activeForm = document.getElementById(formId);
     const formData = new FormData(activeForm);
+
+    // If n = 0 on the current tab, strip hard-constraint matrices from the
+    // payload so the server never evaluates them as active constraints, even
+    // if stale JSON lingers in the hidden inputs.
+    const rowsGLive = parseInt(document.getElementById('dim-rows-g').value) || 0;
+    const lmiELive = parseInt(document.getElementById('dim-lmi-e-size').value) || 0;
+    if (activeTab === 'sdp-tab') {
+        if (lmiELive === 0) formData.set('E', '');
+    } else {
+        if (rowsGLive === 0) { formData.set('G', ''); formData.set('h', ''); }
+    }
 
     // Append mode and dimension controls
     formData.append('mode', currentMode);
@@ -612,6 +1259,9 @@ function executeSolve(mosekLicenseFile) {
                 return;
             }
             lastResultData = data;
+            const option = (data.form_data && data.form_data.option) || 'robust';
+            const showRhoTab = (option === 'relaxation' || option === 'regularization-relaxation');
+            const showTauTab = (option === 'regularization' || option === 'regularization-relaxation');
             const resultBox = document.getElementById('result-box');
             resultBox.innerHTML = `
     <div class="result-container">
@@ -619,14 +1269,14 @@ function executeSolve(mosekLicenseFile) {
         <li class="nav-item">
             <a class="nav-link active" id="result-table-tab" data-toggle="tab" href="#result-table" role="tab" aria-controls="result-table" aria-selected="true">Results Table</a>
         </li>
-        <li class="nav-item">
+        ${showRhoTab ? `<li class="nav-item">
             <a class="nav-link" id="result-graph-tab" data-toggle="tab" href="#result-graph" role="tab" aria-controls="result-graph" aria-selected="false">ρ Graph</a>
-        </li>
-        <li class="nav-item">
+        </li>` : ''}
+        ${showTauTab ? `<li class="nav-item">
             <a class="nav-link" id="result-graph2-tab" data-toggle="tab" href="#result-graph2" role="tab" aria-controls="result-graph2" aria-selected="false">𝜏 Graph</a>
-        </li>
+        </li>` : ''}
         <li class="nav-item">
-            <a class="nav-link" id="result-formdata-tab" data-toggle="tab" href="#result-formdata" role="tab" aria-controls="result-formdata" aria-selected="false">Form Data</a>
+            <a class="nav-link" id="result-formdata-tab" data-toggle="tab" href="#result-formdata" role="tab" aria-controls="result-formdata" aria-selected="false">Program JSON</a>
         </li>
     </ul>
     <div class="tab-content" id="resultTabContent">
@@ -639,29 +1289,38 @@ function executeSolve(mosekLicenseFile) {
             ${generateResultTable(data)}
             </div>
         </div>
-        <div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
+        ${showRhoTab ? `<div class="tab-pane fade" id="result-graph" role="tabpanel" aria-labelledby="result-graph-tab">
             <h3><br> ρ Graph</h3>
             <div class="form-group">
             <label for="tau-select">Select 𝜏:</label>
             <select id="tau-select" class="form-control" style="width: 200px; display: inline-block;"></select>
             </div>
             <canvas id="resultGraph" width="400" height="300"></canvas>
-        </div>
-        <div class="tab-pane fade" id="result-graph2" role="tabpanel" aria-labelledby="result-graph2-tab">
+        </div>` : ''}
+        ${showTauTab ? `<div class="tab-pane fade" id="result-graph2" role="tabpanel" aria-labelledby="result-graph2-tab">
             <h3><br> 𝜏 Graph</h3>
             <div class="form-group">
             <label for="rho-select">Select ρ:</label>
             <select id="rho-select" class="form-control" style="width: 200px; display: inline-block;"></select>
             </div>
             <canvas id="resultGraph2" width="400" height="300"></canvas>
-        </div>
+        </div>` : ''}
         <div class="tab-pane fade" id="result-formdata" role="tabpanel" aria-labelledby="result-formdata-tab">
-            <h3><br> Form Data</h3>
-            <pre style="white-space: pre-wrap; word-break: break-all;">${JSON.stringify(data.form_data, null, 2)}</pre>
+            <h3><br> Form Data
+                <button class="btn btn-outline-success btn-sm ml-3" onclick="downloadProgramJSON()">Download Program (.JSON)</button>
+            </h3>
+            <p class="text-muted small mb-2">This is the exact JSON you can paste or upload via the <b>Upload Program</b> button at the top of the page to restore this problem in a future session.</p>
+            <pre style="white-space: pre-wrap; word-break: break-all;">${JSON.stringify(formDataToProgramJSON(data.form_data), null, 2)}</pre>
         </div>
     </div>
 </div>
 `;
+
+            // Initialise popovers inserted inside the freshly-rendered
+            // results panel (e.g. the ? next to Optimal Cost). The global
+            // .dim-help-btn popover registration runs only at page load, so
+            // these dynamic buttons need their own hookup.
+            $('#result-box .result-help-btn').popover({ trigger: 'hover', html: true });
 
             // Prepare risk lower and upper arrays
             const riskLower = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[0] : r) : [data.risk];
@@ -670,7 +1329,7 @@ function executeSolve(mosekLicenseFile) {
             // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
             const uniqueTau = Array.from(new Set(Array.isArray(data.tau_) ? data.tau_ : [data.tau_]));
             const tauSelect = document.getElementById('tau-select');
-            tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
+            if (tauSelect) tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
 
 // Helper to filter data by selected tau
             function getFilteredByTau(selectedTau) {
@@ -690,8 +1349,10 @@ function executeSolve(mosekLicenseFile) {
             let chart;
 
             function drawRhoChart(selectedTau) {
+                const canvas = document.getElementById('resultGraph');
+                if (!canvas) return;
                 const filtered = getFilteredByTau(selectedTau);
-                const ctx = document.getElementById('resultGraph').getContext('2d');
+                const ctx = canvas.getContext('2d');
                 if (chart) chart.destroy();
                 chart = new Chart(ctx, {
                     type: 'line',
@@ -752,13 +1413,15 @@ function executeSolve(mosekLicenseFile) {
             }
 
 // Initial draw
-            drawRhoChart(uniqueTau[0]);
-            tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
+            if (showRhoTab) {
+                drawRhoChart(uniqueTau[0]);
+                if (tauSelect) tauSelect.addEventListener('change', e => drawRhoChart(e.target.value));
+            }
 
             // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
             const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
             const rhoSelect = document.getElementById('rho-select');
-            rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
+            if (rhoSelect) rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
 
 // Helper to filter data by selected rho
             function getFilteredByRho(selectedRho) {
@@ -778,8 +1441,10 @@ function executeSolve(mosekLicenseFile) {
             let chart2;
 
             function drawTauChart(selectedRho) {
+                const canvas2 = document.getElementById('resultGraph2');
+                if (!canvas2) return;
                 const filtered = getFilteredByRho(selectedRho);
-                const ctx2 = document.getElementById('resultGraph2').getContext('2d');
+                const ctx2 = canvas2.getContext('2d');
                 if (chart2) chart2.destroy();
                 chart2 = new Chart(ctx2, {
                     type: 'line',
@@ -840,8 +1505,10 @@ function executeSolve(mosekLicenseFile) {
             }
 
 // Initial draw
-            drawTauChart(uniqueRho[0]);
-            rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
+            if (showTauTab) {
+                drawTauChart(uniqueRho[0]);
+                if (rhoSelect) rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
+            }
             MathJax.typesetPromise();
         })
         .catch(error => {
@@ -873,12 +1540,20 @@ function generateResultTable(data) {
 
     // Prepare rows
     const rows = [
-        {label: 'Optimal Cost', values: data.optimal_cost},
+        {label: `Optimal Cost <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn result-help-btn"
+                data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true"
+                data-content="<b>What is reported:</b><br>• LP: \\(c^\\top x^*\\)<br>• QP / SDP: \\(c^\\top x^* + \\tfrac{1}{2}\\,x^{*\\top} Q\\, x^*\\)<br><br>The regularization term \\(\\tau \\lVert x - \\bar{x}\\rVert_p\\) and the relaxation term \\(\\rho \\sum_i \\zeta_i\\) are <b>excluded</b>. They are treated as solver-guidance penalties, not part of the underlying problem's objective, so they do not leak into the reported cost."><span class="dim-help-icon">?</span></button>`, values: data.optimal_cost},
         {label: `Optimal x`, values: data.optimal_x},
         ...(hasRelaxation ? [{label: 'Optimal &zeta;', values: data.optimal_s}] : []),
         {label: 'Relaxation Parameters &rho;', values: data.rho_},
         {label: 'Regularization Parameters &tau;', values: data.tau_},
-        {label: 'Confidence \\(1-\\frac{\\beta}{n_{\\tau} n_{\\rho}}\\)', values: data.conf},
+        {label: (function() {
+            const opt = (data.form_data && data.form_data.option) || 'robust';
+            if (opt === 'relaxation') return 'Confidence \\(1 - \\beta \\cdot n_{\\rho}\\)';
+            if (opt === 'regularization') return 'Confidence \\(1 - \\beta \\cdot n_{\\tau}\\)';
+            if (opt === 'regularization-relaxation') return 'Confidence \\(1 - \\beta \\cdot n_{\\tau} \\cdot n_{\\rho}\\)';
+            return 'Confidence \\(1 - \\beta\\)';
+        })(), values: data.conf},
         {label: 'Risk Bounds &epsilon;', values: data.risk},
         {label: 'Degeneracy Detected?', values: data.degeneracy},
         {label: 'Complexity (support list size)', values: data.active_con},
@@ -924,6 +1599,89 @@ function generateResultTable(data) {
     });
     table += `</table>`;
     return table;
+}
+
+/**
+ * Convert the raw submitted form data back into the "Upload Program" JSON
+ * schema so it can be saved now and re-uploaded in a future session to
+ * restore the exact same problem setup.
+ *
+ * Mapping notes:
+ *   - active_tab ("lp-tab"/"qp-tab"/"sdp-tab") → `type` ("LP"/"QP"/"SDP").
+ *   - Matrix hidden inputs store JSON strings; parse them to arrays.
+ *   - "theta-bar" (hyphenated form name) → `x_ref` (the key loadProblemJSON reads).
+ *   - Drop fields that loadProblemJSON doesn't consume to keep the JSON tidy.
+ */
+function formDataToProgramJSON(formData) {
+    if (!formData) return {};
+    const tabToType = {'lp-tab': 'LP', 'qp-tab': 'QP', 'sdp-tab': 'SDP'};
+    const type = tabToType[formData.active_tab] || 'LP';
+    const out = { type: type };
+    if (formData.mode) out.mode = formData.mode;
+
+    const parseIfSet = function(key) {
+        const v = formData[key];
+        if (v === undefined || v === null || v === '') return undefined;
+        try { return JSON.parse(v); } catch (e) { return v; }
+    };
+    const assign = function(targetKey, srcKey) {
+        const v = parseIfSet(srcKey);
+        if (v !== undefined) out[targetKey] = v;
+    };
+
+    // Scenario matrices (symbolic mode)
+    assign('A_d', 'A_d');
+    assign('b_d', 'b_d');
+    assign('F_d', 'F_d');
+
+    // Hard constraints
+    assign('G', 'G');
+    assign('h', 'h');
+    assign('E', 'E');
+
+    // Cost / quadratic
+    assign('c', 'c');
+    assign('Q', 'Q');
+
+    // Regularization reference point (hyphen-named form field → x_ref key)
+    const xRef = parseIfSet('theta-bar') !== undefined ? parseIfSet('theta-bar') : parseIfSet('theta_bar');
+    if (xRef !== undefined) out.x_ref = xRef;
+
+    // Scalar parameters — keep as strings so loadProblemJSON parses them
+    // the same way regardless of number of sweep values.
+    ['rho', 'tau', 'confidence', 'p'].forEach(function(k) {
+        if (formData[k] !== undefined && formData[k] !== '') out[k] = formData[k];
+    });
+
+    // Preserve the explicit formulation option (robust / regularization /
+    // relaxation / regularization-relaxation) so a round-trip upload
+    // doesn't have to re-infer it from rho/tau sweep strings.
+    if (formData.option) out.option = formData.option;
+    // Note: solver is NOT saved — the uploaded program should inherit the
+    // user's current solver choice, not pin to a past one.
+
+    // Dimension controls — useful when uploading in numeric mode, or when
+    // matrix shapes alone don't pin down d / m / lmi_size.
+    if (formData.n_x)      out.n_x      = parseInt(formData.n_x, 10);
+    if (formData.rows_A)   out.rows_A   = parseInt(formData.rows_A, 10);
+    if (formData.rows_G)   out.rows_G   = parseInt(formData.rows_G, 10);
+    if (formData.lmi_size) out.lmi_size = parseInt(formData.lmi_size, 10);
+
+    return out;
+}
+
+function downloadProgramJSON() {
+    if (!lastResultData) return;
+    const program = formDataToProgramJSON(lastResultData.form_data);
+    const blob = new Blob([JSON.stringify(program, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'program.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function downloadResultsJSON() {
@@ -1018,15 +1776,15 @@ function updateLatexText(tab) {
             latexSoft = `${Ax} \\leq 0, \\quad i = 1, \\ldots, N`;
         } else if (option === 'regularization') {
             latexObj = `\\displaystyle\\min_{x} \\quad c^\\top x${qTerm} + \\tau\\Vert x - \\bar{x}\\Vert_{p}`;
-            latexSoft = `${Ax} \\leq 0, \\quad \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            latexSoft = `${Ax} \\leq 0, \\quad i = 1, \\ldots, N`;
             showTau();
         } else if (option === 'relaxation') {
-            latexObj = `\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x${qTerm} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
-            latexSoft = `${Ax} \\leq \\zeta_i, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ i = 1, \\ldots, N`;
+            latexObj = `\\displaystyle\\min_{x,\\,\\zeta_i \\geq 0} \\quad c^\\top x${qTerm} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
+            latexSoft = `${Ax} \\leq \\zeta_i, \\quad i = 1, \\ldots, N`;
             showRho();
         } else if (option === 'regularization-relaxation') {
-            latexObj = `\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x${qTerm} + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
-            latexSoft = `${Ax} \\leq \\zeta_i, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            latexObj = `\\displaystyle\\min_{x,\\,\\zeta_i \\geq 0} \\quad c^\\top x${qTerm} + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i`;
+            latexSoft = `${Ax} \\leq \\zeta_i, \\quad i = 1, \\ldots, N`;
             showTau(); showRho();
         }
     } else if (tab === 'sdp') {
@@ -1036,15 +1794,15 @@ function updateLatexText(tab) {
             latexSoft = `${Fsum} \\preceq 0, \\quad i = 1, \\ldots, N`;
         } else if (option === 'regularization') {
             latexObj = '\\displaystyle\\min_{x} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p}';
-            latexSoft = `${Fsum} \\preceq 0, \\quad \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            latexSoft = `${Fsum} \\preceq 0, \\quad i = 1, \\ldots, N`;
             showTau();
         } else if (option === 'relaxation') {
-            latexObj = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ i = 1, \\ldots, N`;
+            latexObj = '\\displaystyle\\min_{x,\\,\\zeta_i \\geq 0} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad i = 1, \\ldots, N`;
             showRho();
         } else if (option === 'regularization-relaxation') {
-            latexObj = '\\displaystyle\\min_{x,\\zeta_i} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
-            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad \\zeta_i \\geq 0,~ \\rho\\geq 0,~ \\tau\\geq 0,~ i = 1, \\ldots, N`;
+            latexObj = '\\displaystyle\\min_{x,\\,\\zeta_i \\geq 0} \\quad c^\\top x + \\frac{1}{2}x^\\top Qx + \\tau\\Vert x - \\bar{x}\\Vert_{p} + \\rho \\displaystyle\\sum_{i=1}^{N} \\zeta_i';
+            latexSoft = `${Fsum} \\preceq \\zeta_i I, \\quad i = 1, \\ldots, N`;
             showTau(); showRho();
         }
     }
@@ -1053,6 +1811,9 @@ function updateLatexText(tab) {
         `<div class="text-center"><p>\\(${latexObj}\\)</p><p>subject to:</p><p>\\(${latexSoft}\\)</p><p>\\(${latexHard}\\)</p></div>`;
     MathJax.typeset();
     updateConfidenceLabel(option);
+    // Option changed → τ/ρ may now or no longer be required. Re-validate so
+    // a previously-shown τ/ρ banner doesn't linger after switching to robust.
+    if (typeof validateSolveInputs === 'function') validateSolveInputs();
 }
 
 function updateConfidenceLabel(option) {
@@ -1065,11 +1826,11 @@ function updateConfidenceLabel(option) {
     if (option === 'robust') {
         span.innerHTML = '\\(1 - \\beta\\)';
     } else if (option === 'relaxation') {
-        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\rho}\\)';
+        span.innerHTML = '\\(1 - \\beta \\cdot n_\\rho\\)';
     } else if (option === 'regularization') {
-        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\tau}\\)';
+        span.innerHTML = '\\(1 - \\beta \\cdot n_\\tau\\)';
     } else {
-        span.innerHTML = '\\(1 - \\frac{\\beta}{n_\\tau \\cdot n_\\rho}\\)';
+        span.innerHTML = '\\(1 - \\beta \\cdot n_\\tau \\cdot n_\\rho\\)';
     }
     MathJax.typesetPromise();
     updateSweepCounter(option);
@@ -1121,7 +1882,7 @@ function updateModeHelpContent() {
     var numericDesc = isSDP
         ? '<b>Numeric:</b> Provide pre-computed constraint data directly. Each row of the uploaded dataset contains the row-wise flattened \\(F_{0,i}\\), \\(F_{1,i}\\), \\(\\ldots\\), \\(F_{d,i}\\) matrices concatenated together.'
         : '<b>Numeric:</b> Provide pre-computed constraint data directly. Each row of the uploaded dataset contains the row-wise flattened \\(A_i\\) matrix concatenated with the row-wise flattened \\(b_i\\) vector.';
-    var content = '<b>Symbolic:</b> Enter constraint matrices as expressions using <code>delta[i]</code> variables. The matrices are evaluated at each scenario point.<br><br>' + numericDesc;
+    var content = '<b>Symbolic:</b> Enter constraint matrices as expressions of the components of a scenario (<code>delta[k]</code>). The matrices are then evaluated at each scenario as specified later.<br><br>' + numericDesc;
     var btn = document.getElementById('mode-help-btn');
     $(btn).attr('data-content', content);
     // Update the popover instance if it exists
@@ -1183,23 +1944,40 @@ function updateDimensionVisibility() {
     updateHardConstraintState();
 }
 
+/**
+ * Enable/disable the Edit G / Edit h buttons (and the SDP hard-LMI button)
+ * based on the same n value the solve validator uses. Being explicit with
+ * both the .disabled property and the attribute avoids any lingering state
+ * in browsers that memoise the attribute separately.
+ */
+function setHardConstraintButtonsEnabled(enabled) {
+    document.querySelectorAll('.hard-constraint-btn').forEach(function(btn) {
+        btn.disabled = !enabled;
+        if (enabled) {
+            btn.removeAttribute('disabled');
+            btn.classList.remove('btn-outline-secondary', 'disabled');
+            btn.classList.add('btn-secondary');
+        } else {
+            btn.setAttribute('disabled', 'disabled');
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-outline-secondary');
+        }
+    });
+}
+
+/**
+ * Back-compat wrapper: reads the authoritative n value (rows_G for LP/QP,
+ * lmi_e for SDP) and toggles the Edit G / Edit h buttons accordingly. Kept
+ * so existing callers keep working, but validateSolveInputs() is now the
+ * single source of truth and also calls setHardConstraintButtonsEnabled().
+ */
 function updateHardConstraintState() {
     const activeTab = document.querySelector('.nav-link.active');
     const isSDP = activeTab && activeTab.id === 'sdp-tab';
-    var nVal = isSDP
+    const nVal = isSDP
         ? parseInt(document.getElementById('dim-lmi-e-size').value) || 0
         : parseInt(document.getElementById('dim-rows-g').value) || 0;
-    var disabled = (nVal === 0);
-    document.querySelectorAll('.hard-constraint-btn').forEach(function(btn) {
-        btn.disabled = disabled;
-        if (disabled) {
-            btn.classList.remove('btn-secondary');
-            btn.classList.add('btn-outline-secondary');
-        } else {
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-secondary');
-        }
-    });
+    setHardConstraintButtonsEnabled(nVal > 0);
 }
 
 function loadProblemJSON() {
@@ -1218,7 +1996,7 @@ function loadProblemJSON() {
 
         // Clear all form fields across all tabs
         ['lp', 'qp', 'sdp'].forEach(function(p) {
-            ['A_d', 'b_d', 'A', 'b', 'c', 'Q', 'F_d', 'F'].forEach(function(field) {
+            ['A_d', 'b_d', 'G', 'h', 'c', 'Q', 'F_d', 'E'].forEach(function(field) {
                 var el = document.getElementById(p + '-' + field);
                 if (el) el.value = '';
             });
@@ -1255,13 +2033,19 @@ function loadProblemJSON() {
         }
         onModeChange();
 
-        // Determine the formulation option based on rho/tau
-        const hasRho = data.rho !== undefined && parseFloat(data.rho) > 0;
-        const hasTau = data.tau !== undefined && parseFloat(data.tau) > 0;
+        // Determine the formulation option: prefer explicit `option` in the
+        // program JSON; otherwise infer from rho/tau sweep strings.
         let option = 'robust';
-        if (hasRho && hasTau) option = 'regularization-relaxation';
-        else if (hasRho) option = 'relaxation';
-        else if (hasTau) option = 'regularization';
+        if (typeof data.option === 'string' &&
+            ['robust', 'regularization', 'relaxation', 'regularization-relaxation'].includes(data.option)) {
+            option = data.option;
+        } else {
+            const hasRho = data.rho !== undefined && parseFloat(data.rho) > 0;
+            const hasTau = data.tau !== undefined && parseFloat(data.tau) > 0;
+            if (hasRho && hasTau) option = 'regularization-relaxation';
+            else if (hasRho) option = 'relaxation';
+            else if (hasTau) option = 'regularization';
+        }
 
         const prefix = type.toLowerCase();
         const optionSelect = document.getElementById(prefix + '-options');
@@ -1332,8 +2116,8 @@ function loadProblemJSON() {
                 if (data.A_d) document.getElementById(prefix + '-A_d').value = JSON.stringify(data.A_d);
                 if (data.b_d) document.getElementById(prefix + '-b_d').value = JSON.stringify(data.b_d);
             }
-            if (data.G) document.getElementById(prefix + '-A').value = JSON.stringify(data.G);
-            if (data.h) document.getElementById(prefix + '-b').value = JSON.stringify(data.h);
+            if (data.G) document.getElementById(prefix + '-G').value = JSON.stringify(data.G);
+            if (data.h) document.getElementById(prefix + '-h').value = JSON.stringify(data.h);
             if (data.c) document.getElementById(prefix + '-c').value = JSON.stringify(data.c);
             if (type === 'QP' && data.Q) {
                 document.getElementById('qp-Q').value = JSON.stringify(data.Q);
@@ -1410,7 +2194,7 @@ function loadProblemJSON() {
                 }
             }
             if (data.E) {
-                document.getElementById('sdp-F').value = JSON.stringify(data.E);
+                document.getElementById('sdp-E').value = JSON.stringify(data.E);
                 window.sdpMatrixCollection2 = {};
                 for (const [key, mat] of Object.entries(data.E)) {
                     window.sdpMatrixCollection2[parseInt(key)] = mat;
@@ -1591,25 +2375,84 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDimensionVisibility();
         updateLatexText(this.id.replace('-tab', ''));
         updateScenarioLabel();
+        validateSolveInputs();
     });
+
+    // Re-validate whenever the formulation option changes (toggles which
+    // matrices are required, e.g. x̄ when regularization is active).
+    ['lp', 'qp', 'sdp'].forEach(function(tab) {
+        const sel = document.getElementById(tab + '-options');
+        if (sel) sel.addEventListener('change', validateSolveInputs);
+    });
+
+    // Re-validate as soon as a scenarios file is picked (or cleared).
+    const scenarioFileEl = document.getElementById('file');
+    if (scenarioFileEl) {
+        ['change', 'input'].forEach(function(evt) {
+            scenarioFileEl.addEventListener(evt, validateSolveInputs);
+        });
+    }
 
     // Initial filter on page load
     filterSolvers();
     updateDimensionVisibility();
     updateLatexText('lp');
     updateScenarioLabel();
+    validateSolveInputs();
 
-    // Update sweep counter when rho/tau fields change
+    // Update sweep counter + re-run solve validation when rho/tau fields change.
+    // Bind on every plausible event so fixing a bad value clears the banner
+    // immediately no matter how the edit was made.
     ['lp', 'qp', 'sdp'].forEach(function(tab) {
         var rhoEl = document.getElementById(tab + '-rho');
         var tauEl = document.getElementById(tab + '-tau');
-        if (rhoEl) rhoEl.addEventListener('input', function() { updateSweepCounter(); });
-        if (tauEl) tauEl.addEventListener('input', function() { updateSweepCounter(); });
+        var handler = function() {
+            updateSweepCounter();
+            validateSolveInputs();
+        };
+        ['input', 'change', 'keyup', 'blur', 'paste'].forEach(function(evt) {
+            if (rhoEl) rhoEl.addEventListener(evt, handler);
+            if (tauEl) tauEl.addEventListener(evt, handler);
+        });
+    });
+    // Document-level capture-phase delegate for τ/ρ — catches events even if
+    // the input nodes are later re-created or moved.
+    const paramIdSet = new Set([
+        'lp-tau', 'lp-rho', 'qp-tau', 'qp-rho', 'sdp-tau', 'sdp-rho'
+    ]);
+    ['input', 'change', 'keyup', 'blur'].forEach(function(evt) {
+        document.addEventListener(evt, function(e) {
+            if (e.target && paramIdSet.has(e.target.id)) {
+                updateSweepCounter();
+                validateSolveInputs();
+            }
+        }, true);
     });
 
-    // Update hard constraint button state when dimension inputs change
-    document.getElementById('dim-rows-g').addEventListener('input', updateHardConstraintState);
-    document.getElementById('dim-lmi-e-size').addEventListener('input', updateHardConstraintState);
+    // Reshape stored matrices + re-run solve validation whenever any
+    // dimension changes. Direct listeners on each input (input, change,
+    // keyup, wheel, mouseup) + a document-level capture delegate as a
+    // safety net in case any input is ever re-created.
+    function dimChanged() {
+        reshapeAllStoredMatrices();
+        validateSolveInputs();
+    }
+    const dimInputIds = ['dim-nx', 'dim-rows-a', 'dim-rows-g', 'dim-lmi-size', 'dim-lmi-e-size'];
+    const dimInputIdSet = new Set(dimInputIds);
+    dimInputIds.forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        ['input', 'change', 'keyup', 'wheel', 'mouseup'].forEach(function(evt) {
+            el.addEventListener(evt, dimChanged);
+        });
+    });
+    // Safety net delegated listener in case an input is ever re-created.
+    ['input', 'change'].forEach(function(evt) {
+        document.addEventListener(evt, function(e) {
+            if (e.target && dimInputIdSet.has(e.target.id)) dimChanged();
+        }, true);
+    });
+
 
     // Initialize MOSEK cache indicator
     updateMosekCacheIndicator();
