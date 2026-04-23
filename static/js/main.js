@@ -7,6 +7,30 @@ let currentMatrix = '';
 let lastResultData = null;
 let currentMode = 'symbolic';
 
+/**
+ * Safe wrappers around MathJax — MathJax is loaded async from a CDN and
+ * may not be defined when our code fires (esp. during DOMContentLoaded).
+ * Any bare reference throws ReferenceError, which aborted the rest of
+ * init and silently broke the MOSEK license listeners. These helpers
+ * never throw: if MathJax isn't ready they're a no-op.
+ */
+function safeTypeset(arg) {
+    try {
+        if (typeof MathJax !== 'undefined' && MathJax.typeset) {
+            if (arg === undefined) MathJax.typeset();
+            else MathJax.typeset(arg);
+        }
+    } catch (e) { /* MathJax hiccup — don't take the page down */ }
+}
+function safeTypesetPromise(arg) {
+    try {
+        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+            return arg === undefined ? MathJax.typesetPromise() : MathJax.typesetPromise(arg);
+        }
+    } catch (e) { /* ignore */ }
+    return Promise.resolve();
+}
+
 // --- MOSEK License Session Caching ---
 const MOSEK_LICENSE_KEY = 'mosek_license_content';
 const MOSEK_LICENSE_NAME_KEY = 'mosek_license_filename';
@@ -85,7 +109,7 @@ function updateSDPButtons() {
         };
         container.appendChild(btn);
     }
-    MathJax.typesetPromise();
+    safeTypesetPromise();
 }
 
 function openSDPModal(tab, matrix) {
@@ -114,7 +138,7 @@ function openSDPModal(tab, matrix) {
         document.getElementById('matrixModalTitle').textContent = `${titleMap[matrix]} (${tab.toUpperCase()})`;
         document.getElementById('sdpModalTip').innerHTML = `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
         updateSDPFormatReference(matrix);
-        MathJax.typesetPromise();
+        safeTypesetPromise();
         $('#SDPModal').modal('show');
         if (typeof validateSolveInputs === 'function') validateSolveInputs();
     }
@@ -201,7 +225,7 @@ function openMatrixModal(tab, matrix) {
     document.getElementById('matrixModalTip').innerHTML =
         `<u>Top tip:</u> ${getDynamicTip(matrix)}`;
     updateFormatReference(matrix);
-    MathJax.typesetPromise();
+    safeTypesetPromise();
     $('#matrixModal').modal('show');
     // Re-run validation on every modal open so G/h toggle and banner are fresh.
     if (typeof validateSolveInputs === 'function') validateSolveInputs();
@@ -325,7 +349,7 @@ function updateFormatReference(matrix) {
     html += '<p class="text-muted"><small>For file-based matrix input (CSV / MAT / NPY / …), use the <b>Upload Program</b> button at the top of the page.</small></p>';
 
     ref.innerHTML = html;
-    MathJax.typesetPromise([ref]);
+    safeTypesetPromise([ref]);
 }
 
 /* ── Bespoke Input Format Reference for the SDP collection modal ── */
@@ -388,7 +412,7 @@ function updateSDPFormatReference(matrix) {
     html += '<p class="text-muted"><small>For file-based collection input (MAT / JSON-file), use the <b>Upload Program</b> button at the top of the page.</small></p>';
 
     ref.innerHTML = html;
-    MathJax.typesetPromise([ref]);
+    safeTypesetPromise([ref]);
 }
 
 /* ── Cell validation for matrix modals ─────────────────────────────────── */
@@ -530,7 +554,7 @@ function setMatrixPasteHints(kind) {
             ta.placeholder = '[["delta[0]", 0], [0, 1]]';
             cap.innerHTML = `Scenario LMI matrix \\(F_{${window.sdpCurrentMatrixIndex}}(\\delta)\\) — a ${sz}×${sz} 2-D JSON array of <b>numbers</b> or <b>strings containing <code>delta[k]</code></b> expressions; must be symmetric. Loads into the grid above on Save.`;
         }
-        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+        safeTypesetPromise([cap]);
         return;
     }
     const h = hints[kind] || {
@@ -539,7 +563,7 @@ function setMatrixPasteHints(kind) {
     };
     ta.placeholder = h.placeholder;
     cap.innerHTML = h.caption;
-    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+    safeTypesetPromise([cap]);
 }
 
 /**
@@ -577,7 +601,7 @@ function setSDPPasteHints(kind) {
         ta.placeholder = '{"0": [[1, 0], [0, 1]], "1": [[0, 1], [1, 0]]}';
         cap.innerHTML = 'Dictionary keyed by matrix index. Each value is a 2-D JSON array.';
     }
-    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([cap]);
+    safeTypesetPromise([cap]);
 }
 
 /** Clear any error display in a modal when it opens. */
@@ -1233,10 +1257,19 @@ function executeSolve(mosekLicenseFile) {
         formData.append('file', fileInput.files[0]);
     }
 
-    // Append MOSEK license if provided
+    // Append MOSEK license if provided. Instance of File is required — if a
+    // cached pseudo-File decoded wrong this will throw clearly, rather than
+    // silently skipping the license and giving an opaque backend error.
     if (mosekLicenseFile) {
-        formData.append('mosek_license', mosekLicenseFile);
+        if (!(mosekLicenseFile instanceof Blob)) {
+            throw new Error('Internal: MOSEK license file is not a Blob/File object.');
+        }
+        formData.append('mosek_license', mosekLicenseFile, mosekLicenseFile.name || 'mosek.lic');
     }
+
+    // Clear any stale pre-solve banner now that we're actually submitting.
+    const solveErrBox = document.getElementById('solve-error');
+    if (solveErrBox) { solveErrBox.textContent = ''; solveErrBox.style.display = 'none'; }
 
     document.getElementById('result-box').innerHTML = '<p>Solve button pressed, processing results...</p>';
 
@@ -1510,7 +1543,7 @@ function executeSolve(mosekLicenseFile) {
                 drawTauChart(uniqueRho[0]);
                 if (rhoSelect) rhoSelect.addEventListener('change', e => drawTauChart(e.target.value));
             }
-            MathJax.typesetPromise();
+            safeTypesetPromise();
         })
         .catch(error => {
             console.error('Error:', error);
@@ -1811,11 +1844,14 @@ function updateLatexText(tab) {
 
     document.getElementById(`${tab}-latex`).innerHTML =
         `<div class="text-center"><p>\\(${latexObj}\\)</p><p>subject to:</p><p>\\(${latexSoft}\\)</p><p>\\(${latexHard}\\)</p></div>`;
-    MathJax.typeset();
+    safeTypeset();
     updateConfidenceLabel(option);
     // Option changed → τ/ρ may now or no longer be required. Re-validate so
     // a previously-shown τ/ρ banner doesn't linger after switching to robust.
     if (typeof validateSolveInputs === 'function') validateSolveInputs();
+    // Different option ⇒ potentially different cone requirements (e.g.
+    // regularization adds SOCP/POW) ⇒ the solver allow-list may shrink/grow.
+    if (typeof filterSolvers === 'function') filterSolvers();
 }
 
 function updateConfidenceLabel(option) {
@@ -1834,7 +1870,7 @@ function updateConfidenceLabel(option) {
     } else {
         span.innerHTML = '\\(1 - \\beta \\cdot n_\\tau \\cdot n_\\rho\\)';
     }
-    MathJax.typesetPromise();
+    safeTypesetPromise();
     updateSweepCounter(option);
 }
 
@@ -1862,7 +1898,7 @@ function updateSweepCounter(option) {
     } else {
         counter.style.display = 'none';
     }
-    MathJax.typesetPromise();
+    safeTypesetPromise();
 }
 
 function onModeChange() {
@@ -1870,7 +1906,7 @@ function onModeChange() {
         el.style.display = currentMode === 'symbolic' ? '' : 'none';
     });
     updateScenarioLabel();
-    MathJax.typesetPromise();
+    safeTypesetPromise();
     // Re-render LaTeX for active tab
     const activeTab = document.querySelector('.nav-link.active');
     if (activeTab) {
@@ -1907,7 +1943,7 @@ function updateScenarioLabel() {
     } else {
         label.innerHTML = 'Scenarios \\((\\delta_1, \\delta_2, \\ldots)\\):';
     }
-    MathJax.typesetPromise();
+    safeTypesetPromise();
     updateScenarioHelpContent();
 }
 
@@ -2287,6 +2323,85 @@ function loadProblemJSON() {
     }
 }
 
+/**
+ * Per-solver cone capability map. Keys are CVXPY-known solver names; values
+ * are the cone classes each can handle. The ordering LP → QP → SOCP → SDP
+ * is deliberate: SDP-capable solvers implicitly handle everything weaker,
+ * but we list each required cone explicitly so the check is a simple
+ * subset test regardless of the problem. EXP / POW appear in a few
+ * advanced cases (non-quadratic p-norms); most solvers don't support them.
+ */
+const SOLVER_CONE_SUPPORT = {
+    'CLARABEL':   ['LP', 'QP', 'SOCP', 'SDP', 'EXP', 'POW'],
+    'SCS':        ['LP', 'QP', 'SOCP', 'SDP', 'EXP', 'POW'],
+    'MOSEK':      ['LP', 'QP', 'SOCP', 'SDP', 'EXP', 'POW'],
+    'COPT':       ['LP', 'QP', 'SOCP', 'SDP', 'EXP'],
+    'CVXOPT':     ['LP', 'QP', 'SOCP', 'SDP'],
+    'SDPA':       ['LP', 'SDP'],
+    'ECOS':       ['LP', 'SOCP', 'EXP'],
+    'ECOS_BB':    ['LP', 'SOCP', 'EXP'],
+    'GUROBI':     ['LP', 'QP', 'SOCP'],
+    'CPLEX':      ['LP', 'QP', 'SOCP'],
+    'XPRESS':     ['LP', 'QP', 'SOCP'],
+    'SCIP':       ['LP', 'QP', 'SOCP'],
+    'NAG':        ['LP', 'QP', 'SOCP'],
+    'OSQP':       ['LP', 'QP'],
+    'PROXQP':     ['LP', 'QP'],
+    'PIQP':       ['LP', 'QP'],
+    'DAQP':       ['LP', 'QP'],
+    'HIGHS':      ['LP', 'QP'],
+    'CBC':        ['LP'],
+    'GLPK':       ['LP'],
+    'GLPK_MI':    ['LP'],
+    'PDLP':       ['LP']
+};
+
+/**
+ * Compute the cones required by the currently-active problem configuration.
+ * Returns a Set of cone identifiers: 'LP', 'QP' (quadratic cost),
+ * 'SOCP' (second-order-cone: 2-norm / Frobenius / quadratic constraint),
+ * 'SDP' (positive-semidefinite), 'EXP' (exponential), 'POW' (power cone).
+ * Relaxation adds no extra cone (just linear slacks); regularization's
+ * contribution depends on the p-norm.
+ */
+function requiredCones() {
+    const cones = new Set(['LP']);
+    const activeTab = document.querySelector('.nav-link.active');
+    if (!activeTab) return cones;
+    const tabId = activeTab.id;
+    const tab = tabId.replace('-tab', '');
+    if (tabId === 'qp-tab') cones.add('QP');   // 1/2 x^T Q x in the objective
+    if (tabId === 'sdp-tab') {
+        cones.add('SDP');
+        cones.add('QP');   // SDP tab includes a 1/2 x^T Q x term too
+    }
+    const option = (document.getElementById(tab + '-options') || {}).value || 'robust';
+    if (option === 'regularization' || option === 'regularization-relaxation') {
+        const pRaw = ((document.getElementById(tab + '-p') || {}).value || '')
+            .trim().toLowerCase().replace(/["']/g, '');
+        if (!pRaw) {
+            cones.add('SOCP');  // default p = 2
+        } else if (pRaw === 'inf' || pRaw === 'infinity' || pRaw === 'np.inf') {
+            // L_inf is LP-representable via linear constraints — no extra cone.
+        } else if (pRaw === 'fro') {
+            cones.add('SOCP');  // Frobenius norm over a vector ≡ 2-norm
+        } else {
+            const pNum = Number(pRaw);
+            if (!Number.isFinite(pNum)) {
+                cones.add('SOCP');
+            } else if (pNum === 1) {
+                // L_1 is LP-representable.
+            } else if (pNum === 2) {
+                cones.add('SOCP');
+            } else {
+                // Rational p-norms other than 1, 2, ∞ need the power cone.
+                cones.add('POW');
+            }
+        }
+    }
+    return cones;
+}
+
 function filterSolvers() {
     const activeTab = document.querySelector('.nav-link.active');
     if (!activeTab) return;
@@ -2297,11 +2412,22 @@ function filterSolvers() {
 
     const solverSelect = document.getElementById('solver');
     const currentValue = solverSelect.value;
+    const needed = requiredCones();
     let firstVisible = null;
 
     Array.from(solverSelect.options).forEach(option => {
         const types = (option.getAttribute('data-types') || '').split(',');
-        if (types.includes(problemType)) {
+        const typeOK = types.includes(problemType);
+
+        // Cone-subset check: every required cone must appear in the solver's
+        // supported list. Unknown solvers (not in the map) pass through — we
+        // prefer false-positive visibility over hiding a valid choice.
+        const caps = SOLVER_CONE_SUPPORT[option.value];
+        const coneOK = caps === undefined
+            ? true
+            : Array.from(needed).every(c => caps.includes(c));
+
+        if (typeOK && coneOK) {
             option.style.display = '';
             option.disabled = false;
             if (!firstVisible) firstVisible = option.value;
@@ -2371,7 +2497,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Render LaTeX inside popovers when they appear
     $(document).on('shown.bs.popover', function() {
-        MathJax.typesetPromise();
+        safeTypesetPromise();
     });
 
     // Filter solvers and update dimension visibility on tab change
@@ -2436,6 +2562,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }, true);
     });
 
+    // Re-filter solvers whenever the p-norm changes — p = 1/∞ keep the LP
+    // allow-list broad, p = 2 / fro require SOCP, other p require POW cone.
+    ['lp', 'qp', 'sdp'].forEach(function(tab) {
+        const pEl = document.getElementById(tab + '-p');
+        if (!pEl) return;
+        ['input', 'change', 'blur'].forEach(function(evt) {
+            pEl.addEventListener(evt, filterSolvers);
+        });
+    });
+
     // Reshape stored matrices + re-run solve validation whenever any
     // dimension changes. Direct listeners on each input (input, change,
     // keyup, wheel, mouseup) + a document-level capture delegate as a
@@ -2464,19 +2600,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize MOSEK cache indicator
     updateMosekCacheIndicator();
 
-    // MOSEK license modal: upload & solve (cache for future use)
+    // MOSEK license modal: upload & solve (cache for future use).
+    // Defensive: hide the modal, then dispatch the solve in its own try-
+    // block. Earlier the whole handler could die silently if anything in
+    // cacheMosekLicense's FileReader chain threw (e.g. sessionStorage full
+    // in private browsing), leaving the user staring at a dead modal.
     document.getElementById('mosek-license-confirm').addEventListener('click', function() {
-        const fileInput = document.getElementById('mosek-license-file');
-        if (!fileInput.files.length) {
-            alert('Please select a MOSEK license file.');
-            return;
-        }
-        const licenseFile = fileInput.files[0];
-        $('#mosekLicenseModal').modal('hide');
-        fileInput.value = '';
-        cacheMosekLicense(licenseFile).then(function() {
+        try {
+            const fileInput = document.getElementById('mosek-license-file');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                alert('Please select a MOSEK license file.');
+                return;
+            }
+            const licenseFile = fileInput.files[0];
+            $('#mosekLicenseModal').modal('hide');
+            fileInput.value = '';
+            // Fire the solve unconditionally; caching happens in parallel and
+            // its result is optional. Any exception propagates to the outer
+            // try-catch instead of being swallowed by a dropped Promise.
+            cacheMosekLicense(licenseFile).catch(function(err) {
+                console.warn('MOSEK license caching failed (continuing):', err);
+            });
             executeSolve(licenseFile);
-        });
+        } catch (err) {
+            console.error('MOSEK upload-and-solve handler threw:', err);
+            const box = document.getElementById('solve-error');
+            if (box) {
+                box.textContent = 'MOSEK upload-and-solve failed: ' + (err && err.message ? err.message : err);
+                box.style.display = 'block';
+            } else {
+                alert('MOSEK upload-and-solve failed: ' + err);
+            }
+        }
     });
 
     // MOSEK license modal: skip (local license installed)

@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from src.LP import solve_lp
@@ -157,9 +158,10 @@ def solve():
         return _solve_inner()
 
     # ---- MOSEK subprocess path ----
-    request_id = str(uuid.uuid4())
-    tmp_dir = os.path.join('/tmp', f'mosek_{request_id}')
-    os.makedirs(tmp_dir, exist_ok=True)
+    # Use a platform-neutral temp directory (tempfile.mkdtemp → %TEMP% on
+    # Windows, /tmp on Linux/macOS). Hard-coding /tmp broke Windows hosts
+    # because the directory may not exist and isn't writable for the user.
+    tmp_dir = tempfile.mkdtemp(prefix=f'mosek_{uuid.uuid4().hex}_')
     license_path = os.path.join(tmp_dir, 'mosek.lic')
 
     try:
@@ -211,6 +213,34 @@ def solve():
         return jsonify({"error": "MOSEK subprocess returned invalid output."}), 500
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def _parse_theta_bar(raw):
+    """Parse the x̄ (reference point) form field.
+
+    The field is populated by the matrix-grid modal as a JSON-encoded 2-D
+    array (e.g. ``[["10"]]`` or ``[[0], [1]]``). Older inputs or an empty
+    field may arrive as an empty/comma-separated string. This helper
+    accepts any of those and returns a 1-D numpy float array, or 0.0 when
+    the field is unset (backward compat with the previous default).
+    """
+    if raw is None or raw == '':
+        return 0.0
+    s = raw.strip()
+    # Try JSON first (the standard path for matrix-modal entries).
+    try:
+        parsed = json_module.loads(s)
+        return np.asarray(parsed, dtype=float).reshape(-1)
+    except (ValueError, TypeError):
+        pass
+    # Fallback: legacy comma-separated scalars (e.g. "0, 0").
+    try:
+        return np.array([float(x) for x in s.split(',') if x.strip() != ''])
+    except ValueError as e:
+        raise ValueError(
+            f"Could not parse x̄ (theta_bar) value {raw!r}: expected a JSON "
+            f"array (e.g. [[10]]) or comma-separated numbers. ({e})"
+        )
 
 
 def compute_base_cost(active_tab, x, c, Q):
@@ -329,8 +359,7 @@ def _solve_inner():
         [0.0])
     taus = np.array([float(x) for x in request.form.get('tau', 0).split(',')]) if request.form.get('tau') else np.array(
         [0.0])
-    theta_bar = np.array([float(x) for x in request.form.get('theta_bar', 0).split(',')]) if request.form.get(
-        'theta_bar') else 0.0
+    theta_bar = _parse_theta_bar(request.form.get('theta_bar'))
     p_raw = request.form.get('p', '').strip().strip("'\"")
     if not p_raw:
         p = 2

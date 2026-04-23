@@ -129,11 +129,17 @@ def main():
         if form.get("tau")
         else np.array([0.0])
     )
-    theta_bar = (
-        np.array([float(x) for x in form["theta_bar"].split(",")])
-        if form.get("theta_bar")
-        else 0.0
-    )
+    # x̄ is usually sent as a JSON-encoded 2-D array by the matrix-grid modal
+    # (e.g. "[[10]]"); accept legacy comma-separated scalars as a fallback.
+    _raw_theta = form.get("theta_bar", "")
+    if not _raw_theta:
+        theta_bar = 0.0
+    else:
+        _s = _raw_theta.strip()
+        try:
+            theta_bar = np.asarray(json.loads(_s), dtype=float).reshape(-1)
+        except (ValueError, TypeError):
+            theta_bar = np.array([float(x) for x in _s.split(",") if x.strip() != ""])
     p_raw = form.get("p", "").strip().strip("'\"")
     if not p_raw:
         p = 2

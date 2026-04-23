@@ -98,8 +98,23 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     else:
         non_risk_constraints = []
 
+    # Reshape x_ref to match the decision variable's (n, 1) shape. The form
+    # arrives variously as a scalar (default), a 1-D array (legacy CSV), or
+    # a 2-D array (matrix modal). We accept all three and size-check.
+    _xr = np.asarray(x_ref, dtype=float).reshape(-1)
+    if _xr.size == 1:
+        # Broadcast a scalar reference across every coordinate of x.
+        x_ref = np.full((n, 1), float(_xr[0]))
+    elif _xr.size == n:
+        x_ref = _xr.reshape(n, 1)
+    else:
+        raise ValueError(
+            f"x̄ has {_xr.size} entries but d = {n}. Provide either a scalar "
+            f"(broadcast across all coordinates) or a length-{n} vector."
+        )
+
     # Objective Function
-    objective = cp.Minimize(c.T @ x + tau * cp.norm(x-x_ref, norm_type) + rho * cp.sum(zeta))
+    objective = cp.Minimize(c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)

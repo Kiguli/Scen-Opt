@@ -107,8 +107,21 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     else:
         non_risk_constraints = []
 
+    # Reshape x_ref to match the decision variable's (n, 1) shape. Accept
+    # scalar, 1-D, or 2-D inputs; size must be 1 (broadcast) or n.
+    _xr = np.asarray(x_ref, dtype=float).reshape(-1)
+    if _xr.size == 1:
+        x_ref = np.full((n, 1), float(_xr[0]))
+    elif _xr.size == n:
+        x_ref = _xr.reshape(n, 1)
+    else:
+        raise ValueError(
+            f"x̄ has {_xr.size} entries but d = {n}. Provide either a scalar "
+            f"(broadcast across all coordinates) or a length-{n} vector."
+        )
+
     # Objective Function
-    objective = cp.Minimize((1/2)*cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + tau * cp.norm(x-x_ref, norm_type) + rho * cp.sum(zeta))
+    objective = cp.Minimize((1/2)*cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints)

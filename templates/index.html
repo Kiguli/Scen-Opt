@@ -6,7 +6,8 @@
     <title>Scen-Opt </title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <!-- polyfill.io was retired / compromised (ERR_NAME_NOT_RESOLVED). Modern
+         browsers don't need it for MathJax 3 anyway. -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -225,7 +226,7 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('lp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
-                                    <input type="hidden" id="lp-theta-bar" class="form-control" name="theta-bar"
+                                    <input type="hidden" id="lp-theta-bar" class="form-control" name="theta_bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -395,7 +396,7 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('qp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
-                                    <input type="hidden" id="qp-theta-bar" class="form-control" name="theta-bar"
+                                    <input type="hidden" id="qp-theta-bar" class="form-control" name="theta_bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -546,7 +547,7 @@
                                     <button type="button" class="btn btn-secondary btn-block"
                                             onclick="openMatrixModal('sdp','theta-bar')">Edit \(\bar{x}\)
                                     </button>
-                                    <input type="hidden" id="sdp-theta-bar" class="form-control" name="theta-bar"
+                                    <input type="hidden" id="sdp-theta-bar" class="form-control" name="theta_bar"
                                            data-shared="true"
                                            value="{{ request.form.theta_bar }}">
                                 </div>
@@ -857,6 +858,6 @@ save('benchmark.mat', 'type', 'A_d', 'b_d', ...
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}?v=29" defer></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v=34" defer></script>
 </body>
 </html>
