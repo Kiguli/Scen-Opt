@@ -1219,6 +1219,7 @@ function executeSolve(mosekLicenseFile) {
     formData.append('rows_A', document.getElementById('dim-rows-a').value);
     formData.append('rows_G', document.getElementById('dim-rows-g').value);
     formData.append('lmi_size', document.getElementById('dim-lmi-size').value);
+    formData.append('lmi_e_size', document.getElementById('dim-lmi-e-size').value);
 
     // Add solver form data
     const solverForm = document.getElementById('solver-form');
@@ -1663,9 +1664,10 @@ function formDataToProgramJSON(formData) {
     // Dimension controls — useful when uploading in numeric mode, or when
     // matrix shapes alone don't pin down d / m / lmi_size.
     if (formData.n_x)      out.n_x      = parseInt(formData.n_x, 10);
-    if (formData.rows_A)   out.rows_A   = parseInt(formData.rows_A, 10);
-    if (formData.rows_G)   out.rows_G   = parseInt(formData.rows_G, 10);
-    if (formData.lmi_size) out.lmi_size = parseInt(formData.lmi_size, 10);
+    if (formData.rows_A)     out.rows_A     = parseInt(formData.rows_A, 10);
+    if (formData.rows_G)     out.rows_G     = parseInt(formData.rows_G, 10);
+    if (formData.lmi_size)   out.lmi_size   = parseInt(formData.lmi_size, 10);
+    if (formData.lmi_e_size) out.lmi_e_size = parseInt(formData.lmi_e_size, 10);
 
     return out;
 }
@@ -2063,9 +2065,12 @@ function loadProblemJSON() {
 
         if (type === 'LP' || type === 'QP') {
             // ── Infer dimensions ──
+            // Prefer matrix shapes when the matrices are present (symbolic);
+            // fall back to the explicit scalar keys (n_x / rows_A / rows_G)
+            // that the Program JSON carries for numeric uploads.
             const d = data.c ? nRows(data.c) : (data.n_x || 0);
             const m = data.A_d ? nRows(data.A_d) : (data.rows_A || 0);
-            const n = data.G ? nRows(data.G) : 0;
+            const n = data.G ? nRows(data.G) : (data.rows_G || 0);
 
             // ── Validate ──
             if (!data.c || d === 0) errors.push('c (cost vector) is missing or empty.');
@@ -2132,7 +2137,9 @@ function loadProblemJSON() {
             // ── Infer dimensions ──
             const d = data.c ? nRows(data.c) : (data.n_x || 0);
             const lmiSize = (data.F_d && data.F_d["0"]) ? nRows(data.F_d["0"]) : (data.lmi_size || 0);
-            const lmiESize = (data.E && data.E["0"]) ? nRows(data.E["0"]) : 0;
+            // Prefer E's matrix shape when present; fall back to the explicit
+            // lmi_e_size scalar so numeric SDP uploads without E still set n.
+            const lmiESize = (data.E && data.E["0"]) ? nRows(data.E["0"]) : (data.lmi_e_size || 0);
 
             // ── Validate ──
             if (!data.c || d === 0) errors.push('c (cost vector) is missing or empty.');
