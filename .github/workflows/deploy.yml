@@ -41,9 +41,18 @@ jobs:
       - name: Update app
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
+        # Directory / service still carry the pre-rename "scen-o-con" name
+        # on the live server. Flip both to "scen-opt" once the server-side
+        # migration has been done (see README → Renaming the GitHub Repository).
         run: |
           ssh target << 'EOF'
-            cd /srv/scen-opt.woodingben.com/current
+            set -e
+            if [ -d /srv/scen-opt.woodingben.com/current ]; then
+              DEPLOY_ROOT=/srv/scen-opt.woodingben.com
+            else
+              DEPLOY_ROOT=/srv/scen-o-con.woodingben.com
+            fi
+            cd "$DEPLOY_ROOT/current"
             git reset --hard HEAD
             git pull
             cd ..
@@ -57,6 +66,11 @@ jobs:
       - name: Restart services
         run: |
           ssh target << 'EOF'
-            sudo systemctl restart scen-opt
+            if systemctl list-unit-files scen-opt.service >/dev/null 2>&1 \
+               && systemctl cat scen-opt.service >/dev/null 2>&1; then
+              sudo systemctl restart scen-opt
+            else
+              sudo systemctl restart scen-o-con
+            fi
             sudo nginx -s reload
           EOF
