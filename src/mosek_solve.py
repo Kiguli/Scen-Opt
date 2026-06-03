@@ -148,7 +148,14 @@ def main():
     elif p_raw.lower() == "fro":
         p = "fro"
     else:
-        p = float(p_raw)
+        try:
+            p = float(p_raw)
+        except ValueError:
+            raise ValueError(
+                f"p (norm order) must be a single number, 'inf', or 'fro'. "
+                f"You entered {p_raw!r} — comma-separated lists are not "
+                f"supported for p (sweep over τ or ρ instead)."
+            )
 
     # ---- solve loop (mirrors _solve_inner in app.py) ----
     conf = conf / (len(taus) * len(rhos))
@@ -158,6 +165,14 @@ def main():
     risk_list, e_list, degeneracy_list = [], [], []
     rho_list, tau_list = [], []
     solve_time_list, risk_time_list = [], []
+
+    # Honour relaxation slack independently of ρ=0 (see solve_lp). Leave as
+    # None when no explicit option is provided so the solver defaults apply.
+    selected_option = form.get("option")
+    if selected_option:
+        include_slack = selected_option in ("relaxation", "regularization-relaxation")
+    else:
+        include_slack = None
 
     for tau in taus:
         for rho in rhos:
@@ -179,16 +194,19 @@ def main():
                 t0 = time.perf_counter()
                 if active_tab == "lp-tab":
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_lp(
-                        scenarios, A_d, b_d, G, h_vec, c, tau, theta_bar, rho, p, solver
+                        scenarios, A_d, b_d, G, h_vec, c, tau, theta_bar, rho, p, solver,
+                        include_slack=include_slack,
                     )
                 elif active_tab == "qp-tab":
                     Q_inner = generate_matrix(form["Q"]) if form.get("Q") else np.array([])
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_qp(
-                        scenarios, A_d, b_d, G, h_vec, c, Q_inner, tau, theta_bar, rho, p, solver
+                        scenarios, A_d, b_d, G, h_vec, c, Q_inner, tau, theta_bar, rho, p, solver,
+                        include_slack=include_slack,
                     )
                 elif active_tab == "sdp-tab":
                     optimal_x, optimal_s, optimal_cost, N, complexity, constraints, degeneracy = solve_sdp(
-                        scenarios, F_d, E, c, Q, tau, theta_bar, rho, p, solver
+                        scenarios, F_d, E, c, Q, tau, theta_bar, rho, p, solver,
+                        include_slack=include_slack,
                     )
                 solve_time = time.perf_counter() - t0
 

@@ -3,7 +3,7 @@ import numpy as np
 from src.Miscellaneous import get_active
 
 
-def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None):
+def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
     r"""Solve a semidefinite program with LMI scenario constraints via the scenario approach.
 
     .. math::
@@ -92,7 +92,12 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
 
     # Variables
     x = cp.Variable(n)
-    if rho != 0:
+    # See solve_lp for the rationale: respect include_slack independently of
+    # whether ρ happens to be 0, so relaxation with ρ = 0 is correctly
+    # reported as unbounded rather than silently coerced into robust.
+    if include_slack is None:
+        include_slack = (rho != 0)
+    if include_slack:
         zeta = cp.Variable(N, nonneg=True)  # One slack per scenario
     else:
         zeta = np.zeros(N)
@@ -142,7 +147,7 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
     if prob.status not in ["optimal", "optimal_inaccurate"]:
         raise ValueError(f"SDP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
-    if rho != 0.0:
+    if include_slack:
         zeta_out = zeta.value
     else:
         zeta_out = np.zeros(N)

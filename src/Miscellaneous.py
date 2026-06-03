@@ -5,9 +5,13 @@ import pandas as pd
 
 SOLVER_CAPABILITIES = {
     'CLARABEL': ['LP', 'QP', 'SDP'], 'SCS': ['LP', 'QP', 'SDP'],
-    'OSQP': ['LP', 'QP'], 'ECOS': ['LP', 'QP', 'SDP'],
+    # OSQP and SCIPY are removed from the LP list — both technically claim
+    # LP support but fail on the scenario LPs we build (slack reformulation
+    # produces degenerate QPs OSQP can't handle; SCIPY's wrapper hits
+    # NotImplemented paths for our equality reductions).
+    'OSQP': ['QP'], 'ECOS': ['LP', 'QP', 'SDP'],
     'CVXOPT': ['LP', 'QP', 'SDP'], 'GLOP': ['LP'], 'GLPK': ['LP'],
-    'GLPK_MI': ['LP'], 'SCIPY': ['LP', 'QP'], 'HIGHS': ['LP', 'QP'],
+    'GLPK_MI': ['LP'], 'SCIPY': ['QP'], 'HIGHS': ['LP', 'QP'],
     'SCIP': ['LP', 'QP', 'SDP'], 'CBC': ['LP', 'QP'],
     'DAQP': ['LP', 'QP'], 'PIQP': ['LP', 'QP'],
     'PROXQP': ['LP', 'QP'], 'QPALM': ['LP', 'QP'],
@@ -20,7 +24,7 @@ def get_solvers():
 
     Returns
     -------
-    dict
+    solver_dict : dict
         Mapping of solver name to list of supported types
         (``'LP'``, ``'QP'``, ``'SDP'``).
 
@@ -29,7 +33,8 @@ def get_solvers():
     `CVXPY solver list <https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver>`_
     """
     installed = cp.installed_solvers()
-    return {s: SOLVER_CAPABILITIES.get(s, ['LP', 'QP', 'SDP']) for s in installed}
+    solver_dict = {s: SOLVER_CAPABILITIES.get(s, ['LP', 'QP', 'SDP']) for s in installed}
+    return solver_dict
 
 def get_norm_types():
     """Retrieve available norm types for the regularization term.

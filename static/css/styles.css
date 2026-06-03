@@ -64,12 +64,31 @@ body{
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    /* Force every column to use the same fraction of the table width
+       regardless of content (long solver-error strings used to blow out
+       their column). Combined with overflow-wrap below, this keeps every
+       Value column equally sized and wraps long text inside its cell. */
+    table-layout: fixed;
 }
 
 .result-table th, .result-table td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
+    /* Wrap long content (error tracebacks, large JSON, etc.) inside the
+       cell instead of pushing column width outwards. */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+/* The first column ("Parameter") is the label list — give it a narrow
+   fixed share so the data columns get the rest. */
+.result-table th:first-child,
+.result-table td:first-child {
+    width: 180px;
+    min-width: 180px;
+    max-width: 240px;
 }
 
 .result-table th {

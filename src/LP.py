@@ -2,7 +2,7 @@ import cvxpy as cp
 import numpy as np
 from src.Miscellaneous import get_active
 
-def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2,solver=None):
+def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
     r"""Solve a linear program with scenario constraints via the scenario approach.
 
     .. math::
@@ -83,7 +83,15 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
 
     # Variables
     x = cp.Variable((n, 1))
-    if rho != 0:
+    # Introduce a non-negative slack ζ_i whenever the caller has selected the
+    # relaxation formulation (`include_slack=True`), even if the user has set
+    # ρ = 0. Previously we silently dropped the slack at ρ = 0, which made
+    # the problem look like the robust formulation; for relaxation with ρ = 0
+    # the LP is genuinely unbounded (ζ_i can absorb any constraint violation
+    # at zero cost) and the solver should report it as such.
+    if include_slack is None:
+        include_slack = (rho != 0)
+    if include_slack:
         zeta = cp.Variable(N, nonneg=True)  # One slack per scenario
     else:
         zeta = np.zeros(N)
@@ -126,7 +134,7 @@ def solve_lp(deltas, A_d, b_d, G, h, c, tau=0.0, x_ref=np.array([0.0]), rho=0.0,
     if prob.status not in ["optimal", "optimal_inaccurate"]:
         raise ValueError(f"LP did not solve to optimality. Status: {prob.status}, Objective: {prob.value}, x: {x_out}")
 
-    if rho != 0.0:
+    if include_slack:
         zeta_out = zeta.value
     else:
         zeta_out = np.zeros(N)

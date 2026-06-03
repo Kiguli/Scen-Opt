@@ -227,7 +227,6 @@ function openMatrixModal(tab, matrix) {
     updateFormatReference(matrix);
     safeTypesetPromise();
     $('#matrixModal').modal('show');
-    // Re-run validation on every modal open so G/h toggle and banner are fresh.
     if (typeof validateSolveInputs === 'function') validateSolveInputs();
 }
 
@@ -1046,6 +1045,29 @@ function validateSolveInputs() {
     if (hasReg) {
         const err = checkNonNegatives(tab + '-tau', 'τ (regularization weight)');
         if (err) { setMsg(err); return {valid: false, message: err}; }
+        // p is a single scalar (norm order). Reject lists, blanks-only, and
+        // non-numeric / non-special values up front so the backend never
+        // hits a cryptic float() ValueError.
+        const pEl = document.getElementById(tab + '-p');
+        const pRaw = (pEl ? pEl.value : '').trim().toLowerCase().replace(/["']/g, '');
+        if (pRaw !== '') {
+            const isList = pRaw.includes(',');
+            const isSpecial = pRaw === 'inf' || pRaw === 'infinity' || pRaw === 'np.inf' || pRaw === 'fro';
+            const asNum = Number(pRaw);
+            const isNum = Number.isFinite(asNum);
+            if (isList) {
+                const msg = `p (norm order) must be a single value, not a list — you entered "${pEl.value}". Sweep over τ or ρ instead.`;
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            if (!isSpecial && !isNum) {
+                const msg = `p (norm order) must be a number, "inf", or "fro" — you entered "${pEl.value}".`;
+                setMsg(msg); return {valid: false, message: msg};
+            }
+            if (isNum && asNum < 1) {
+                const msg = `p (norm order) value ${asNum} is less than 1 — p must be ≥ 1.`;
+                setMsg(msg); return {valid: false, message: msg};
+            }
+        }
     }
     if (hasRelax) {
         const err = checkNonNegatives(tab + '-rho', 'ρ (relaxation penalty)');
@@ -1363,7 +1385,13 @@ function executeSolve(mosekLicenseFile) {
             // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
             const uniqueTau = Array.from(new Set(Array.isArray(data.tau_) ? data.tau_ : [data.tau_]));
             const tauSelect = document.getElementById('tau-select');
-            if (tauSelect) tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
+            if (tauSelect) {
+                tauSelect.innerHTML = uniqueTau.map(tau => `<option value="${tau}">${tau}</option>`).join('');
+                // Hide the selector + its label when there's only one value to
+                // pick from — the dropdown has nothing to disambiguate.
+                const tauWrap = tauSelect.closest('.form-group');
+                if (tauWrap) tauWrap.style.display = uniqueTau.length > 1 ? '' : 'none';
+            }
 
 // Helper to filter data by selected tau
             function getFilteredByTau(selectedTau) {
@@ -1400,7 +1428,7 @@ function executeSolve(mosekLicenseFile) {
                                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
                                 yAxisID: 'y-risk',
                                 fill: false,
-                                tension: 0.1
+                                tension: 0
                             },
                             {
                                 label: 'Risk Upper Bound (εᵤ)',
@@ -1409,7 +1437,7 @@ function executeSolve(mosekLicenseFile) {
                                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                                 yAxisID: 'y-risk',
                                 fill: '-1',
-                                tension: 0.1
+                                tension: 0
                             },
                             {
                                 label: 'Cost',
@@ -1417,7 +1445,7 @@ function executeSolve(mosekLicenseFile) {
                                 borderColor: 'rgba(36, 32, 34, 0.8)',
                                 yAxisID: 'y-cost',
                                 fill: false,
-                                tension: 0.1
+                                tension: 0
                             }
                         ]
                     },
@@ -1455,7 +1483,11 @@ function executeSolve(mosekLicenseFile) {
             // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
             const uniqueRho = Array.from(new Set(Array.isArray(data.rho_) ? data.rho_ : [data.rho_]));
             const rhoSelect = document.getElementById('rho-select');
-            if (rhoSelect) rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
+            if (rhoSelect) {
+                rhoSelect.innerHTML = uniqueRho.map(rho => `<option value="${rho}">${rho}</option>`).join('');
+                const rhoWrap = rhoSelect.closest('.form-group');
+                if (rhoWrap) rhoWrap.style.display = uniqueRho.length > 1 ? '' : 'none';
+            }
 
 // Helper to filter data by selected rho
             function getFilteredByRho(selectedRho) {
@@ -1492,7 +1524,7 @@ function executeSolve(mosekLicenseFile) {
                                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
                                 yAxisID: 'y-risk',
                                 fill: false,
-                                tension: 0.1
+                                tension: 0
                             },
                             {
                                 label: 'Risk Upper Bound (εᵤ)',
@@ -1501,7 +1533,7 @@ function executeSolve(mosekLicenseFile) {
                                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                                 yAxisID: 'y-risk',
                                 fill: '-1',
-                                tension: 0.1
+                                tension: 0
                             },
                             {
                                 label: 'Cost',
@@ -1509,7 +1541,7 @@ function executeSolve(mosekLicenseFile) {
                                 borderColor: 'rgba(36, 32, 34, 0.8)',
                                 yAxisID: 'y-cost',
                                 fill: false,
-                                tension: 0.1
+                                tension: 0
                             }
                         ]
                     },
@@ -1561,6 +1593,32 @@ function generateResultTable(data) {
     // Generate headers
     const headers = Array.from({length: count}, (_, i) => `<th>Value${i + 1}</th>`).join('');
 
+    // ── Display formatter: tiered numeric rendering.
+    //    • |n| < 5e-5   → scientific (1.234e-5)        – avoids "0.0000"
+    //    • 5e-5 ≤ |n| < 10 → 4 decimal places (0.1234, 9.8765)
+    //    • 10 ≤ |n| < 1e7  → 2 decimal places (1234.58) – fewer trailing zeros
+    //    • |n| ≥ 1e7   → scientific (1.234e+7)
+    //    Strings, booleans, null, and non-numeric content pass through unchanged.
+    //    Only affects rendering — `lastResultData` keeps full precision so
+    //    the Download .JSON / Download .MAT buttons export unrounded numbers.
+    function fmt(v) {
+        if (v === null || v === undefined || v === '') return v;
+        if (typeof v === 'boolean') return v;
+        const isNumeric = typeof v === 'number'
+            || (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)));
+        if (!isNumeric) return v;
+        const n = Number(v);
+        if (!Number.isFinite(n)) return v;
+        if (n === 0) return '0.0000';
+        const a = Math.abs(n);
+        if (a < 5e-5 || a >= 1e7) return n.toExponential(3);
+        if (a >= 10) return n.toFixed(2);
+        return n.toFixed(4);
+    }
+    function fmtArr(arr) {
+        return Array.isArray(arr) ? arr.map(fmt) : fmt(arr);
+    }
+
     // Helper to get value or empty string
     function getValue(arr, idx) {
         if (Array.isArray(arr)) {
@@ -1598,7 +1656,20 @@ function generateResultTable(data) {
         {label: '<i>Error</i>', values: data.errorcode}
     ];
 
-    let table = `<table class="result-table">
+    // Size the table so every Value column is at least 120px wide — enough
+    // for the widest single-line numeric format we produce (e.g. "1.234e-100"
+    // including the cell padding). When (180 + count*120) exceeds the
+    // container width, the outer .result-table-container scrolls horizontally;
+    // otherwise the table fills the container and table-layout:fixed gives
+    // each Value column an equal share of the remaining space.
+    const PARAM_COL_PX = 180;
+    const MIN_VALUE_COL_PX = 120;
+    const tableMinWidth = PARAM_COL_PX + count * MIN_VALUE_COL_PX;
+    let table = `<table class="result-table" style="min-width:${tableMinWidth}px;">
+        <colgroup>
+            <col style="width:${PARAM_COL_PX}px;">
+            ${Array.from({length: count}, () => `<col style="min-width:${MIN_VALUE_COL_PX}px;">`).join('')}
+        </colgroup>
         <tr>
             <th>Parameter</th>
             ${headers}
@@ -1611,21 +1682,35 @@ function generateResultTable(data) {
 
             if (row.label === 'Optimal x' || row.label === 'Optimal &zeta;') {
                 if (Array.isArray(val)) {
-                    val = `<div style="max-height:150px; overflow-y:auto;">${val.join('<br>')}</div>`;
+                    // Optimal x can come back as [[x_0], [x_1], …] for column
+                    // vectors; flatten one level so each entry is a number.
+                    const flat = val.map(v => Array.isArray(v) ? v[0] : v);
+                    val = `<div style="max-height:150px; overflow-y:auto;">${flat.map(fmt).join('<br>')}</div>`;
                 }
             }
 
             if (row.label.includes('Risk Bounds') && Array.isArray(val) && val.length === 2) {
-                val = `<strong>[${val[0]}, ${val[1]}]</strong>`;
-            }
-            if (row.label.includes('Optimal Cost')) {
-                val = `<strong>${val}</strong>`;
-            }
-            if (row.label.includes('Error')) {
+                val = `<strong>[${fmt(val[0])}, ${fmt(val[1])}]</strong>`;
+            } else if (row.label.includes('Confidence')) {
+                // Clamp at 0 — over-aggressive sweeps can push 1 − β·q below
+                // zero, which is nonsensical to display. Reuse fmt() so a
+                // tiny but positive confidence still prints in scientific
+                // form rather than rounding to 0.0000.
+                const v = Number(val);
+                val = Number.isFinite(v) ? fmt(Math.max(0, v)) : val;
+            } else if (row.label.includes('Optimal Cost')) {
+                val = `<strong>${fmt(val)}</strong>`;
+            } else if (row.label.includes('Error')) {
                 val = `<i>${Array.isArray(val) ? val.join('<br>') : val}</i>`;
-            }
-            if (row.label.includes('Degeneracy Detected?')) {
+            } else if (row.label.includes('Degeneracy Detected?')) {
                 val = val ? 'Yes' : 'No';
+            } else if (
+                row.label.includes('Relaxation Parameters') ||
+                row.label.includes('Regularization Parameters') ||
+                row.label.includes('Optimization Time') ||
+                row.label.includes('Risk Computation Time')
+            ) {
+                val = fmt(val);
             }
             table += `<td>${val !== undefined ? val : ''}</td>`;
         }
@@ -1888,17 +1973,20 @@ function updateSweepCounter(option) {
     const hasRho = option === 'relaxation' || option === 'regularization-relaxation';
     const hasTau = option === 'regularization' || option === 'regularization-relaxation';
 
+    // Use plain Unicode glyphs (no LaTeX → no MathJax typeset) so this can
+    // run on every τ/ρ keystroke without UI lag. The display reads
+    // "n_τ = 3, n_ρ = 2" instead of the prettier MathJax-rendered subscript,
+    // but the cost drops from ~20 ms+ to microseconds.
     let parts = [];
-    if (hasTau) parts.push(`\\(n_\\tau = ${nTau}\\)`);
-    if (hasRho) parts.push(`\\(n_\\rho = ${nRho}\\)`);
+    if (hasTau) parts.push(`n_τ = ${nTau}`);
+    if (hasRho) parts.push(`n_ρ = ${nRho}`);
 
     if (parts.length > 0) {
-        counter.innerHTML = parts.join(', ');
+        counter.textContent = parts.join(', ');
         counter.style.display = 'block';
     } else {
         counter.style.display = 'none';
     }
-    safeTypesetPromise();
 }
 
 function onModeChange() {
@@ -2428,10 +2516,14 @@ function filterSolvers() {
             : Array.from(needed).every(c => caps.includes(c));
 
         if (typeOK && coneOK) {
+            option.hidden = false;
             option.style.display = '';
             option.disabled = false;
             if (!firstVisible) firstVisible = option.value;
         } else {
+            // `hidden` is the HTML5-spec attribute Chrome actually honours
+            // for <option>; style:none alone isn't reliable on initial paint.
+            option.hidden = true;
             option.style.display = 'none';
             option.disabled = true;
         }
@@ -2515,7 +2607,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // matrices are required, e.g. x̄ when regularization is active).
     ['lp', 'qp', 'sdp'].forEach(function(tab) {
         const sel = document.getElementById(tab + '-options');
-        if (sel) sel.addEventListener('change', validateSolveInputs);
+        if (!sel) return;
+        sel.addEventListener('change', function() {
+            // Reset all cost-function parameters that meaningfully depend on
+            // the formulation: τ, ρ, p, x̄. They'd otherwise propagate stale
+            // values across robust ↔ regularization ↔ relaxation switches.
+            ['tau', 'rho', 'p', 'theta-bar'].forEach(function(field) {
+                const el = document.getElementById(tab + '-' + field);
+                if (el) el.value = '';
+            });
+            // Make sure the sweep counter and any stale banner are refreshed.
+            updateSweepCounter();
+            const box = document.getElementById('solve-error');
+            if (box) { box.textContent = ''; box.style.display = 'none'; }
+        });
     });
 
     // Re-validate as soon as a scenarios file is picked (or cleared).
@@ -2533,51 +2638,43 @@ document.addEventListener('DOMContentLoaded', function() {
     updateScenarioLabel();
     validateSolveInputs();
 
-    // Update sweep counter + re-run solve validation when rho/tau fields change.
-    // Bind on every plausible event so fixing a bad value clears the banner
-    // immediately no matter how the edit was made.
+    // τ/ρ inputs only update the (cheap) sweep counter live. They do NOT
+    // run validateSolveInputs() — the validator parses every matrix's JSON
+    // and is too expensive per-keystroke. The Solve press still runs the
+    // full check, so an invalid value can't sneak through.
     ['lp', 'qp', 'sdp'].forEach(function(tab) {
         var rhoEl = document.getElementById(tab + '-rho');
         var tauEl = document.getElementById(tab + '-tau');
         var handler = function() {
             updateSweepCounter();
-            validateSolveInputs();
+            // Hide stale solve-error banner so it doesn't sit there after
+            // the user has just fixed a flagged value.
+            var box = document.getElementById('solve-error');
+            if (box && box.style.display !== 'none') {
+                box.textContent = ''; box.style.display = 'none';
+            }
         };
-        ['input', 'change', 'keyup', 'blur', 'paste'].forEach(function(evt) {
+        ['input', 'change'].forEach(function(evt) {
             if (rhoEl) rhoEl.addEventListener(evt, handler);
             if (tauEl) tauEl.addEventListener(evt, handler);
         });
     });
-    // Document-level capture-phase delegate for τ/ρ — catches events even if
-    // the input nodes are later re-created or moved.
-    const paramIdSet = new Set([
-        'lp-tau', 'lp-rho', 'qp-tau', 'qp-rho', 'sdp-tau', 'sdp-rho'
-    ]);
-    ['input', 'change', 'keyup', 'blur'].forEach(function(evt) {
-        document.addEventListener(evt, function(e) {
-            if (e.target && paramIdSet.has(e.target.id)) {
-                updateSweepCounter();
-                validateSolveInputs();
-            }
-        }, true);
-    });
 
-    // Re-filter solvers whenever the p-norm changes — p = 1/∞ keep the LP
-    // allow-list broad, p = 2 / fro require SOCP, other p require POW cone.
-    ['lp', 'qp', 'sdp'].forEach(function(tab) {
-        const pEl = document.getElementById(tab + '-p');
-        if (!pEl) return;
-        ['input', 'change', 'blur'].forEach(function(evt) {
-            pEl.addEventListener(evt, filterSolvers);
-        });
-    });
+    // p-norm input has no live listeners — filterSolvers() runs only on
+    // tab switch, option change, and Solve press. Re-filtering on every
+    // keystroke (which is what the listener used to do) added perceptible
+    // typing lag because filterSolvers walks every option in the dropdown.
+    // Trade-off: if the user types a p value that needs a solver they
+    // don't have, the Solve will simply fail at solve-time rather than
+    // grey out the entry up-front.
 
-    // Reshape stored matrices + re-run solve validation whenever any
-    // dimension changes. Direct listeners on each input (input, change,
-    // keyup, wheel, mouseup) + a document-level capture delegate as a
-    // safety net in case any input is ever re-created.
+    // Reshape stored matrices, refresh Edit G / Edit h toggle, and re-run
+    // the solve validator on every dimension change. Each piece is cheap on
+    // its own (no MathJax) — dim inputs are typed infrequently, so the
+    // per-keystroke cost is acceptable here.
     function dimChanged() {
         reshapeAllStoredMatrices();
+        updateHardConstraintState();
         validateSolveInputs();
     }
     const dimInputIds = ['dim-nx', 'dim-rows-a', 'dim-rows-g', 'dim-lmi-size', 'dim-lmi-e-size'];
