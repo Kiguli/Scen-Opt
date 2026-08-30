@@ -55,8 +55,8 @@ for i, dv in enumerate(delta_vals):
         ax.plot(sol.y[0], sol.y[1], color=colors[i], alpha=alpha,
                 linewidth=0.8, label=label)
 
-ax.set_xlabel('$x_1$')
-ax.set_ylabel('$x_2$')
+ax.set_xlabel(r'$\xi_1$')
+ax.set_ylabel(r'$\xi_2$')
 ax.set_title('LPV system trajectories')
 ax.legend(frameon=True, framealpha=0.9, edgecolor='none', fontsize=7,
           ncol=2, loc='upper right')
