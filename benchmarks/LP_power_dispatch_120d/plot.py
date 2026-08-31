@@ -108,9 +108,24 @@ ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label
 ax.axvline(x=k, color=C_DEMAND, linestyle='-', linewidth=1.5, alpha=0.8)
 ax.scatter([k], [eps_lo_k], c=C_DEMAND, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi_k], c=C_DEMAND, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 5, eps_hi_k + 0.08),
-            fontsize=9, color=C_DEMAND,
-            arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
+# Place the "$k=N$" label so neither the text nor its connector crosses a blue
+# curve: either fully ABOVE eps_up (white space) or INSIDE the feasible region.
+eu = float(eps_hi_k)                       # eps_up at the operating complexity k
+el = float(eps_lo_k)                       # eps_lo at the operating complexity k
+eu_max = float(np.max(spl_hi(k_smooth)))   # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom above the operating point: label in the white space, with a
+    # vertical/left-leaning arrow (x <= k) that meets the rising curve only at the dot.
+    label_y = eu + max(0.35 * (eu_max - eu), 0.05)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(k, label_y),
+                fontsize=9, color=C_DEMAND, ha='center', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
+else:
+    # Operating point near the top: drop the label into the tall feasible region.
+    # The vertical red line already marks k, so no arrow is needed.
+    label_y = 0.5 * (el + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 1.0, label_y),
+                fontsize=9, color=C_DEMAND, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

@@ -121,21 +121,45 @@ ax.plot(k_smooth, spl_lo(k_smooth), '--', color=C_RISK_LINE, linewidth=1.2,
 ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2,
         label=r'$\epsilon_{\mathrm{up}}(k)$')
 
+# Headroom above the operating point, and height of the shaded region there,
+# used to place the k-label so neither the text nor its arrow crosses a blue curve.
+eu = float(eps_hi_k)
+el = float(eps_lo_k)
+eu_max = float(np.max(spl_hi(k_smooth)))
+
 if k > 0:
     ax.axvline(x=k, color=C_UNSTABLE, linestyle='-', linewidth=1.5, alpha=0.8)
     ax.scatter([k], [eps_lo_k], c=C_UNSTABLE, s=50, zorder=5)
     ax.scatter([k], [eps_hi_k], c=C_UNSTABLE, s=50, zorder=5)
-    ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
-                xytext=(k + 3, eps_hi_k + 0.06),
-                fontsize=9, color=C_UNSTABLE,
-                arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
+    if eu < 0.6 * eu_max:
+        # Ample headroom: place the label ABOVE the eps_up curve, in the white
+        # space, and to the RIGHT of the red marker line so the line no longer
+        # passes through the text. The arrow still points down to xy=(k, eu).
+        dx = 0.035 * (k_smooth[-1] - k_smooth[0])
+        x_label = k + dx
+        # eps_up rises to the right, so shifting the text right moves it toward
+        # the curve; keep the whole text box above eps_up by clearing the curve
+        # a few k-units past the label plus a margin.
+        eu_right = float(spl_hi(min(x_label + 0.06 * k_max, k_max)))
+        y_label = max(eu + max(0.35 * (eu_max - eu), 0.08 * eu_max),
+                      eu_right + 0.08 * eu_max)
+        ax.annotate(f'$k={k}$', xy=(k, eu),
+                    xytext=(x_label, y_label),
+                    fontsize=9, color=C_UNSTABLE, ha='left', va='bottom',
+                    arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
+    else:
+        # Little headroom but a tall feasible region: drop the label INSIDE the
+        # shaded band (the red line already marks k, so no arrow needed).
+        ax.annotate(f'$k={k}$', xy=(k + 0.02 * k_max, 0.5 * (el + eu)),
+                    fontsize=9, color=C_UNSTABLE, ha='left', va='center')
 else:
-    # k=0: mark on y-axis
+    # k=0: mark on y-axis, label placed above the eps_up value in white space.
     ax.scatter([0], [eps_lo_k], c=C_UNSTABLE, s=50, zorder=5)
     ax.scatter([0], [eps_hi_k], c=C_UNSTABLE, s=50, zorder=5)
-    ax.annotate(f'$k=0$', xy=(0, eps_hi_k),
-                xytext=(3, eps_hi_k + 0.005),
-                fontsize=9, color=C_UNSTABLE,
+    y_label = eu + max(0.35 * (eu_max - eu), 0.08 * eu_max)
+    ax.annotate(f'$k=0$', xy=(0, eu),
+                xytext=(0, y_label),
+                fontsize=9, color=C_UNSTABLE, ha='left',
                 arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
 
 ax.set_xlabel('Complexity $k$')

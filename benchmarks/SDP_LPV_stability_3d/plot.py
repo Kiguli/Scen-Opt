@@ -123,10 +123,38 @@ ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2,
 ax.axvline(x=k, color=C_UNSTABLE, linestyle='-', linewidth=1.5, alpha=0.8)
 ax.scatter([k], [eps_lo_k], c=C_UNSTABLE, s=50, zorder=5)
 ax.scatter([k], [eps_hi_k], c=C_UNSTABLE, s=50, zorder=5)
-ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
-            xytext=(k + 3, eps_hi_k + 0.08),
-            fontsize=9, color=C_UNSTABLE,
-            arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
+
+# Place the k-annotation so that neither the text box nor its connector
+# crosses either blue curve. eps_up rises to the right, so we anchor the
+# label at x=k (never to the right) and lift it straight up into the white
+# space when there is headroom; otherwise we drop it into the feasible band.
+eu = float(eps_hi_k)                       # eps_up at operating k
+el = float(eps_lo_k)                       # eps_lo at operating k
+eu_max = float(np.max(spl_hi(k_smooth)))   # top of plotted eps_up range
+headroom = eu_max - eu
+if eu < 0.6 * eu_max:
+    # Ample headroom: park the label ABOVE the eps_up curve and slightly to
+    # the RIGHT of the red marker line so the line no longer runs through
+    # the text. The arrow still points back down to the operating dot.
+    k_width = float(k_smooth[-1] - k_smooth[0])
+    dx = 0.035 * k_width                     # small horizontal offset
+    label_x = k + dx
+    # eps_up rises to the right, so evaluate the curve out past the right
+    # edge of the text box and lift the label clear of it with a margin.
+    eu_right = float(spl_hi(min(label_x + 0.08 * k_width, k_smooth[-1])))
+    label_y = max(eu + max(0.35 * headroom, 0.08 * eu_max),
+                  eu_right + 0.06 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu),
+                xytext=(label_x, label_y),
+                fontsize=9, color=C_UNSTABLE, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_UNSTABLE, lw=1.0))
+else:
+    # Operating point near the top: put the label INSIDE the shaded band
+    # (between eps_lo and eps_up) and drop the arrow, since the red line
+    # already marks k.
+    label_y = 0.5 * (el + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 0.4, label_y),
+                fontsize=9, color=C_UNSTABLE, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

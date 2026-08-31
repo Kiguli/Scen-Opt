@@ -92,9 +92,31 @@ ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label
 ax.axvline(x=k, color=C_CVAR, linestyle='-', linewidth=1.5, alpha=0.8)
 ax.scatter([k], [eps_lo_k], c=C_CVAR, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi_k], c=C_CVAR, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 4, eps_hi_k + 0.035),
-            fontsize=9, color=C_CVAR,
-            arrowprops=dict(arrowstyle='->', color=C_CVAR, lw=1.0))
+# Place the "k=N" label so that neither the text box nor its connector crosses
+# either blue curve. eps_up rises to the right, so an up-and-right offset would
+# cut across it; instead we anchor at x=k (vertical connector only touches the
+# rising curve at the target dot) and lift the text into the white space above.
+eu = float(eps_hi_k)
+eu_max = float(np.max(spl_hi(k_smooth)))
+if eu < 0.6 * eu_max:
+    # Ample headroom: place the label ABOVE the eps_up curve in the white space,
+    # shifted to the RIGHT of the red k-line so the vertical marker no longer runs
+    # through the text. eps_up rises to the right, so we also lift the y-position
+    # enough that the entire text box clears the (rising) curve.
+    dx = 0.035 * (k_smooth[-1] - k_smooth[0])
+    y_text = eu + 0.40 * (eu_max - eu)
+    # Guarantee the box (which extends a few k-units right of its left anchor)
+    # stays above eps_up: take the max with the curve a bit further right + margin.
+    y_text = max(y_text, float(spl_hi(k + dx + 3.0)) + 0.04 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(k + dx, y_text),
+                fontsize=9, color=C_CVAR, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_CVAR, lw=1.0))
+else:
+    # Little headroom: place the label INSIDE the shaded feasible region; the
+    # red vertical line already marks k, so no arrow is needed.
+    y_text = 0.5 * (float(eps_lo_k) + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 0.6, y_text), xytext=(k + 0.6, y_text),
+                fontsize=9, color=C_CVAR, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

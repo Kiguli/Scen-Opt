@@ -133,9 +133,36 @@ ax.axvline(x=k, color=C_MARKER, linestyle='-', linewidth=1.5, alpha=0.8)
 k_idx = min(k, len(eps_lo) - 1)
 ax.scatter([k], [eps_lo[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 3, eps_hi[k_idx] + 0.003),
-            fontsize=9, color=C_MARKER,
-            arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+
+# Place the "k=N" label so neither the text nor its connector crosses the blue
+# eps_up curve. eps_up rises to the right, so an up-and-right offset (the old
+# behaviour) always cut across the curve.
+eu = float(eps_hi[k_idx])       # eps_up at the operating complexity k
+el = float(eps_lo[k_idx])       # eps_lo at the operating complexity k
+eu_max = float(np.max(eps_hi))  # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom: label sits in the white space ABOVE eps_up and to the
+    # RIGHT of the red marker line, so the line no longer passes through the
+    # text. The arrow still points down-left to the operating point (k, eps_up).
+    dx = 0.035 * (k_range[-1] - k_range[0])
+    # eps_up rises to the right, so shifting the text right moves it toward the
+    # curve. Keep the whole text box above eps_up by clearing the curve a few
+    # k-units to the right of the label anchor, plus a margin.
+    k_right = min(k + dx + 3.0, float(k_range[-1]))
+    eu_right = float(np.interp(k_right, k_range, eps_hi))
+    label_y = max(eu + 0.35 * (eu_max - eu),
+                  eu + 0.05 * eu_max,
+                  eu_right + 0.08 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(k + dx, label_y),
+                fontsize=9, color=C_MARKER, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+else:
+    # Little headroom above, but the feasible region is tall: label sits INSIDE
+    # the shaded band; drop the arrow since the red line already marks k.
+    label_y = 0.5 * (el + eu)
+    dx = 0.02 * (k_range[-1] - k_range[0])
+    ax.text(k + dx, label_y, f'$k={k}$', fontsize=9, color=C_MARKER,
+            ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

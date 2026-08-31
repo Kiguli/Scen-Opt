@@ -131,10 +131,35 @@ ax.scatter([k_plot], [eps_lo_k], c=C_MARKER, s=50, zorder=5, marker='o')
 ax.scatter([k_plot], [eps_hi_k], c=C_MARKER, s=50, zorder=5, marker='o')
 
 if k <= k_max:
-    ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
-                xytext=(k + 3, eps_hi_k + 0.02),
-                fontsize=9, color=C_MARKER,
-                arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+    eu = float(eps_hi_k)          # eps_up at the operating complexity k
+    el = float(eps_lo_k)          # eps_lo at the operating complexity k
+    eu_max = float(np.max(spl_hi(k_smooth)))  # top of plotted eps_up range
+    if eu < 0.6 * eu_max:
+        # Ample headroom above the operating point: place label in the white
+        # space ABOVE the eps_up curve, with a vertical connector at x=k so it
+        # only meets the rising curve at the target dot (never crossing it).
+        # Shift the label to the RIGHT of the red marker line so the line no
+        # longer runs through the text. Keep the arrow pointing to (k, eu).
+        dx = 0.035 * (k_smooth[-1] - k_smooth[0])
+        x_text = k + dx
+        y_text = eu + max(0.35 * (eu_max - eu), 0.05 * eu_max)
+        # eps_up rises to the right, so the shifted text moves toward the curve;
+        # ensure the whole text box (which extends further right) clears eps_up.
+        eps_up_ahead = float(spl_hi(min(x_text + 0.08 * (k_smooth[-1] - k_smooth[0]), k_smooth[-1])))
+        y_text = max(y_text, eps_up_ahead + 0.05 * eu_max)
+        ax.annotate(f'$k={k}$', xy=(k, eu),
+                    xytext=(x_text, y_text),
+                    fontsize=9, color=C_MARKER,
+                    ha='left', va='bottom',
+                    arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+    else:
+        # Operating point near the top with little headroom: place label INSIDE
+        # the shaded feasible region (between eps_lo and eps_up), no arrow since
+        # the vertical red line already marks k.
+        y_mid = 0.5 * (el + eu)
+        ax.annotate(f'$k={k}$', xy=(k + 1.2, y_mid),
+                    fontsize=9, color=C_MARKER,
+                    ha='left', va='center')
 
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')

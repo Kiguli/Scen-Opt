@@ -122,9 +122,35 @@ ax.axvline(x=k, color=C_OTHERS, linestyle='-', linewidth=1.5, alpha=0.8)
 k_idx = min(k, len(eps_lo) - 1)
 ax.scatter([k], [eps_lo[k_idx]], c=C_OTHERS, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi[k_idx]], c=C_OTHERS, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 2, eps_hi[k_idx] + 0.06),
-            fontsize=9, color=C_OTHERS,
-            arrowprops=dict(arrowstyle='->', color=C_OTHERS, lw=1.0))
+
+# Place the "k=N" label so that both the text box and its connector lie entirely
+# on one side of the blue curves (never crossing eps_lo or eps_up).
+eu = float(eps_hi[k_idx])          # eps_up at the operating complexity k
+el = float(eps_lo[k_idx])          # eps_lo at the operating complexity k
+eu_max = float(np.max(eps_hi))     # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom above the operating point: put the label in the white space
+    # ABOVE eps_up. A vertical connector at x=k meets the rising curve only at the
+    # target dot, so nothing crosses. Text box sits well above eps_up.
+    # Shift the label to the RIGHT of the red marker line so the line no longer
+    # runs through the text. eps_up rises to the right, so raise y as needed to
+    # keep the whole text box clear of the (rising) eps_up curve.
+    dx = 0.035 * (k_range[-1] - k_range[0])
+    y_text = eu + 0.35 * (eu_max - eu)
+    y_text = max(y_text, eu + 0.05 * eu_max)
+    # Guarantee the text box clears eps_up a few k-units to the right of the label.
+    eu_right = float(np.interp(k + dx + 2.0, k_range, eps_hi))
+    y_text = max(y_text, eu_right + 0.05 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(k + dx, y_text),
+                fontsize=9, color=C_OTHERS, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_OTHERS, lw=1.0))
+else:
+    # Little headroom (operating point near the top): put the label INSIDE the
+    # shaded feasible region, at the vertical middle of [eps_lo, eps_up], and drop
+    # the arrow (the red vertical line already marks k).
+    y_text = 0.5 * (el + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 0.4, y_text),
+                fontsize=9, color=C_OTHERS, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

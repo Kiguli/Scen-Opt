@@ -107,10 +107,32 @@ ax.scatter([k_plot], [eps_lo_k], c=C_MARKER, s=50, zorder=5, marker='o')
 ax.scatter([k_plot], [eps_hi_k], c=C_MARKER, s=50, zorder=5, marker='o')
 
 if k <= k_max:
-    ax.annotate(f'$k={k}$', xy=(k, eps_hi_k),
-                xytext=(k + 3, eps_hi_k + 0.02),
-                fontsize=9, color=C_MARKER,
-                arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+    # Place the k-label so neither the text nor its connector crosses a blue curve.
+    eu = float(eps_hi_k)                       # eps_up at the operating k
+    el = float(eps_lo_k)                       # eps_lo at the operating k
+    eu_max = float(np.max(spl_hi(k_smooth)))   # top of the plotted eps_up range
+    if eu < 0.6 * eu_max:
+        # Ample headroom: put the label just to the RIGHT of the red marker line, in the
+        # white space above eps_up, so the vertical line no longer runs through the text.
+        dx = 0.035 * (k_smooth[-1] - k_smooth[0])   # ~3.5% of the plotted k-range
+        x_txt = k_plot + dx
+        # eps_up rises to the right, so shifting the text right moves it toward the curve.
+        # Keep the whole text box clear of eps_up: raise y to the larger of the nominal
+        # headroom target and eps_up a few k-units right of the label, plus a margin.
+        eu_right = float(spl_hi(min(x_txt + 0.06 * k_max, k_max)))
+        y_txt = max(eu + 0.35 * (eu_max - eu), eu_right + 0.05 * eu_max)
+        ax.annotate(f'$k={k}$', xy=(k_plot, eu),
+                    xytext=(x_txt, y_txt),
+                    ha='left', va='bottom',
+                    fontsize=9, color=C_MARKER,
+                    arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+    else:
+        # Little headroom above, but the feasible band is tall: drop the label inside
+        # the shaded region and drop the arrow (the red line already marks k).
+        dx = 0.015 * k_max
+        y_txt = 0.5 * (el + eu)
+        ax.text(k_plot + dx, y_txt, f'$k={k}$',
+                ha='left', va='center', fontsize=9, color=C_MARKER)
 else:
     ax.annotate(f'$k={k}$ (off scale)', xy=(k_range[-1], eps_hi[-1]),
                 xytext=(k_range[-1] - 15, eps_hi[-1] - 0.05),

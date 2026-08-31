@@ -151,9 +151,35 @@ ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label
 ax.axvline(x=k, color=C_MARKER, linestyle='-', linewidth=1.5, alpha=0.8)
 ax.scatter([k], [eps_lo_k], c=C_MARKER, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi_k], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 3, eps_hi_k + 0.01),
-            fontsize=9, color=C_MARKER,
-            arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+
+# Place the "k=..." label so that neither the text box nor its connector crosses
+# a blue curve. eps_up rises to the right, so a label offset up-and-right would
+# cut across it; instead choose a no-crossing side based on the available headroom.
+eu = float(eps_hi_k)                       # eps_up at the operating complexity k
+el = float(eps_lo_k)                       # eps_lo at the operating complexity k
+eu_max = float(np.max(spl_hi(k_smooth)))   # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom: put the label in the white space ABOVE eps_up, offset to
+    # the RIGHT of the red marker line so the vertical line no longer passes
+    # through the label text. The arrow still points down to the target dot at
+    # x=k. Because eps_up rises to the right, shifting the text right moves it
+    # toward the curve, so raise label_y until the whole text box clears eps_up.
+    dx = 0.035 * (k_smooth[-1] - k_smooth[0])
+    # eps_up near the right extent of the label text (a few k-units past x=k+dx)
+    eu_right = float(spl_hi(min(k + dx + 0.10 * (k_smooth[-1] - k_smooth[0]),
+                                k_smooth[-1])))
+    label_y = max(eu + 0.35 * (eu_max - eu),
+                  eu_right + 0.12 * (eu_max - eu))
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(k + dx, label_y),
+                fontsize=9, color=C_MARKER, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+else:
+    # Little headroom near the top: put the label INSIDE the shaded feasible
+    # region (mid-way between eps_lo and eps_up) and drop the arrow, since the
+    # red vertical line already marks the operating complexity k.
+    dx = 0.03 * (k_max if k_max else 1)
+    ax.annotate(f'$k={k}$', xy=(k + dx, 0.5 * (el + eu)),
+                fontsize=9, color=C_MARKER, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 beta_str = f'{beta:.0e}'.replace('e-0', 'e-').replace('e+0', 'e')

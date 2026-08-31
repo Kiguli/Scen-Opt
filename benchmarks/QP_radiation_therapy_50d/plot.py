@@ -140,9 +140,35 @@ ax.axvline(x=k, color=C_MARKER, linestyle='-', linewidth=1.5, alpha=0.8)
 k_idx = min(k, len(eps_lo) - 1)
 ax.scatter([k], [eps_lo[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi[k_idx]], c=C_MARKER, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 5, eps_hi[k_idx] + 0.02),
-            fontsize=9, color=C_MARKER,
-            arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+# Position the "k=N" label so that neither the text box nor its connector
+# crosses the rising eps_up curve.  eps_up increases with k, so any label/arrow
+# placed up-and-to-the-right of the operating point cuts through the blue curve.
+eu = float(eps_hi[k_idx])          # eps_up at the operating complexity
+el = float(eps_lo[k_idx])          # eps_lo at the operating complexity
+eu_max = float(np.max(eps_hi))     # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom above the operating point: place the label in the white
+    # space ABOVE eps_up, shifted to the RIGHT of the red marker line so the
+    # vertical line no longer runs through the label text.  The arrow still
+    # points down-left to the operating dot at (k, eps_up(k)).
+    dx = 0.035 * (k_range[-1] - k_range[0])
+    x_label = k + dx
+    y_label = eu + 0.35 * (eu_max - eu)
+    # eps_up rises to the right, so shifting the text right moves it toward the
+    # curve; guarantee the whole text box clears eps_up a few k-units past the
+    # label's left edge (plus a small margin).
+    eu_right = float(np.interp(x_label + 3.0, k_range, eps_hi))
+    y_label = max(y_label, eu_right + 0.05 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(x_label, y_label),
+                fontsize=9, color=C_MARKER, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_MARKER, lw=1.0))
+else:
+    # Operating point near the top: drop the label INSIDE the shaded feasible
+    # region (between eps_lo and eps_up) and remove the arrow, since the red
+    # vertical line already marks k.
+    y_label = 0.5 * (el + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 1.2, y_label),
+                fontsize=9, color=C_MARKER, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 beta_str = f'{beta:.2g}'

@@ -88,9 +88,31 @@ ax.plot(k_smooth, spl_hi(k_smooth), '-', color=C_RISK_LINE, linewidth=1.2, label
 ax.axvline(x=k, color=C_DEMAND, linestyle='-', linewidth=1.5, alpha=0.8)
 ax.scatter([k], [eps_lo_k], c=C_DEMAND, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi_k], c=C_DEMAND, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi_k), xytext=(k + 4, eps_hi_k + 0.025),
-            fontsize=9, color=C_DEMAND,
-            arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
+# Place the k-label without crossing either blue curve.
+eu = float(eps_hi_k)                       # eps_up at the operating k
+el = float(eps_lo_k)                        # eps_lo at the operating k
+eu_max = float(np.max(spl_hi(k_smooth)))   # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom: place the label ABOVE eps_up in the white space, shifted to
+    # the RIGHT of the red marker line so the line does not run through the text.
+    # The connector arrow still points to the operating dot at (k, eps_up(k)).
+    dx = 0.035 * (k_smooth[-1] - k_smooth[0])
+    x_txt = k + dx
+    # eps_up rises to the right, so shifting the text right moves it toward the
+    # curve. Evaluate eps_up a few k-units past the label start and keep the whole
+    # text box above it with a margin, so neither the box nor the arrow touch it.
+    eu_right = float(spl_hi(min(x_txt + 3.5, k_smooth[-1])))
+    y_txt = max(eu + 0.35 * (eu_max - eu), eu + 0.05 * eu_max,
+                eu_right + 0.06 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(x_txt, y_txt),
+                fontsize=9, color=C_DEMAND, ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color=C_DEMAND, lw=1.0))
+else:
+    # Little headroom: place the label INSIDE the shaded feasible region and
+    # drop the arrow (the red vertical line already marks k).
+    y_txt = 0.5 * (el + eu)
+    ax.annotate(f'$k={k}$', xy=(k + 0.6, y_txt), xytext=(k + 0.6, y_txt),
+                fontsize=9, color=C_DEMAND, ha='left', va='center')
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 ax.set_title(f'(b) Risk bounds ($N={N}$, $\\beta=10^{{-6}}$)')

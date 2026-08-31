@@ -117,9 +117,35 @@ ax.axvline(x=k, color=C_SUPPORT, linestyle='-', linewidth=1.5, alpha=0.8)
 k_idx = min(k, len(eps_lo) - 1)
 ax.scatter([k], [eps_lo[k_idx]], c=C_SUPPORT, s=50, zorder=5, marker='o')
 ax.scatter([k], [eps_hi[k_idx]], c=C_SUPPORT, s=50, zorder=5, marker='o')
-ax.annotate(f'$k={k}$', xy=(k, eps_hi[k_idx]), xytext=(k + 2, eps_hi[k_idx] + 0.06),
-            fontsize=9, color=C_SUPPORT,
-            arrowprops=dict(arrowstyle='->', color=C_SUPPORT, lw=1.0))
+
+# Place the k-label so neither the text box nor its connector crosses the
+# blue curves. Because eps_up rises to the right, a label offset up-and-right
+# would cut through the curve; instead we key off the available headroom.
+eu = float(eps_hi[k_idx])          # eps_up at the operating complexity
+el = float(eps_lo[k_idx])          # eps_lo at the operating complexity
+eu_max = float(eps_hi.max())       # top of the plotted eps_up range
+if eu < 0.6 * eu_max:
+    # Ample headroom above the operating point: put the label in the white
+    # space above eps_up, shifted to the RIGHT of the red vertical line so the
+    # line no longer runs through the text. The arrow still points back to the
+    # operating dot at x = k.
+    dx = 0.035 * (k_range[-1] - k_range[0])
+    label_x = k + dx
+    label_y = eu + 0.35 * (eu_max - eu)
+    label_y = max(label_y, eu + 0.05 * eu_max)  # guarantee a visible gap
+    # eps_up rises to the right, so shifting the text right moves it toward the
+    # curve. Evaluate eps_up a few k-units past the label and keep the whole
+    # text box above it (plus a margin) so it never touches the blue curve.
+    eu_right = float(np.interp(label_x + 1.0, k_range, eps_hi))
+    label_y = max(label_y, eu_right + 0.05 * eu_max)
+    ax.annotate(f'$k={k}$', xy=(k, eu), xytext=(label_x, label_y),
+                ha='left', va='bottom', fontsize=9, color=C_SUPPORT,
+                arrowprops=dict(arrowstyle='->', color=C_SUPPORT, lw=1.0))
+else:
+    # Operating point near the top: drop the label inside the shaded feasible
+    # region. The red vertical line already marks k, so no arrow is needed.
+    ax.text(k + 0.3, 0.5 * (el + eu), f'$k={k}$',
+            ha='left', va='center', fontsize=9, color=C_SUPPORT)
 ax.set_xlabel('Complexity $k$')
 ax.set_ylabel(r'Risk $\varepsilon$')
 conf_pct = (1 - beta) * 100
