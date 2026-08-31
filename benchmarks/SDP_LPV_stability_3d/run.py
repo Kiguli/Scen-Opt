@@ -86,8 +86,11 @@ def main():
     Q = prog.get('Q', np.array([]))
     F_d = prog['F_d']
     E = prog.get('E', {})
-    if scenarios.ndim == 2 and scenarios.shape[1] == 1:
-        scenarios = scenarios.flatten()
+    # Keep scenarios as an (N, 1) array: solve_sdp and the symbolic F_d
+    # expressions index each sample as delta[0], so flattening to scalars
+    # would break evaluation.
+    if scenarios.ndim == 1:
+        scenarios = scenarios.reshape(-1, 1)
 
     N = len(scenarios)
     n_vars = Q.shape[0]

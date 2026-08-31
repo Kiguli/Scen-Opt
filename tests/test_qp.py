@@ -96,7 +96,7 @@ def test_qp_non_symmetric_q():
     """QP with non-symmetric Q raises AssertionError."""
     Q_bad = np.array([[1.0, 0.5], [0.0, 1.0]])
 
-    with pytest.raises(AssertionError, match="positive semi-definite"):
+    with pytest.raises(AssertionError, match="symmetric"):
         solve_qp(
             deltas=SCENARIOS, A_d=_A_d, b_d=_b_d, G=G_EMPTY, h=H_EMPTY,
             c=C_VEC, Q=Q_bad,

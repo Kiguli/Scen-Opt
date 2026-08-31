@@ -1,6 +1,6 @@
 import cvxpy as cp
 import numpy as np
-from src.Miscellaneous import get_active
+from src.Miscellaneous import get_support
 
 def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
     r"""Solve a quadratic program with scenario constraints via the scenario approach.
@@ -62,9 +62,9 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     N : int
         Number of scenarios used.
     complexity : int
-        Number of active (support) scenario constraints.
+        Cardinality of the support list (violated plus retained active scenario constraints).
     constraints : list
-        CVXPY constraint objects from the problem formulation.
+        Scenario constraint objects (one per scenario; hard constraints are kept separate).
     degeneracy : bool
         ``True`` if degeneracy was detected during support identification.
 
@@ -75,19 +75,14 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     AssertionError
         If *Q* is not positive semidefinite or not symmetric.
     """
-    # Check Q is positive semi-definite and symmetric
-    #print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
-
-    assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite and symmetric"
-    assert (Q==Q.T).all(), "Q needs to be positive semi-definite and symmetric"
+    # Check Q is positive semi-definite and symmetric.
+    eigvals = np.linalg.eigvals(Q)
+    assert np.all(eigvals >= 0), f"Q must be positive semi-definite (eigenvalues: {eigvals})"
+    assert (Q == Q.T).all(), "Q must be symmetric"
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m_scenario = A_d(deltas[0]).shape[0]  # Number of scenario constraints
     try:
-        num_of_deltas = deltas.shape[1]  # Number of deltas per row
-    except IndexError:
-        num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
-    try:
-        N = deltas.shape[0]  # Number of row
+        N = deltas.shape[0]  # Number of scenarios
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
@@ -106,9 +101,10 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     for i in range(N):
         constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta[i])  # Per-scenario slack
 
+    # Hard constraints are kept separate from the scenario constraints: they
+    # are always enforced but never candidates for the support list.
     if not (G.size == 0 or h.size == 0):
-        non_risk_constraints = G @ x + h <= 0
-        constraints.append(non_risk_constraints)  # hard constraints
+        non_risk_constraints = [G @ x + h <= 0]
     else:
         non_risk_constraints = []
 
@@ -129,7 +125,7 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     objective = cp.Minimize((1/2)*cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
-    prob = cp.Problem(objective, constraints)
+    prob = cp.Problem(objective, constraints + non_risk_constraints)
     prob.solve(solver=solver)
 
     # Simplify results
@@ -147,8 +143,9 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
 
     cost_out = prob.value
 
-    # Find the active constraints
-    complexity,active,degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
+    # Find the support list
+    complexity, support, degeneracy = get_support(
+        constraints, non_risk_constraints, prob, objective, solver=solver)
 
     # Return results
     return x_out, zeta_out, cost_out, N, complexity, constraints,degeneracy

@@ -1,6 +1,75 @@
 import ast
 import math
+import operator
 import numpy as np
+
+# Untrusted matrix/tensor cells arrive from the public web form, so they are
+# evaluated by a restricted AST walker instead of eval(): only numeric
+# literals, + - * / // % **, unary +/-, the name `delta` (indexed), and
+# `math.<fn>(...)` are permitted. Anything else raises ValueError, which
+# closes the remote-code-execution path that eval() with an open namespace
+# would otherwise expose.
+_BINOPS = {
+    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+    ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod, ast.Pow: operator.pow,
+}
+_UNARYOPS = {ast.UAdd: operator.pos, ast.USub: operator.neg}
+
+
+def safe_eval(expr, delta=None):
+    """Safely evaluate a scalar arithmetic expression over `delta` and `math`.
+
+    Parameters
+    ----------
+    expr : str
+        Expression such as ``"delta[0]"``, ``"-delta[3]"``, ``"0.5"``,
+        or ``"math.sin(delta[1])"``.
+    delta : sequence or None
+        The uncertainty vector referenced by ``delta[i]``; ``None`` for
+        constant expressions.
+
+    Returns
+    -------
+    float
+
+    Raises
+    ------
+    ValueError
+        If the expression uses any construct outside the permitted subset.
+    """
+    def ev(node):
+        if isinstance(node, ast.Expression):
+            return ev(node.body)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
+                raise ValueError(f"disallowed constant: {node.value!r}")
+            return node.value
+        if isinstance(node, ast.BinOp) and type(node.op) in _BINOPS:
+            return _BINOPS[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in _UNARYOPS:
+            return _UNARYOPS[type(node.op)](ev(node.operand))
+        if isinstance(node, ast.Name):
+            if node.id == "delta":
+                if delta is None:
+                    raise ValueError("delta is not available in this expression")
+                return delta
+            raise ValueError(f"disallowed name: {node.id}")
+        if isinstance(node, ast.Subscript):
+            return ev(node.value)[int(ev(node.slice))]
+        if isinstance(node, ast.Attribute):
+            if isinstance(node.value, ast.Name) and node.value.id == "math" \
+                    and not node.attr.startswith("_"):
+                return getattr(math, node.attr)
+            raise ValueError(f"disallowed attribute access: {node.attr}")
+        if isinstance(node, ast.Call):
+            func = ev(node.func)
+            if node.keywords or not callable(func):
+                raise ValueError("disallowed call")
+            return func(*[ev(a) for a in node.args])
+        raise ValueError(f"disallowed expression element: {type(node).__name__}")
+
+    return ev(ast.parse(expr, mode="eval"))
 
 
 def generate_matrix_function(expr_matrix_str):
@@ -9,7 +78,7 @@ def generate_matrix_function(expr_matrix_str):
 
     def matrix_function(delta):
         return np.array([
-            [eval(expr, {"delta": delta, "math": math}) for expr in row]
+            [safe_eval(expr, delta) for expr in row]
             for row in expr_matrix
         ])
 
@@ -20,7 +89,7 @@ def generate_matrix(expr_matrix_str):
     """Evaluate a matrix expression string (no delta dependency) into a numpy array."""
     expr_matrix = ast.literal_eval(expr_matrix_str)
     return np.array([
-        [eval(expr, {"math": math}) for expr in row]
+        [safe_eval(expr) for expr in row]
         for row in expr_matrix
     ])
 
@@ -32,7 +101,7 @@ def generate_tensor_function(expr_matrix_str):
     def tensor_function(delta):
         return {
             key: np.array([
-                [eval(expr, {"delta": delta, "math": math}) for expr in row]
+                [safe_eval(expr, delta) for expr in row]
                 for row in expr_dict[key]
             ])
             for key in expr_dict

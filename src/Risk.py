@@ -1,3 +1,10 @@
+import jax
+# The bisection compares two betainc terms whose difference is ~1e-8 near the
+# upper root; in JAX's default float32 that difference is pure noise, which
+# flips the comparison and can leave epsU understated by up to ~0.01 at
+# beta=1e-6 (the high-confidence regime this tool targets). float64 makes the
+# root agree with a float64 SciPy reference to ~1e-10.
+jax.config.update("jax_enable_x64", True)
 from jax.scipy.special import betainc
 
 def quantify_risk(k,N,beta):
@@ -16,7 +23,7 @@ def quantify_risk(k,N,beta):
     Parameters
     ----------
     k : int
-        Number of active (support) constraints from the scenario optimization.
+        Cardinality of the support list from the scenario optimization.
     N : int
         Number of sampled scenarios.
     beta : float

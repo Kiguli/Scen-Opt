@@ -116,20 +116,20 @@ The `benchmarks/` directory contains 12 case studies spanning all three program 
 
 | Benchmark | Type | d | q | m_s | m_h | rho | tau | N | beta | k | epsilon_lower | epsilon_upper | Time (s) | Data Source |
 |-----------|------|---|---|-----|-----|-----|-----|---|------|---|---------------|---------------|----------|-------------|
-| Half Width | LP | 2 | 1 | 2 | 0 | 0 | 0 | 100 | 1e-6 | 2 | 0 | 0.2073 | 6.7 | --- |
-| Growth Bound | LP | 12 | 6 | 2 | 5 | 0 | 0 | 3127 | 1e-6 | 6 | * | 0.0101 | 7231.9 | --- |
-| Inventory | LP | 11 | 15 | 6 | 17 | 100 | 0 | 500 | 1e-6 | 7 | 0 | 0.0655 | 9.7 | --- |
-| Portfolio CVaR | LP | 13 | 12 | 4 | 27 | 0.016 | 0 | 1255 | 1e-6 | 3 | 0 | 0.0200 | 1.4 | Yahoo Finance |
-| Power Dispatch | LP | 120 | 48 | 48 | 330 | 100 | 0 | 150 | 1e-6 | 34 | 0.0791 | 0.4425 | 3.4 | --- |
-| Iris SVM | QP | 3 | 3 | 1 | 0 | 0 | 0 | 150 | 1e-6 | 2 | 0 | 0.1430 | 1.0 | UCI Iris |
-| Robot Navigation | QP | 118 | 1 | 3 | 320 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0400 | 2.3 | --- |
-| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-6 | 6 | 0 | 0.1486 | 6.5 | TROTS |
-| LPV Stability | SDP | 3 | 1 | 2 | 2 | 1 | 0 | 100 | 1e-6 | 1 | 0 | 0.1853 | 4.0 | --- |
-| Quadratic Stability | SDP | 6 | 2 | 3 | 3 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0400 | 3.1 | --- |
-| Covariance Estimation | SDP | 15 | 5 | 5 | 5 | 0 | 0 | 178 | 1e-6 | 7 | 0 | 0.1754 | 3.9 | UCI Wine |
-| Min. Encl. Ellipsoid | SDP | 15 | 5 | 1 | 5 | 0 | 0 | 569 | 1e-6 | 5 | 0 | 0.0510 | 117.1 | UCI Breast Cancer |
+| Half Width | LP | 2 | 1 | 2 | 0 | 0 | 0 | 100 | 1e-6 | 2 | 0 | 0.2085 | 1.2 | --- |
+| Growth Bound | LP | 12 | 6 | 3 | 6 | 0 | 0 | 3127 | 1e-6 | 6 | 0 | 0.0103 | 1276.8 | --- |
+| Inventory | LP | 11 | 15 | 6 | 17 | 100 | 0 | 500 | 1e-6 | 7 | 0 | 0.0666 | 4.0 | --- |
+| Portfolio CVaR | LP | 13 | 12 | 4 | 27 | 0.016 | 0 | 1255 | 1e-6 | 3 | 0 | 0.0203 | 22.0 | Yahoo Finance |
+| Power Dispatch | LP | 120 | 48 | 48 | 330 | 100 | 0 | 150 | 1e-6 | 34 | 0.0791 | 0.4496 | 2.9 | --- |
+| Iris SVM | QP | 3 | 3 | 1 | 0 | 0 | 0 | 150 | 1e-6 | 2 | 0 | 0.1441 | 1.2 | UCI Iris |
+| Robot Navigation | QP | 118 | 1 | 3 | 320 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0403 | 1.6 | --- |
+| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-6 | 5 | 0 | 0.1414 | 112.3 | TROTS |
+| LPV Stability | SDP | 3 | 1 | 2 | 2 | 1 | 0 | 100 | 1e-6 | 1 | 0 | 0.1858 | 1.7 | --- |
+| Quadratic Stability | SDP | 6 | 2 | 3 | 3 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0403 | 2.2 | --- |
+| Covariance Estimation | SDP | 15 | 5 | 5 | 5 | 0 | 0 | 178 | 1e-6 | 7 | 0 | 0.1780 | 2.1 | UCI Wine |
+| Min. Encl. Ellipsoid | SDP | 15 | 5 | 1 | 5 | 0 | 0 | 569 | 1e-6 | 5 | 0 | 0.0518 | 235.6 | UCI Breast Cancer |
 
-d = decision variables, q = uncertainty dimension, m_s = scenario constraints per sample, m_h = hard constraints, N = number of scenarios, k = complexity (support constraints). Solve times on Apple MacBook Air (M2, 8 GB). *No lower bound due to degeneracy.
+d = decision variables, q = uncertainty dimension, m_s = scenario constraints per sample, m_h = hard constraints, N = number of scenarios, k = complexity (support constraints). Solve times on a desktop with an Intel Core Ultra 9 285K (24 cores) and 64 GB RAM running Windows 11.
 
 ### Benchmark Descriptions
 
@@ -247,9 +247,9 @@ Solves semidefinite programs with LMI constraints. Each scenario produces a matr
 
 Computes the scenario approach risk bounds given the complexity k (support constraint count), number of scenarios N, and confidence parameter beta. Uses the regularized incomplete beta function via JAX to compute both lower and upper bounds on the violation probability epsilon through bisection. Returns `(epsilon_lower, epsilon_upper)`.
 
-#### `src/Miscellaneous.py` -- `get_active()`
+#### `src/Miscellaneous.py` -- `get_support()`
 
-Identifies support constraints (active constraints that define the optimal solution). Uses dual variable analysis with parallel constraint testing: a constraint is in the support set if removing it changes the optimal cost. Handles degeneracy by iteratively building the minimal support set when the initial dual-based identification fails. Also provides `get_solvers()` to list installed CVXPY solvers and `load_file()` for reading data files.
+Identifies the support list of a solved scenario program: the constraints whose removal changes the optimal value (all violated constraints together with an irreducible subset of the active ones). Candidates are screened by dual value, then greedily pruned by re-solving and comparing the optimal value (via the helper `test_support()`); hard constraints are always enforced and never counted. If the screened set fails to reproduce the optimum, a recovery pass restarts from the full scenario list and flags degeneracy. Also provides `get_solvers()` to list installed CVXPY solvers and `load_file()` for reading data files.
 
 ## Supported File Formats
 

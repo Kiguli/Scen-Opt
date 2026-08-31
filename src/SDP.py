@@ -1,6 +1,6 @@
 import cvxpy as cp
 import numpy as np
-from src.Miscellaneous import get_active
+from src.Miscellaneous import get_support
 
 
 def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
@@ -58,9 +58,9 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
     N : int
         Number of scenarios used.
     complexity : int
-        Number of active (support) scenario constraints.
+        Cardinality of the support list (violated plus retained active scenario constraints).
     constraints : list
-        CVXPY constraint objects from the problem formulation.
+        Scenario constraint objects (one per scenario; hard constraints are kept separate).
     degeneracy : bool
         ``True`` if degeneracy was detected during support identification.
 
@@ -72,21 +72,15 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
         If *Q* or any :math:`F_j(\delta)` matrix is not symmetric.
     """
 
-    # TODO: need to change all this...
-    # Check Q is positive semi-definite and symmetric
-    # print(np.linalg.eigvals(Q)) #TODO: add eigenvalues to errors if not PSD
-
-    assert np.all(np.linalg.eigvals(Q) >= 0), "Q needs to be positive semi-definite"
-    assert (Q == Q.T).all(), "Q needs to be symmetric"
+    # Check Q is positive semi-definite and symmetric.
+    eigvals = np.linalg.eigvals(Q)
+    assert np.all(eigvals >= 0), f"Q must be positive semi-definite (eigenvalues: {eigvals})"
+    assert (Q == Q.T).all(), "Q must be symmetric"
     n = Q.shape[1]
     m = list(F_d(deltas[0]).values())[0].shape[0]
 
     try:
-        num_of_deltas = deltas.shape[1]  # Number of deltas per row
-    except IndexError:
-        num_of_deltas = 1  # TODO: check A_d and b_d don't include delta[i] where i>num_deltas
-    try:
-        N = deltas.shape[0]  # Number of row
+        N = deltas.shape[0]  # Number of scenarios
     except IndexError:
         raise ValueError("The input `deltas` must have at least one row.")
 
@@ -128,8 +122,9 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
                 xk = x[int(k) - 1]
                 term = xk*Fk   # scalar-variable times numpy matrix is fine
             expr = term if expr is None else expr + term
-        non_risk_constraints = expr << 0
-        constraints.append(non_risk_constraints)  # hard constraints
+        # Hard constraints are kept separate from the scenario constraints:
+        # always enforced but never candidates for the support list.
+        non_risk_constraints = [expr << 0]
 
     else:
         non_risk_constraints = []
@@ -138,7 +133,7 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
     objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
-    prob = cp.Problem(objective, constraints)
+    prob = cp.Problem(objective, constraints + non_risk_constraints)
     prob.solve(solver=solver)
 
     # Simplify results
@@ -154,8 +149,9 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
 
     cost_out = prob.value
 
-    # Find the active constraints
-    complexity, active, degeneracy = get_active(constraints, non_risk_constraints, prob, objective, rho, solver)
+    # Find the support list
+    complexity, support, degeneracy = get_support(
+        constraints, non_risk_constraints, prob, objective, solver=solver)
 
     # Return results
     return x_out, zeta_out, cost_out, N, complexity, constraints, degeneracy

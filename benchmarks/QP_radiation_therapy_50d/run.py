@@ -175,9 +175,6 @@ def main():
     prog = load_symbolic_program(data_dir)
     c, Q, A_d, b_d = prog['c'], prog['Q'], prog['A_d'], prog['b_d']
     G, h = prog.get('G', np.array([])), prog.get('h', np.array([]))
-    print("Compiling constraint expressions...")
-    A_d = compile_expression_matrix(os.path.join(data_dir, 'A_d.csv'))
-    b_d = compile_expression_vector(os.path.join(data_dir, 'b_d.csv'))
 
     try:
         D_nominal = load_matrix(os.path.join(data_dir, 'D_nominal.csv'))

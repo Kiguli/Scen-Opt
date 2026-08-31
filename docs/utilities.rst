@@ -20,9 +20,9 @@ File Loading
 Active Constraint Detection
 ----------------------------
 
-These functions identify the support (active) constraints that define the optimal
-solution — a key step for computing the scenario approach risk bounds.
+These functions identify the support list — the constraints whose removal changes the
+optimal value — a key step for computing the scenario approach risk bounds.
 
-.. autofunction:: src.Miscellaneous.get_active
+.. autofunction:: src.Miscellaneous.get_support
 
-.. autofunction:: src.Miscellaneous.test_active
+.. autofunction:: src.Miscellaneous.test_support

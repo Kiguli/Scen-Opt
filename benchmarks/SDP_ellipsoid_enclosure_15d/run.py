@@ -119,10 +119,6 @@ def main():
     print(f"  Formulation: Robust (rho=0)")
     print()
 
-    # Build F_d function from expression CSVs
-    def F_d(delta):
-        return {key: func(delta) for key, func in F_funcs.items()}
-
     # Solve
     print("Solving SDP with MOSEK...")
 

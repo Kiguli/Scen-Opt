@@ -41,7 +41,7 @@ that:
 2. The sublist is **irreducible**: removing any single scenario changes the solution.
 
 The **complexity** :math:`s_N^*` is the minimal cardinality among all support lists. This is the
-value *k* computed by :func:`~src.Miscellaneous.get_active` and passed to
+value *k* computed by :func:`~src.Miscellaneous.get_support` and passed to
 :func:`~src.Risk.quantify_risk`.
 
 Risk Bounds

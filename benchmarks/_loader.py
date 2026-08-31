@@ -30,11 +30,14 @@ The returned object is a dict with numpy-ready fields::
 from __future__ import annotations
 
 import json
-import math
 import os
+import sys
 from typing import Callable, Dict, Optional
 
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.parsing import safe_eval
 
 
 def _as_numeric_matrix(m):
@@ -44,8 +47,7 @@ def _as_numeric_matrix(m):
 def _expr_matrix_function(expr_matrix) -> Callable[[np.ndarray], np.ndarray]:
     def f(delta):
         return np.array([
-            [eval(cell, {"delta": delta, "math": math})
-             if isinstance(cell, str) else float(cell)
+            [safe_eval(cell, delta) if isinstance(cell, str) else float(cell)
              for cell in row]
             for row in expr_matrix
         ], dtype=float)

@@ -1,4 +1,3 @@
-import concurrent.futures
 import cvxpy as cp
 import numpy as np
 import pandas as pd
@@ -86,164 +85,130 @@ def load_file(file_path):
         print(f"Error: {e}")
         return None
 
-def test_active(prob, objective, active, rho=0.0, solver=None):
-    """Validate that a constraint subset produces the same optimal solution.
+def test_support(objective, support, non_risk, ref, solver=None):
+    """Check whether the scenario constraints in `support`, together with the
+    hard constraints in `non_risk` (always enforced), reproduce the reference
+    optimal value.
 
-    Re-solves the problem using only the given constraints and checks that the
-    objective value and decision variables match the original solution. Used
-    internally by :func:`get_active` to verify support set correctness.
+    Support membership is decided on the optimal *value*, which is well
+    defined even when the optimizer is not unique. A scenario is of support
+    exactly when its removal changes the optimum: a genuinely violated
+    scenario changes it by its penalty contribution, an active support
+    constraint by the relaxation its removal permits, while a redundant or
+    only-spuriously-slack scenario leaves it unchanged. Comparing solution
+    vectors instead would misfire on problems with a non-unique optimum
+    (a flat optimal face), which is why only the value is used.
 
     Parameters
     ----------
-    prob : cvxpy.Problem
-        The original solved CVXPY problem instance.
     objective : cvxpy.Minimize
-        The CVXPY objective function.
-    active : list
-        List of candidate active CVXPY constraint objects.
-    rho : float, optional
-        Slack variable penalty. Default is ``0.0``.
+        The original objective function.
+    support : list
+        Candidate support list of scenario constraint objects.
+    non_risk : list
+        Hard (non-scenario) constraints, always enforced.
+    ref : dict
+        Reference optimum with keys ``cost`` and ``tol``.
     solver : str or None, optional
-        CVXPY solver name. Default is ``None``.
+        CVXPY solver name.
 
     Returns
     -------
     bool
-        ``True`` if the reduced problem matches the original solution,
-        ``False`` otherwise.
+        ``True`` if the reduced problem reproduces the reference value.
     """
     try:
-        prob2 = cp.Problem(objective, active)
+        prob2 = cp.Problem(objective, list(support) + list(non_risk))
         prob2.solve(solver=solver)
-
-        # Assert that the objective values are the same
-        assert np.isclose(prob.value, prob2.value), f"Objective values differ: {prob.value} vs {prob2.value}"
-
-        # Assert that the solutions are the same
-        assert np.allclose(prob.variables()[0].value,
-                           prob2.variables()[0].value), f"Solutions for x differ: {prob.variables()[0].value} vs {prob2.variables()[0].value}"
-
-        if rho != 0:
-            assert np.allclose(prob.variables()[1].value, prob2.variables()[1].value), f"Solutions for zeta differ: {prob.variables()[1].value} vs {prob2.variables()[1].value}"
-
-        # Return True if all assertions pass
-        return True
-
-    except AssertionError as e:
-        print(f"Assertion failed: {e}")
-        # Return False if any assertion fails
+        if prob2.value is None or prob2.status not in ("optimal", "optimal_inaccurate"):
+            return False
+        return bool(np.isclose(ref["cost"], prob2.value, rtol=ref["tol"], atol=1e-9))
+    except Exception:
+        # Solver failure on the reduced problem: candidate not validated
+        # (conservative — the tested constraint is kept).
         return False
 
 
+def _prune(objective, candidates, non_risk, ref, solver=None):
+    """Greedily drop scenario constraints whose removal leaves the optimum
+    unchanged, returning an irreducible support list."""
+    keep = list(candidates)
+    i = 0
+    while i < len(keep):
+        if test_support(objective, keep[:i] + keep[i + 1:], non_risk, ref, solver=solver):
+            keep.pop(i)
+        else:
+            i += 1
+    return keep
 
-def get_active(constraints, non_risk_constraints, prob, objective, rho=0.0, solver=None, threshold=1e-8):
-    """Identify the support (active) constraints that define the optimal solution.
 
-    Uses dual variable analysis with parallel constraint testing. A constraint
-    is initially flagged as active when its dual value exceeds *threshold*.
-    The candidate set is then validated and pruned to find a minimal support
-    set. Degeneracy is handled by iteratively removing constraints until the
-    minimal valid set is found.
+def get_support(constraints, non_risk_constraints, prob, objective, solver=None, threshold=1e-8, sol_tol=1e-6):
+    """Identify the support list of a solved scenario problem.
+
+    The support list comprises every scenario constraint whose removal changes
+    the optimal value: all genuinely violated constraints together with an
+    irreducible subset of the active ones (cf. the support-list definition).
+    Candidates are screened by dual value -- under relaxation the dual
+    variables of a violated constraint sum to rho, so both violated and active
+    constraints are captured -- then greedily pruned by re-solving and
+    comparing the optimal value. Hard constraints are always enforced in
+    re-solves and never counted. If the screened set fails to reproduce the
+    optimum (inaccurate solver duals or degeneracy), the search restarts from
+    the full scenario-constraint list.
 
     Parameters
     ----------
     constraints : list
-        All scenario constraints from the optimization problem.
+        Scenario constraints only (one constraint object per scenario).
     non_risk_constraints : list
-        Hard constraints to exclude from the support complexity count.
+        Hard constraints; always enforced in re-solves, never counted.
     prob : cvxpy.Problem
         The solved CVXPY problem instance.
     objective : cvxpy.Minimize
         The CVXPY objective function.
-    rho : float, optional
-        Slack variable penalty parameter. Default is ``0.0``.
     solver : str or None, optional
-        CVXPY solver name. Default is ``None``.
+        CVXPY solver name.
     threshold : float, optional
-        Dual value threshold for detecting active constraints.
-        Default is ``1e-8``.
+        Dual-value threshold for screening candidates. Default ``1e-8``.
+    sol_tol : float, optional
+        Relative tolerance for judging whether a re-solve reproduces the
+        reference optimal value. Set above solver value-reproducibility
+        (~1e-8 relative) and below the smallest meaningful support
+        contribution. Default ``1e-6``.
 
     Returns
     -------
     complexity : int
-        Number of active scenario constraints (*k* in the scenario approach).
-    active : list
-        List of active CVXPY constraint objects.
+        Cardinality of the support list (*k* in the scenario approach).
+    support : list
+        The support list of CVXPY scenario constraint objects.
     degeneracy : bool
-        ``True`` if degeneracy was detected during support identification.
+        ``True`` if the recovery procedure was used.
 
     Raises
     ------
     ValueError
-        If a valid support set cannot be determined.
+        If no valid support list can be determined.
     """
-
-    #TODO: make threshold a global parameter?
     degeneracy = False
+    non_risk = list(non_risk_constraints) if isinstance(non_risk_constraints, (list, tuple)) \
+        else [non_risk_constraints]
+    ref = {"cost": prob.value, "tol": sol_tol}
 
-    def is_active(constraint, threshold):
+    def is_candidate(constraint):
         dv = constraint.dual_value
-        if dv is None:
-            return False
-        # Handle both vector and matrix dual values (for SDP)
-        if hasattr(dv, 'flatten'):
-            return np.max(np.abs(dv.flatten())) > threshold
-        return max(dv) > threshold
+        return dv is not None and np.max(np.abs(np.asarray(dv))) > threshold
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-       results = list(executor.map(lambda c: is_active(c,threshold), constraints))
+    screened = [c for c in constraints if is_candidate(c)]
 
-    active = [c for c, is_act in zip(constraints, results) if is_act]
-
-    # If solution changes then likely to have degeneracy
-    if not test_active(prob, objective, active, rho=rho, solver=solver):
+    if test_support(objective, screened, non_risk, ref, solver=solver):
+        support = _prune(objective, screened, non_risk, ref, solver=solver)
+    else:
         degeneracy = True
-        print("Active constraints are not valid. Lower bound not viable likely due to degeneracy.")
-        # loop through all constraints and make a support list from them
-        active = constraints.copy()
-        # Iteratively remove constraints from active if test_active returns True when they are removed
-        i = 0
-        while i < len(active):
-            temp_active = active[:i] + active[i + 1:]
-            if test_active(prob, objective, temp_active, rho=rho, solver=solver):
-                # Remove constraint and don't increment i
-                active.pop(i)
-            else:
-                i += 1
-        # At the end, active contains only constraints whose removal makes test_active return False
-        if not test_active(prob, objective, active, rho=rho, solver=solver):
+        print("Screened candidates do not reproduce the optimum "
+              "(inaccurate duals or degeneracy); recovering from the full list.")
+        support = _prune(objective, list(constraints), non_risk, ref, solver=solver)
+        if not test_support(objective, support, non_risk, ref, solver=solver):
             raise ValueError("Error calculating support list! Perhaps try another solver?")
-    else:
-        # If solution does not change then likely to be non-degenerate, check for true support list as solvers can be incorrect
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = list(executor.map(
-                lambda a: test_active(prob, objective, [constraint for constraint in active if constraint != a],
-                                      rho=rho, solver=solver),
-                active
-            ))
-        drop = [a for a, should_drop in zip(active, results) if should_drop]
-        if not test_active(prob, objective, [constraint for constraint in active if constraint not in drop], rho=rho,solver=solver):
-            degeneracy = True
-            print("Reduced version of active constraints are not valid. Lower bound not viable likely due to degeneracy.")  # TODO: in theory can have degeneracy here too! SVM p=0.1 fails here!!
-            # Iteratively remove constraints from active if test_active returns True when they are removed
-            i = 0
-            while i < len(active):
-                temp_active = active[:i] + active[i + 1:]
-                if test_active(prob, objective, temp_active, rho=rho, solver=solver):
-                    # Remove constraint and don't increment i
-                    active.pop(i)
-                else:
-                    i += 1
-            # At the end, active contains only constraints whose removal makes test_active return False
-            if not test_active(prob, objective, active, rho=rho, solver=solver):
-                raise ValueError("Error calculating support list! Perhaps try another solver?")
-        else:
-            active = [constraint for constraint in active if constraint not in drop]
 
-    if non_risk_constraints in active:
-        active.remove(non_risk_constraints)
-        complexity = len(active)
-    else:
-        complexity = len(active)
-
-    return complexity, active, degeneracy
+    return len(support), support, degeneracy
