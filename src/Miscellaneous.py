@@ -129,6 +129,35 @@ def test_support(objective, support, non_risk, ref, solver=None):
         return False
 
 
+def _is_slack(constraint, atol=1e-6, rtol=1e-6):
+    """Return ``True`` when `constraint` is strictly slack (satisfied with
+    positive margin, hence neither active nor violated) at the currently
+    stored solution.
+
+    Interior-point solvers routinely leave small nonzero duals on inactive
+    constraints, so a constraint passing the dual screen is not necessarily a
+    support scenario. The activity margin -- ``min(rhs - lhs)`` for scalar or
+    vector inequalities, the smallest eigenvalue for PSD constraints -- decides:
+    a margin clearly above the scale-aware tolerance means the dual was
+    spurious. Must be called while the original solution is still stored on
+    the variables (before any re-solve overwrites them). Errs on the side of
+    ``False`` (treated as active) when the margin cannot be evaluated.
+    """
+    try:
+        if isinstance(constraint, cp.constraints.PSD):
+            X = np.asarray(constraint.args[0].value, dtype=float)
+            margin = float(np.min(np.linalg.eigvalsh((X + X.T) / 2.0)))
+            scale = float(np.max(np.abs(X)))
+        else:
+            lhs = np.asarray(constraint.args[0].value, dtype=float)
+            rhs = np.asarray(constraint.args[1].value, dtype=float)
+            margin = float(np.min(rhs - lhs))
+            scale = max(float(np.max(np.abs(lhs))), float(np.max(np.abs(rhs))))
+        return margin > atol + rtol * scale
+    except Exception:
+        return False
+
+
 def _prune(objective, candidates, non_risk, ref, solver=None):
     """Greedily drop scenario constraints whose removal leaves the optimum
     unchanged, returning an irreducible support list."""
@@ -150,11 +179,26 @@ def get_support(constraints, non_risk_constraints, prob, objective, solver=None,
     irreducible subset of the active ones (cf. the support-list definition).
     Candidates are screened by dual value -- under relaxation the dual
     variables of a violated constraint sum to rho, so both violated and active
-    constraints are captured -- then greedily pruned by re-solving and
-    comparing the optimal value. Hard constraints are always enforced in
-    re-solves and never counted. If the screened set fails to reproduce the
-    optimum (inaccurate solver duals or degeneracy), the search restarts from
-    the full scenario-constraint list.
+    constraints are captured (these are the *support scenarios*) -- then
+    greedily pruned by re-solving and comparing the optimal value. Hard
+    constraints are always enforced in re-solves and never counted.
+
+    Non-degeneracy is equivalent to the support scenarios forming a support
+    list, so the prune doubles as a degeneracy test. Interior-point solvers
+    may leave a small nonzero dual on constraints that are neither active nor
+    violated, so each screened constraint's activity margin is recorded at the
+    optimum (see ``_is_slack``) and only the removal of a genuinely active or
+    violated constraint raises ``degeneracy`` -- the support scenarios are
+    then reducible, more than one support list exists, and the lower risk
+    bound is not certified. Removals of spuriously screened (strictly slack)
+    constraints are discounted as solver dual noise.
+
+    If the screened set fails to reproduce the
+    optimum (inaccurate solver duals, or a degenerate instance), the support
+    list is instead recovered by pruning the full scenario-constraint list.
+    That recovery yields a valid support list but cannot certify it is of
+    minimum cardinality, so ``degeneracy`` is raised conservatively and the
+    two-sided lower risk bound should not be trusted in that case.
 
     Parameters
     ----------
@@ -183,7 +227,11 @@ def get_support(constraints, non_risk_constraints, prob, objective, solver=None,
     support : list
         The support list of CVXPY scenario constraint objects.
     degeneracy : bool
-        ``True`` if the recovery procedure was used.
+        ``True`` when the support list is not certified minimal -- either
+        pruning removed a genuinely active or violated constraint (the support
+        scenarios were reducible) or the dual screen failed and the list was
+        recovered from the full constraint set. In both cases the lower risk
+        bound is not certified.
 
     Raises
     ------
@@ -200,13 +248,43 @@ def get_support(constraints, non_risk_constraints, prob, objective, solver=None,
         return dv is not None and np.max(np.abs(np.asarray(dv))) > threshold
 
     screened = [c for c in constraints if is_candidate(c)]
+    # Activity margins must be captured now: the re-solves inside
+    # test_support/_prune overwrite the shared variable values.
+    spurious = {id(c) for c in screened if _is_slack(c)}
 
     if test_support(objective, screened, non_risk, ref, solver=solver):
         support = _prune(objective, screened, non_risk, ref, solver=solver)
+        support_ids = {id(c) for c in support}
+        removed = [c for c in screened if id(c) not in support_ids]
+        genuine = [c for c in removed if id(c) not in spurious]
+        if genuine:
+            # PRUNE removed a constraint that was genuinely active or violated
+            # at the optimum: the support scenarios are reducible, more than
+            # one support list exists, and the instance is degenerate (its
+            # lower risk bound is not certified). Removing a spuriously
+            # screened constraint (strictly slack, near-threshold dual left by
+            # the solver) says nothing about degeneracy and is discounted.
+            degeneracy = True
+            print(f"PRUNE removed {len(genuine)} active/violated support "
+                  f"scenario(s) ({len(screened)} screened -> {len(support)} "
+                  f"irreducible); flagging degeneracy (lower risk bound not "
+                  f"certified).")
+        elif removed:
+            print(f"Discarded {len(removed)} spuriously screened constraint(s) "
+                  f"(strictly slack, near-threshold duals); remaining support "
+                  f"scenarios are irreducible: non-degenerate.")
     else:
+        # The dual-screened candidates did not reproduce the optimum, so the
+        # support list is recovered by pruning the full constraint set. Pruning
+        # the full set gives a valid but not necessarily minimal support list,
+        # and cannot tell us whether the true support list is unique -- whether
+        # the screen failed from inaccurate duals or genuine degeneracy. We
+        # therefore raise the degeneracy flag conservatively: the two-sided
+        # lower risk bound is not trustworthy in this case.
         degeneracy = True
-        print("Screened candidates do not reproduce the optimum "
-              "(inaccurate duals or degeneracy); recovering from the full list.")
+        print("Dual-screened candidates did not reproduce the optimum; "
+              "recovering the support list from the full constraint set "
+              "(flagging degeneracy: lower risk bound not certified).")
         support = _prune(objective, list(constraints), non_risk, ref, solver=solver)
         if not test_support(objective, support, non_risk, ref, solver=solver):
             raise ValueError("Error calculating support list! Perhaps try another solver?")
