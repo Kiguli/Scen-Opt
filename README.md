@@ -117,26 +117,26 @@ The `benchmarks/` directory contains 12 case studies spanning all three program 
 | Benchmark | Type | d | q | m_s | m_h | rho | tau | N | beta | k | epsilon_lower | epsilon_upper | Time (s) | Data Source |
 |-----------|------|---|---|-----|-----|-----|-----|---|------|---|---------------|---------------|----------|-------------|
 | Half Width | LP | 2 | 1 | 2 | 0 | 0 | 0 | 100 | 1e-6 | 2 | 0 | 0.2085 | 1.2 | --- |
-| Growth Bound | LP | 12 | 6 | 3 | 6 | 0 | 0 | 3127 | 1e-6 | 6 | 0 | 0.0103 | 1276.8 | --- |
+| Growth Bound | LP | 12 | 6 | 3 | 6 | 0 | 0 | 3127 | 1e-6 | 6 | N/A | 0.0103 | 1276.8 | --- |
 | Inventory | LP | 11 | 15 | 6 | 17 | 100 | 0 | 500 | 1e-6 | 7 | 0 | 0.0666 | 4.0 | --- |
 | Portfolio CVaR | LP | 13 | 12 | 4 | 27 | 0.016 | 0 | 1255 | 1e-6 | 3 | 0 | 0.0203 | 22.0 | Yahoo Finance |
 | Power Dispatch | LP | 120 | 48 | 48 | 330 | 100 | 0 | 150 | 1e-6 | 34 | 0.0791 | 0.4496 | 2.9 | --- |
 | Iris SVM | QP | 3 | 3 | 1 | 0 | 0 | 0 | 150 | 1e-6 | 2 | 0 | 0.1441 | 1.2 | UCI Iris |
 | Robot Navigation | QP | 118 | 1 | 3 | 320 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0403 | 1.6 | --- |
-| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-6 | 5 | 0 | 0.1414 | 112.3 | TROTS |
+| Radiation Therapy | QP | 50 | 3 | 80 | 100 | 0 | 0.1 | 200 | 1e-6 | 5 | N/A | 0.1414 | 112.3 | TROTS |
 | LPV Stability | SDP | 3 | 1 | 2 | 2 | 1 | 0 | 100 | 1e-6 | 1 | 0 | 0.1858 | 1.7 | --- |
 | Quadratic Stability | SDP | 6 | 2 | 3 | 3 | 0 | 0 | 500 | 1e-6 | 1 | 0 | 0.0403 | 2.2 | --- |
 | Covariance Estimation | SDP | 15 | 5 | 5 | 5 | 0 | 0 | 178 | 1e-6 | 7 | 0 | 0.1780 | 2.1 | UCI Wine |
 | Min. Encl. Ellipsoid | SDP | 15 | 5 | 1 | 5 | 0 | 0 | 569 | 1e-6 | 5 | 0 | 0.0518 | 235.6 | UCI Breast Cancer |
 
-d = decision variables, q = uncertainty dimension, m_s = scenario constraints per sample, m_h = hard constraints, N = number of scenarios, k = complexity (support constraints). Solve times on a desktop with an Intel Core Ultra 9 285K (24 cores) and 64 GB RAM running Windows 11.
+d = decision variables, q = uncertainty dimension, m_s = scenario constraints per sample, m_h = hard constraints, N = number of scenarios, k = complexity (support constraints). N/A = degeneracy detected, so the theoretical lower risk bound is not certified. Solve times on a desktop with an Intel Core Ultra 9 285K (24 cores) and 64 GB RAM running Windows 11.
 
 ### Benchmark Descriptions
 
 **Linear Programs:**
 
 - **Half Width** (`LP_half_width_2d`) -- Find the smallest interval enclosing 100 points sampled from [0, 1]. A minimal introductory example with 2 decision variables.
-- **Growth Bound** (`LP_growth_bound_12d`) -- Compute a data-driven growth bound for finite abstraction of a 3D vehicle dynamics system from 3127 sampled trajectories (Kazemi et al. 2024).
+- **Growth Bound** (`LP_growth_bound_12d`) -- Compute a data-driven growth bound for finite abstraction of a 3D vehicle dynamics system from 3127 sampled trajectories (Kazemi et al. 2024). Degeneracy is detected: essentially all scenario constraints are active at the optimum while only 6 form the support list, so the lower risk bound is not certified.
 - **Inventory** (`LP_inventory_11d`) -- Optimize daily ordering of 5 perishable produce items under uncertain yield, demand, and warehouse packing. Budget $12,000, warehouse 800 cu.ft.
 - **Portfolio CVaR** (`LP_portfolio_cvar_13d`) -- Minimize Conditional Value-at-Risk (95%) for a pension fund across 8 ETF asset classes using the Rockafellar-Uryasev formulation. Real market data from Yahoo Finance.
 - **Power Dispatch** (`LP_power_dispatch_120d`) -- Schedule 3 thermal generators over 24 hours to meet demand with uncertain wind and solar generation. 120 decision variables, 330 hard constraints.
@@ -145,7 +145,7 @@ d = decision variables, q = uncertainty dimension, m_s = scenario constraints pe
 
 - **Iris SVM** (`QP_Iris_minimal_3d`) -- Hard-margin SVM separating Iris Setosa from other species using petal measurements from the UCI Iris dataset.
 - **Robot Navigation** (`QP_cbf_robot_navigation_118d`) -- Navigate a point robot from start to goal around a wall obstacle with uncertain wall position. 20 timesteps, double-integrator dynamics, 118 decision variables.
-- **Radiation Therapy** (`QP_radiation_therapy_50d`) -- Design a prostate brachytherapy plan under catheter placement uncertainty using TROTS dose-influence data. 50 dwell positions, 100 voxels, 80 dose constraints per scenario.
+- **Radiation Therapy** (`QP_radiation_therapy_50d`) -- Design a prostate brachytherapy plan under catheter placement uncertainty using TROTS dose-influence data. 50 dwell positions, 100 voxels, 80 dose constraints per scenario. Degeneracy is detected: 20 scenario constraints are active at the optimum while only 5 form the support list, so the lower risk bound is not certified.
 
 **Semidefinite Programs:**
 

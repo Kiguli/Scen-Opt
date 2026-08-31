@@ -56,7 +56,7 @@
   "k": 5,
   "eps_lower": 0.0,
   "eps_upper": 0.1413759133502026,
-  "degeneracy": false,
+  "degeneracy": true,
   "rho": 0.0,
   "tau": 0.1,
   "dose_prescribed": 145.0,

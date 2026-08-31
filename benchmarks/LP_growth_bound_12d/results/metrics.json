@@ -40,5 +40,5 @@
   "k": 6,
   "eps_lower": 0.0,
   "eps_upper": 0.010266487573906823,
-  "degeneracy": false
+  "degeneracy": true
 }
