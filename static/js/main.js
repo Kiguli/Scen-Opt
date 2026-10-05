@@ -2138,6 +2138,17 @@ function loadProblemJSON() {
         var resultBox = document.getElementById('result-box');
         if (resultBox) resultBox.innerHTML = '<p>No result yet.</p>';
 
+        // Treat empty fields (null, "", [] or {}) as omitted, so a program can
+        // list fields it does not use (e.g. "G": [] with no hard constraints).
+        Object.keys(data).forEach(function(key) {
+            const v = data[key];
+            if (v === null || v === '' ||
+                (Array.isArray(v) && v.length === 0) ||
+                (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0)) {
+                delete data[key];
+            }
+        });
+
         const type = (data.type || '').toUpperCase();
         if (!['LP', 'QP', 'SDP'].includes(type)) {
             alert('JSON must include a "type" field with value "LP", "QP", or "SDP".');

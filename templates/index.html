@@ -769,8 +769,10 @@
                         <ul>
                             <li><b>LP:</b> <code>type</code>, <code>A_d</code>, <code>b_d</code>, <code>c</code>. Optional: <code>G</code>, <code>h</code>, <code>rho</code>, <code>tau</code>, <code>confidence</code>, <code>p</code>, <code>x_ref</code>.</li>
                             <li><b>QP:</b> Same as LP, plus <code>Q</code>.</li>
-                            <li><b>SDP:</b> <code>type</code>, <code>F_d</code> (dict of expression matrices keyed "0","1",...), <code>c</code>. Optional: <code>E</code> (dict of numeric matrices), <code>Q</code>, <code>rho</code>, <code>tau</code>, <code>confidence</code>.</li>
+                            <li><b>SDP:</b> <code>type</code>, <code>F_d</code> (dict of expression matrices keyed "0","1",...), <code>c</code>. Optional: <code>E</code> (dict of numeric matrices), <code>Q</code>, <code>rho</code>, <code>tau</code>, <code>confidence</code>, <code>p</code>, <code>x_ref</code>.</li>
                         </ul>
+                        <p>Optional fields that a problem does not use can be omitted or left empty
+                           (<code>[]</code>, <code>""</code> or <code>null</code>).</p>
                         <h6><b>JSON format:</b></h6>
                         <pre style="background:#f8f9fa; padding:10px; border-radius:4px; font-size:0.85em;">{
   "type": "LP",

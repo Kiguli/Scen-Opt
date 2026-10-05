@@ -47,6 +47,32 @@ def test_solve_lp_route(client):
     assert data["optimal_x"][0] is not None
 
 
+@pytest.mark.parametrize("theta_bar", ["", "null", '""', "[]"])
+def test_solve_lp_route_empty_theta_bar(client, theta_bar):
+    """An empty x_ref (as sent for a program JSON with "x_ref": null, "" or []) is treated as unset."""
+    deltas = np.array([0.1, 0.4, 0.9])
+    csv_bytes = "\n".join(str(v) for v in deltas).encode()
+
+    resp = client.post("/solve", data={
+        "active_tab": "lp-tab",
+        "A_d": '[["-1", "-1"], ["1", "-1"]]',
+        "b_d": '[["delta[0]"], ["-delta[0]"]]',
+        "c": '[["0"], ["1"]]',
+        "rho": "0",
+        "tau": "0",
+        "theta_bar": theta_bar,
+        "p": "",
+        "solver": "CLARABEL",
+        "confidence": "1e-06",
+        "file": (io.BytesIO(csv_bytes), "scenarios.csv"),
+    }, content_type="multipart/form-data")
+
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["errorcode"] == ["None"]
+    np.testing.assert_allclose(np.ravel(data["optimal_x"][0]), [0.5, 0.4], atol=1e-6)
+
+
 def test_solve_qp_route(client):
     """POST /solve with QP form data returns optimal_x."""
     scenarios = np.array([[2, 1, -100], [3, 2, -120], [-1, 0, 0], [0, -1, 0]])

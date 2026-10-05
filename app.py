@@ -224,9 +224,11 @@ def _parse_theta_bar(raw):
     accepts any of those and returns a 1-D numpy float array, or 0.0 when
     the field is unset (backward compat with the previous default).
     """
-    if raw is None or raw == '':
+    if raw is None:
         return 0.0
     s = raw.strip()
+    if s in ('', 'null', '""', '[]'):
+        return 0.0
     # Try JSON first (the standard path for matrix-modal entries).
     try:
         parsed = json_module.loads(s)
