@@ -43,7 +43,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
         # Directory / service still carry the pre-rename "scen-o-con" name
         # on the live server. Flip both to "scen-opt" once the server-side
-        # migration has been done (see README → Renaming the GitHub Repository).
+        # migration has been done (see MAINTAINING.md → Web app deployment).
         run: |
           ssh target << 'EOF'
             set -e

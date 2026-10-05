@@ -8,7 +8,13 @@ The easiest way to run Scen-Opt locally is with Docker. No Python installation o
 
 ## Quick Start
 
-Build the image:
+Run the pre-built image from the GitHub Container Registry (use a release tag such as `v1.0` instead of `latest` for an exact version):
+
+```bash
+docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
+```
+
+Or build the image yourself:
 
 ```bash
 docker build -t scen-opt .

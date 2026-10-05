@@ -274,75 +274,28 @@ Identifies the support list of a solved scenario program: the constraints whose 
 
 ## Docker
 
-The easiest way to run Scen-Opt locally without managing Python dependencies is with Docker.
+The easiest way to run Scen-Opt locally without managing Python dependencies is with Docker. A pre-built image is published on the GitHub Container Registry:
 
 ```bash
-# Build the image
-docker build -t scen-opt .
+# Latest version
+docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
 
-# Run the container
+# Exact release, e.g. v1.0
+docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:v1.0
+```
+
+To build the image yourself instead:
+
+```bash
+docker build -t scen-opt .
 docker run -p 5000:5000 scen-opt
 ```
 
 Open `http://localhost:5000` in your browser. See [DOCKER.md](DOCKER.md) for MOSEK license mounting, custom port mapping, and worker configuration.
 
-### Publishing as a GitHub Package
-
-To publish the Docker image to GitHub Container Registry so others can pull it directly:
-
-1. Create a Personal Access Token with `write:packages` scope at [GitHub Settings > Tokens](https://github.com/settings/tokens)
-
-2. Log in to the registry:
-   ```bash
-   echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
-   ```
-
-3. Build, tag, and push:
-   ```bash
-   docker build -t ghcr.io/kiguli/scen-opt:latest .
-   docker push ghcr.io/kiguli/scen-opt:latest
-   ```
-
-4. Make the package public (optional): go to the package settings at `https://github.com/users/Kiguli/packages/container/package/scen-opt` and set visibility to **Public**.
-
-Users can then run the tool with a single command:
-
-```bash
-docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
-```
-
-## Renaming the GitHub Repository (from Scen-O-Con to Scen-Opt)
-
-The codebase, docs, CI, and Docker labels have all been moved to the name **Scen-Opt**. The GitHub repository itself still needs to be renamed on the web side. One-off migration steps:
-
-1. **Rename on GitHub.** Go to `https://github.com/Kiguli/Scen-O-Con/settings` → top of the page → change the repository name to `Scen-Opt` → **Rename**. GitHub will keep the old `Scen-O-Con` URL working indefinitely via automatic redirects, but prefer the new name going forward.
-2. **Update your local remote URL.**
-   ```bash
-   cd path/to/local/checkout
-   git remote set-url origin https://github.com/Kiguli/Scen-Opt.git
-   git remote -v   # verify
-   ```
-3. **Update any open forks / clones.** Collaborators should run the same `git remote set-url` command once.
-4. **Update Docker / ghcr image tags** if you've published images — rebuild and push under the new name:
-   ```bash
-   docker build -t ghcr.io/kiguli/scen-opt:latest .
-   docker push ghcr.io/kiguli/scen-opt:latest
-   ```
-   (The package appears as a new one under `Scen-Opt`; delete the old `scen-o-con` package from GitHub → Packages if desired.)
-5. **Deployment host (if used).** The deploy workflow at `.github/workflows/deploy.yml` and the systemd unit are already named `scen-opt`. If an older `scen-o-con.*` systemd unit or nginx server name is still live, rename them:
-   ```bash
-   sudo systemctl stop scen-o-con && sudo systemctl disable scen-o-con
-   sudo mv /srv/scen-o-con.woodingben.com /srv/scen-opt.woodingben.com
-   sudo mv /etc/systemd/system/scen-o-con.service /etc/systemd/system/scen-opt.service
-   sudo systemctl daemon-reload && sudo systemctl enable --now scen-opt
-   ```
-6. **Browser bookmarks, pip/poetry caches, IDE workspace references** — update anywhere that hard-codes the old URL. The GitHub redirect covers cloning and browsing; it does **not** cover `pip install git+...` pinning or CI secrets tied to the old name.
-
-Sphinx docs, the web UI title (`templates/index.html`), Dockerfile labels, and the README are all updated already — no further code changes are needed after step 1 on GitHub.
-
 ## Testing
 
-The test suite uses [pytest](https://docs.pytest.org/) with 42 tests covering all core modules: solvers (LP, QP, SDP), risk quantification, matrix/tensor parsing, file loading utilities, and Flask route integration.
+The test suite uses [pytest](https://docs.pytest.org/) and covers all core modules: solvers (LP, QP, SDP), risk quantification, matrix/tensor parsing, file loading utilities, and Flask route integration.
 
 ```bash
 pip install pytest
@@ -352,5 +305,9 @@ python -m pytest tests/ -v
 Tests run automatically on push and pull request via GitHub Actions (see `.github/workflows/test.yml`).
 
 ## License
+
+Scen-Opt is released under the [MIT License](LICENSE).
+
+## Acknowledgements
 
 This work was supported in part by an EPSRC Doctoral Prize Research Fellowship at Newcastle University.
