@@ -1,10 +1,10 @@
-import jax
 # The bisection compares two betainc terms whose difference is ~1e-8 near the
 # upper root; in JAX's default float32 that difference is pure noise, which
 # flips the comparison and can leave epsU understated by up to ~0.01 at
 # beta=1e-6 (the high-confidence regime this tool targets). float64 makes the
-# root agree with a float64 SciPy reference to ~1e-10.
-jax.config.update("jax_enable_x64", True)
+# root agree with a float64 SciPy reference to ~1e-10. It is switched on only
+# inside quantify_risk (enable_x64), not for the whole Python process.
+from jax.experimental import enable_x64
 from jax.scipy.special import betainc
 
 def quantify_risk(k,N,beta):
@@ -36,12 +36,30 @@ def quantify_risk(k,N,beta):
     epsU : float
         Upper bound on the constraint violation probability.
 
+    Raises
+    ------
+    ValueError
+        If ``N < 1``, ``k`` is not between 0 and ``N``, or ``beta`` is not
+        strictly between 0 and 1.
+
     Notes
     -----
     The incomplete beta function ``betainc`` used here follows the JAX/SciPy
     argument convention, which differs from MATLAB (the first argument appears
     last in JAX).
     """
+    if int(N) != N or N < 1:
+        raise ValueError(f"N must be a positive integer (got {N}).")
+    if int(k) != k or not 0 <= k <= N:
+        raise ValueError(f"k must be an integer between 0 and N = {N} (got {k}).")
+    if not 0 < beta < 1:
+        raise ValueError(f"beta must lie strictly between 0 and 1 (got {beta}).")
+    with enable_x64():
+        return _risk_bounds(int(k), int(N), beta)
+
+
+def _risk_bounds(k, N, beta):
+    """Bisection for the lower and upper risk bounds (see quantify_risk)."""
     t1 = 0.0
     t2 = k/N
     threshold = 1e-10
@@ -61,7 +79,7 @@ def quantify_risk(k,N,beta):
     #print("epsL = ", epsL)
 
     if (k==N):
-        epsU = 1 #set upper bound
+        epsU = 1.0 #set upper bound
     else:
         t1 = k/N
         t2 = 1
@@ -78,13 +96,4 @@ def quantify_risk(k,N,beta):
         epsU = t2 #set upper bound
     #print("epsU = ", epsU)
     # Return results
-    return epsL, epsU
-
-def quantify_conf():
-    """
-        To create...
-    """
-
-
-    # Return results
-    return 0.0
+    return float(epsL), float(epsU)

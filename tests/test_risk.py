@@ -1,3 +1,6 @@
+import numpy as np
+import pytest
+
 from src.Risk import quantify_risk
 
 
@@ -39,3 +42,19 @@ def test_risk_bounds_high_beta():
     _, epsU_low_beta = quantify_risk(k=10, N=4000, beta=1e-9)
     _, epsU_high_beta = quantify_risk(k=10, N=4000, beta=1e-3)
     assert epsU_high_beta < epsU_low_beta
+
+
+def test_risk_invalid_inputs_raise():
+    """k > N, N = 0 and β outside (0, 1) raise ValueError."""
+    for k, N, beta in [(3, 2, 1e-6), (0, 0, 1e-6), (1, 10, 0.0), (1, 10, 1.0)]:
+        with pytest.raises(ValueError):
+            quantify_risk(k, N, beta)
+
+
+def test_risk_returns_floats_and_keeps_x64_local():
+    """Bounds are plain floats, and importing Risk does not switch JAX to 64-bit globally."""
+    import jax
+    epsL, epsU = quantify_risk(5, 5, 1e-6)
+    assert isinstance(epsL, float) and isinstance(epsU, float) and epsU == 1.0
+    assert not jax.config.jax_enable_x64
+    np.testing.assert_allclose(quantify_risk(2, 100, 1e-6)[1], 0.20852406, atol=1e-8)
