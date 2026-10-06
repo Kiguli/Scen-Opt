@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires matplotlib (not in requirements.txt): pip install matplotlib
 """Generate a trajectory animation GIF for the robot navigation benchmark."""
 
 import sys, os, json

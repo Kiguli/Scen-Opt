@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires yfinance (not in requirements.txt): pip install yfinance
 """
 Golden State Teachers' Pension Fund CVaR Portfolio Benchmark
 

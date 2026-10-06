@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires matplotlib (not in requirements.txt): pip install matplotlib
 """Generate a clean, paper-ready figure for the LPV Stability 3D benchmark."""
 
 import sys, os, json

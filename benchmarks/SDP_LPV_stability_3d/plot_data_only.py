@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires matplotlib (not in requirements.txt): pip install matplotlib
 """Generate a paper-ready figure showing only the LPV trajectories (no Lyapunov ellipse)."""
 
 import os

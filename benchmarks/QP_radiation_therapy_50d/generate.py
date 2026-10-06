@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires mat73 (not in requirements.txt): pip install mat73
 """
 Prostate Brachytherapy Benchmark Data Generator (TROTS Dataset)
 

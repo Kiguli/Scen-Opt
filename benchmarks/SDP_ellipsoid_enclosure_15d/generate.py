@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires scikit-learn (not in requirements.txt): pip install scikit-learn
 """
 Generate minimum enclosing ellipsoid data from Breast Cancer Wisconsin dataset for SDP.
 
