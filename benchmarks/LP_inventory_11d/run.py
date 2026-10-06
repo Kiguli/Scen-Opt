@@ -15,12 +15,13 @@ The goal is to minimize ordering costs while maintaining service levels,
 subject to budget, warehouse capacity, and supplier constraints.
 
 Usage:
-    python test_and_visualize.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 
 # Add project root to path for imports
@@ -97,6 +98,11 @@ def load_vector(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 65)
     print("BENCHMARK: Fresh Produce Distribution (LP)")
     print("Regional Distributor Ordering Under Uncertainty")
@@ -146,7 +152,7 @@ def main():
     # Data files contain the augmented formulation x_aug = [q; zeta] with
     # rho embedded in c, A_d augmented with -I slack columns, and G/h
     # extended with zeta >= 0 constraints. See generate.py for details.
-    print("Solving LP with MOSEK...")
+    print(f"Solving LP with {args.solver}...")
 
     try:
         x_full, _, cost, N_out, k, constraints, degeneracy = solve_lp(
@@ -160,7 +166,7 @@ def main():
             x_ref=np.zeros((n_aug, 1)),
             rho=0.0,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         x = x_full[:n_vars]
         zeta = x_full[n_vars:]

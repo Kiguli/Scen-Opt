@@ -13,12 +13,13 @@ SDP formulation:
   Objective: maximize trace(P) = minimize -trace(P)  (tightest ellipsoid)
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -77,6 +78,11 @@ def load_parameters(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 60)
     print("BENCHMARK: Minimum Enclosing Ellipsoid (SDP)")
     print("Breast Cancer Wisconsin — Tightest Containment Ellipsoid")
@@ -120,7 +126,7 @@ def main():
     print()
 
     # Solve
-    print("Solving SDP with MOSEK...")
+    print(f"Solving SDP with {args.solver}...")
 
     try:
         x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
@@ -133,12 +139,12 @@ def main():
             x_ref=np.zeros(n_vars),
             rho=0.0,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         status = "SUCCESS"
-        print(f"Solved with MOSEK")
+        print(f"Solved with {args.solver}")
     except Exception as e:
-        print(f"MOSEK failed: {e}")
+        print(f"{args.solver} failed: {e}")
         print("Attempting with SCS solver...")
         try:
             x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(

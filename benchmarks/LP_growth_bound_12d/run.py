@@ -3,7 +3,7 @@
 Solve the Growth Bound benchmark using the scenario approach LP solver.
 
 Usage:
-    python run.py [--mini]
+    python run.py [--mini] [--solver SOLVER]
 """
 
 import sys
@@ -67,6 +67,8 @@ def load_vector(filepath):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--mini', action='store_true', help='Use mini dataset (100 samples)')
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
     args = parser.parse_args()
 
     print("=" * 65)
@@ -113,7 +115,7 @@ def main():
     print()
 
     # Solve LP
-    print("Solving LP with MOSEK...")
+    print(f"Solving LP with {args.solver}...")
     try:
         x, zeta, cost, N, k, constraints, degeneracy = solve_lp(
             deltas=scenarios,
@@ -126,7 +128,7 @@ def main():
             x_ref=np.zeros((n_vars, 1)),
             rho=rho,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         status = "SUCCESS"
         print(f"Solved successfully")

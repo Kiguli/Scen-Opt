@@ -3,12 +3,13 @@
 Solve the CVaR Portfolio benchmark using the scenario approach LP solver.
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 import pandas as pd
 
@@ -92,6 +93,11 @@ def load_vector(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 65)
     print("BENCHMARK: Pension Fund CVaR Portfolio Optimization (LP)")
     print("=" * 65)
@@ -138,7 +144,7 @@ def main():
     # Data files contain the augmented formulation x_aug = [x; zeta] with
     # rho embedded in c, A_d augmented with -I slack columns, and G/h
     # extended with zeta >= 0 constraints. See generate.py for details.
-    print("Solving LP with MOSEK...")
+    print(f"Solving LP with {args.solver}...")
 
     try:
         x_full, _, cost, N_out, k, constraints, degeneracy = solve_lp(
@@ -152,7 +158,7 @@ def main():
             x_ref=np.zeros((n_aug, 1)),
             rho=0.0,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         x = x_full[:n_vars]
         zeta = x_full[n_vars:]
