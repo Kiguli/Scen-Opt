@@ -10,7 +10,7 @@ The tool is implemented as a Python Flask web application with a modern JavaScri
 
 ## Installation
 
-**Prerequisites:** Python 3.12+ and pip.
+**Prerequisites:** Python 3.10 or newer (3.12 recommended) and pip.
 
 ```bash
 # Clone the repository
@@ -26,7 +26,7 @@ python3 app.py
 
 The server starts at `http://127.0.0.1:5000`. Open this URL in a browser to access the web interface.
 
-**Optional:** For best performance on SDP problems, install [MOSEK](https://www.mosek.com/) (free academic license available). See [MOSEK Support](#mosek-support) for license configuration.
+**MOSEK:** [MOSEK](https://www.mosek.com/) is the recommended solver: it is the most stable for these problems and was used for all published results. Its Python package is installed by `requirements.txt`, but it needs a licence (free for academics). See [MOSEK Support](#mosek-support) for license configuration.
 
 ## Quick Start
 
@@ -94,7 +94,7 @@ where the scenario constraints are Linear Matrix Inequalities (LMIs) parameteriz
 | Scenarios | delta_i | Sampled uncertainty realizations (N samples) |
 | Slack penalty | rho | Penalty on constraint relaxation (rho = 0 means hard scenario constraints) |
 | Regularization | tau | Regularization strength toward reference point x_ref |
-| Norm type | p | Norm for regularization (1, 2, inf, fro, nuc) |
+| Norm type | p | Norm for regularization (any p ≥ 1, inf, or fro) |
 | Confidence | beta | Confidence parameter for risk bounds (e.g. beta = 0.01 for 99% confidence) |
 
 ### Risk Quantification
@@ -269,7 +269,7 @@ Identifies the support list of a solved scenario program: the constraints whose 
 
 - **License upload:** When MOSEK is selected as the solver, a modal prompts you to upload your `mosek.lic` file. The license is **not** stored on the server.
 - **Browser caching:** After the first upload, the license is cached in your browser's session storage. Subsequent solves skip the modal automatically. A cache indicator and "Clear" button appear below the solver dropdown.
-- **Local license:** If MOSEK is installed locally with a system license (e.g., at `~/mosek/mosek.lic`), click "Skip" in the modal to use it directly.
+- **Local license:** If MOSEK is installed locally with a system license (e.g., at `~/mosek/mosek.lic`), click "I have a local license" in the modal to use it directly.
 - **Concurrent users:** Each MOSEK solve with an uploaded license runs in an isolated subprocess with the license written to an ephemeral `/tmp` directory (RAM-backed, auto-purged). Multiple users can solve simultaneously without conflicts.
 
 ## Docker

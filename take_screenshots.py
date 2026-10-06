@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
-"""Take screenshots of the web interface for documentation."""
+"""Take screenshots of the web interface for documentation.
+
+Requires playwright (not in requirements.txt):
+    pip install playwright && playwright install chromium
+
+Start the app first (python app.py), then run from the repository root:
+    python take_screenshots.py [URL]     # default URL: http://127.0.0.1:5000/
+The screenshots are written to screenshots/.
+"""
 import asyncio
+import os
+import sys
 from playwright.async_api import async_playwright
 
-SCREENSHOTS_DIR = "/Users/ben/Documents/Tools/ScenarioApproachTool/screenshots"
+ROOT = os.path.dirname(os.path.abspath(__file__))
+SCREENSHOTS_DIR = os.path.join(ROOT, "screenshots")
+URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:5000/"
+BENCHMARK_DATA = os.path.join(ROOT, "benchmarks", "LP_half_width_2d", "data")
 
 async def main():
-    import os
     os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 
     async with async_playwright() as p:
@@ -16,17 +28,17 @@ async def main():
         # Handle alert dialogs automatically
         page.on("dialog", lambda d: asyncio.ensure_future(d.accept()))
 
-        await page.goto("http://127.0.0.1:5000/")
+        await page.goto(URL)
         await page.wait_for_load_state("networkidle")
         await asyncio.sleep(2)
 
-        # --- Load benchmark via Detect Program modal ---
+        # --- Load the benchmark via the Upload Program dialog ---
         await page.click('button[data-target="#detectProgramModal"]')
         await asyncio.sleep(1)
 
         # Upload the benchmark JSON
         await page.set_input_files('#detect-program-file',
-            "benchmarks/LP_half_width_2d/data/benchmark.json")
+            os.path.join(BENCHMARK_DATA, "program_symbolic.json"))
         await asyncio.sleep(0.5)
 
         # Click "Load" button
@@ -35,16 +47,17 @@ async def main():
 
         # Set multiple rho and tau values for interesting graphs
         # First select the general formulation to show rho+tau fields
-        await page.select_option('#lp-options', 'robust-regularization-relaxation')
+        await page.select_option('#lp-options', 'regularization-relaxation')
         await asyncio.sleep(0.5)
 
-        await page.fill('#lp-rho', '0,0.25,0.5,0.75,1')
+        # (rho = 0 is left out: relaxation with rho = 0 is unbounded.)
+        await page.fill('#lp-rho', '0.25,0.5,0.75,1')
         await page.fill('#lp-tau', '0,0.01,0.1,1')
         await asyncio.sleep(0.3)
 
         # Upload scenarios file
         await page.set_input_files('#file',
-            "benchmarks/LP_half_width_2d/data/scenarios.csv")
+            os.path.join(BENCHMARK_DATA, "scenarios.csv"))
         await asyncio.sleep(0.5)
 
         # Screenshot 1: Tool (everything above results, including Solve button)
@@ -57,7 +70,7 @@ async def main():
         result_box = await result_card.bounding_box()
 
         await page.screenshot(
-            path=f"{SCREENSHOTS_DIR}/1_tool.png",
+            path=f"{SCREENSHOTS_DIR}/scrn_1_tool.png",
             clip={"x": 0, "y": 0, "width": 1400, "height": result_box["y"] - 5},
             full_page=True
         )
@@ -76,21 +89,21 @@ async def main():
         result_card_el = page.locator('.card.mt-4:has(.card-title:has-text("Result"))').first
         await result_card_el.scroll_into_view_if_needed()
         await asyncio.sleep(0.5)
-        await result_card_el.screenshot(path=f"{SCREENSHOTS_DIR}/2_results.png")
+        await result_card_el.screenshot(path=f"{SCREENSHOTS_DIR}/scrn_2_results.png")
         print("Screenshot 2: Results table - done")
 
         # Screenshot 3: tau graph tab
         await page.click('a#result-graph2-tab')
         await asyncio.sleep(1.5)
         tau_pane = page.locator('#result-graph2')
-        await tau_pane.screenshot(path=f"{SCREENSHOTS_DIR}/3_tau_graph.png")
+        await tau_pane.screenshot(path=f"{SCREENSHOTS_DIR}/scrn_3_tau_graph.png")
         print("Screenshot 3: Tau graph - done")
 
         # Screenshot 4: rho graph tab
         await page.click('a#result-graph-tab')
         await asyncio.sleep(1.5)
         rho_pane = page.locator('#result-graph')
-        await rho_pane.screenshot(path=f"{SCREENSHOTS_DIR}/4_rho_graph.png")
+        await rho_pane.screenshot(path=f"{SCREENSHOTS_DIR}/scrn_4_rho_graph.png")
         print("Screenshot 4: Rho graph - done")
 
         await browser.close()
