@@ -4,6 +4,10 @@
 
 <h1 align="center">A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
 
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.23177689"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23177689.svg" alt="DOI"></a>
+</p>
+
 Scen-Opt is an open-source software tool for data-driven convex optimization using the scenario approach of Campi and Garatti. It solves **Linear Programs (LP)**, **Quadratic Programs (QP)**, and **Semidefinite Programs (SDP)** using only sampled uncertainty realizations, providing rigorous probabilistic guarantees on out-of-sample performance without requiring knowledge of the underlying probability distribution.
 
 The tool is implemented as a Python Flask web application with a modern JavaScript frontend, offering an intuitive graphical interface for specifying problems, uploading data, and inspecting results. It supports 27+ convex optimization solvers through CVXPY, including MOSEK, CLARABEL, SCS, and OSQP.
