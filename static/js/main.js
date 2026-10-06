@@ -232,9 +232,9 @@ function openMatrixModal(tab, matrix) {
 
 function getDynamicTip(matrix) {
     if (matrix === 'A_d') {
-        return "Manually enter the matrix. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+        return "Manually enter the matrix. Cells accept expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, ** (or ^) and functions such as <code>sin()</code>, <code>exp()</code>, <code>sqrt()</code>.";
     } else if (matrix === 'b_d') {
-        return "Manually enter the vector. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+        return "Manually enter the vector. Cells accept expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, ** (or ^) and functions such as <code>sin()</code>, <code>exp()</code>, <code>sqrt()</code>.";
     } else if (matrix === 'Q') {
         return "Manually enter the matrix. \\(Q\\) must be <b>symmetric</b> and <b>positive semidefinite</b> (\\(Q \\succeq 0\\)).";
     } else if (matrix === 'c') {
@@ -244,11 +244,11 @@ function getDynamicTip(matrix) {
     } else if (matrix === 'h') {
         return "Manually enter the hard constraint vector.";
     } else if (matrix === 'F_d') {
-        return "Manually enter the matrices. Each \\(F_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+        return "Manually enter the matrices. Each \\(F_j(\\delta)\\) must be <b>symmetric</b>. Cells accept expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, ** (or ^) and functions such as <code>sin()</code>, <code>exp()</code>, <code>sqrt()</code>.";
     } else if (matrix === 'E') {
         return "Manually enter the matrices. Each \\(E_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'A_da') {
-        return "Manually enter the matrices. Each \\(A_j(\\delta)\\) must be <b>symmetric</b>. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+        return "Manually enter the matrices. Each \\(A_j(\\delta)\\) must be <b>symmetric</b>. Cells accept expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, ** (or ^) and functions such as <code>sin()</code>, <code>exp()</code>, <code>sqrt()</code>.";
     } else if (matrix === 'A_a') {
         return "Manually enter the matrices. Each \\(G_j\\) must be <b>symmetric</b>.";
     } else if (matrix === 'C') {
@@ -258,7 +258,7 @@ function getDynamicTip(matrix) {
     } else if (matrix === 'theta-bar') {
         return "Manually enter the reference vector.";
     } else if (matrix === 'b_da') {
-        return "Manually enter the vectors. Cells accept SymPy expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, **.";
+        return "Manually enter the vectors. Cells accept expressions with <code>delta[k]</code> (delta[0] = 1st component of vector \\(\\delta\\), delta[1] = 2nd component of vector \\(\\delta\\), ...) including +, -, *, /, ** (or ^) and functions such as <code>sin()</code>, <code>exp()</code>, <code>sqrt()</code>.";
     } else if (matrix === 'b_a') {
         return "Manually enter the vectors.";
     }
@@ -294,9 +294,9 @@ function updateFormatReference(matrix) {
     // ── Cell content rules ──
     let html = '<h6><b>Cell content:</b></h6>';
     if (isDelta) {
-        html += '<p>This matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> SymPy expressions that reference ' +
+        html += '<p>This matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> expressions that reference ' +
                 '<code>delta[k]</code> (<code>delta[0]</code> = 1st component of \\(\\delta\\), <code>delta[1]</code> = 2nd component of \\(\\delta\\), \\(\\ldots\\)). ' +
-                'Operators <code>+ - * / **</code> and functions like <code>sin()</code>, <code>exp()</code> are allowed. ' +
+                'Operators <code>+ - * / **</code> and functions such as <code>sin()</code>, <code>cos()</code>, <code>exp()</code>, <code>log()</code>, <code>sqrt()</code>, <code>abs()</code> and the constants <code>pi</code>, <code>e</code> are allowed (<code>^</code> also means power). ' +
                 'Example cells: <code>delta[0] + 1</code>, <code>sin(delta[1])</code>, <code>2.5</code>.</p>';
         html += '<p><b>Mode note:</b> this matrix is only editable when the <b>Symbolic</b> input mode is selected. ' +
                 'In <b>Numeric</b> mode, \\(A(\\delta_i)\\) and \\(b(\\delta_i)\\) come directly from the uploaded scenario data ' +
@@ -372,9 +372,9 @@ function updateSDPFormatReference(matrix) {
 
     html += '<h6><b>Cell content:</b></h6>';
     if (isSoft) {
-        html += '<p>Each matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> SymPy expressions that reference ' +
+        html += '<p>Each matrix is <b>delta-capable</b> — cells accept <b>numeric values</b> <i>or</i> expressions that reference ' +
                 '<code>delta[k]</code> (<code>delta[0]</code> = 1st component of \\(\\delta\\), <code>delta[1]</code> = 2nd component of \\(\\delta\\), \\(\\ldots\\)). ' +
-                'Operators <code>+ - * / **</code> and functions like <code>sin()</code>, <code>exp()</code> are allowed. ' +
+                'Operators <code>+ - * / **</code> and functions such as <code>sin()</code>, <code>cos()</code>, <code>exp()</code>, <code>log()</code>, <code>sqrt()</code>, <code>abs()</code> and the constants <code>pi</code>, <code>e</code> are allowed (<code>^</code> also means power). ' +
                 'Every matrix must be <b>symmetric</b>.</p>';
         html += '<p><b>Mode note:</b> scenario LMI matrices \\(F_j(\\delta)\\) are only editable when the <b>Symbolic</b> input mode is selected. ' +
                 'In <b>Numeric</b> mode, \\(F_{0,i}, F_{1,i}, \\ldots, F_{d,i}\\) come directly from the uploaded scenario data ' +
@@ -431,7 +431,7 @@ function isCurrentMatrixDeltaCapable() {
 /**
  * Validate a single cell's text against the delta-capable rule:
  *   • numeric-only → must parse as a finite number
- *   • delta-capable → either a finite number, or a SymPy-ish expression
+ *   • delta-capable → either a finite number, or an expression in delta[k]
  * Returns '' if valid, otherwise a short reason.
  */
 function validateCellText(text, deltaCapable) {
@@ -1218,6 +1218,16 @@ function solve() {
     const check = validateSolveInputs();
     if (!check.valid) return;
 
+    const beta = Number((document.getElementById('confidence') || {}).value);
+    if (!(beta > 0 && beta < 1)) {
+        const errEl = document.getElementById('solve-error');
+        if (errEl) {
+            errEl.textContent = 'Enter the confidence parameter β, a number between 0 and 1 (e.g. 1e-06).';
+            errEl.style.display = 'block';
+        }
+        return;
+    }
+
     const selectedSolver = document.getElementById('solver').value;
 
     if (selectedSolver === 'MOSEK') {
@@ -1295,6 +1305,15 @@ function executeSolve(mosekLicenseFile) {
 
     document.getElementById('result-box').innerHTML = '<p>Solve button pressed, processing results...</p>';
 
+    // On the hosted app, suggest a local install once a solve runs for a while.
+    const isLocalHost = ['localhost', '127.0.0.1', '[::1]', ''].includes(window.location.hostname);
+    const slowSolveTimer = isLocalHost ? null : setTimeout(function() {
+        const box = document.getElementById('result-box');
+        if (box) box.insertAdjacentHTML('beforeend',
+            '<div class="alert alert-info mt-2">This problem is taking a while: problems of this size are better solved locally. ' +
+            'See the <a href="https://github.com/Kiguli/Scen-Opt/wiki/Local_Install" target="_blank" rel="noopener">local install guide</a>.</div>');
+    }, 30000);
+
     fetch(activeForm.action, {
         method: activeForm.method,
         body: formData
@@ -1302,7 +1321,12 @@ function executeSolve(mosekLicenseFile) {
         .then(response => {
             if (!response.ok) {
                 return response.text().then(text => {
-                    throw new Error('Server error (' + response.status + '): ' + text);
+                    let message = 'Server error (' + response.status + '): ' + text;
+                    try {
+                        const body = JSON.parse(text);
+                        if (body && body.error) message = body.error;
+                    } catch (e) { /* not JSON: keep the raw text */ }
+                    throw new Error(message);
                 });
             }
             return response.json();
@@ -1379,7 +1403,11 @@ function executeSolve(mosekLicenseFile) {
             $('#result-box .result-help-btn').popover({ trigger: 'hover', html: true });
 
             // Prepare risk lower and upper arrays
-            const riskLower = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[0] : r) : [data.risk];
+            // A degenerate run's lower bound is not certified, so it is left off the graphs (null = gap).
+            const degenerateRuns = Array.isArray(data.degeneracy) ? data.degeneracy : [data.degeneracy];
+            const riskLower = Array.isArray(data.risk)
+                ? data.risk.map((r, i) => degenerateRuns[i] ? null : (Array.isArray(r) ? r[0] : r))
+                : [degenerateRuns[0] ? null : data.risk];
             const riskUpper = Array.isArray(data.risk) ? data.risk.map(r => Array.isArray(r) ? r[1] : r) : [data.risk];
 
             // Assume data.rho_ and data.tau_ are arrays of equal length, and each (rho, tau) pair is unique
@@ -1581,7 +1609,8 @@ function executeSolve(mosekLicenseFile) {
             console.error('Error:', error);
             document.getElementById('result-box').innerHTML =
                 '<div class="alert alert-danger"><strong>Error:</strong> ' + error.message + '</div>';
-        });
+        })
+        .finally(() => clearTimeout(slowSolveTimer));
 }
 
 function generateResultTable(data) {
@@ -1646,12 +1675,18 @@ function generateResultTable(data) {
             if (opt === 'regularization-relaxation') return 'Confidence \\(1 - \\beta \\cdot n_{\\tau} \\cdot n_{\\rho}\\)';
             return 'Confidence \\(1 - \\beta\\)';
         })(), values: data.conf},
-        {label: 'Risk Bounds &epsilon;', values: data.risk},
+        {label: `Risk Bounds &epsilon; <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn result-help-btn"
+                data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true"
+                data-content="Lower and upper bounds on the risk, each holding with the confidence above. The upper bound always holds. The lower bound needs non-degeneracy: when degeneracy is detected it is not certified and is shown as N/A."><span class="dim-help-icon">?</span></button>`, values: data.risk},
         {label: 'Degeneracy Detected?', values: data.degeneracy},
         {label: 'Complexity (support list size)', values: data.active_con},
         {label: 'Number of data samples', values: data.num_deltas},
-        {label: 'Total Constraints', values: data.tot_con},
-        {label: 'Optimization Time (s)', values: data.solve_time},
+        {label: `Total Constraints <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn result-help-btn"
+                data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true"
+                data-content="The \\(N\\) scenario constraints plus the hard constraints (the rows of \\(G\\), or the hard LMI)."><span class="dim-help-icon">?</span></button>`, values: data.tot_con},
+        {label: `Optimization Time (s) <button type="button" class="btn btn-link p-0 ml-1 dim-help-btn result-help-btn"
+                data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true"
+                data-content="Time to solve the program and compute its support list (which re-solves the program)."><span class="dim-help-icon">?</span></button>`, values: data.solve_time},
         {label: 'Risk Computation Time (s)', values: data.risk_time},
         {label: '<i>Error</i>', values: data.errorcode}
     ];
@@ -1690,14 +1725,18 @@ function generateResultTable(data) {
             }
 
             if (row.label.includes('Risk Bounds') && Array.isArray(val) && val.length === 2) {
-                val = `<strong>[${fmt(val[0])}, ${fmt(val[1])}]</strong>`;
+                const degenerate = getValue(data.degeneracy, i) === true;
+                val = `<strong>[${degenerate ? 'N/A' : fmt(val[0])}, ${fmt(val[1])}]</strong>`;
             } else if (row.label.includes('Confidence')) {
                 // Clamp at 0 — over-aggressive sweeps can push 1 − β·q below
                 // zero, which is nonsensical to display. Reuse fmt() so a
                 // tiny but positive confidence still prints in scientific
                 // form rather than rounding to 0.0000.
-                const v = Number(val);
-                val = Number.isFinite(v) ? fmt(Math.max(0, v)) : val;
+                // Show enough digits that 1 − β is not rounded to 1.0000.
+                const v = Math.max(0, Number(val));
+                val = Number.isFinite(v)
+                    ? (v > 0.9999 && v < 1 ? String(Number(v.toPrecision(12))) : fmt(v))
+                    : val;
             } else if (row.label.includes('Optimal Cost')) {
                 val = `<strong>${fmt(val)}</strong>`;
             } else if (row.label.includes('Error')) {
