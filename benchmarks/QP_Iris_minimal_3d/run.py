@@ -3,12 +3,13 @@
 Solve the Iris SVM Classification benchmark using the scenario approach QP solver.
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 
 # Add project root to path for imports
@@ -57,6 +58,11 @@ def load_vector(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 65)
     print("BENCHMARK: Iris SVM Classification (QP)")
     print("=" * 65)
@@ -107,7 +113,7 @@ def main():
     print()
 
     # Solve QP
-    print("Solving QP with MOSEK...")
+    print(f"Solving QP with {args.solver}...")
     try:
         x, zeta, cost, N, k, constraints, degeneracy = solve_qp(
             deltas=scenarios,
@@ -121,7 +127,7 @@ def main():
             x_ref=np.zeros((n_vars, 1)),
             rho=rho,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         status = "SUCCESS"
         print(f"Solved successfully")

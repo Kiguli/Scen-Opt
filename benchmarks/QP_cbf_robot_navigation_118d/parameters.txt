@@ -11,4 +11,5 @@
 
 rho = 0
 tau = 0
+# confidence is the confidence level 1 - beta (here beta = 1e-06); the program JSON's "confidence" holds beta
 confidence = 0.999999

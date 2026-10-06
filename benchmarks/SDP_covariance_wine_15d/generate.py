@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires scikit-learn (not in requirements.txt): pip install scikit-learn
 """
 Generate robust covariance estimation data from UCI Wine dataset for SDP formulation.
 

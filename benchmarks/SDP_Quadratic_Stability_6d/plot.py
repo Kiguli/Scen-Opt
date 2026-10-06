@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires matplotlib (not in requirements.txt): pip install matplotlib
 """Generate a clean, paper-ready figure for the Quadratic Stability 6D benchmark."""
 
 import sys, os, json

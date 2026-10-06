@@ -43,20 +43,17 @@ with trace(P) = 0.033. The solver found complexity k = 1 with no degeneracy, mea
 ## Files
 
 ```
-Quadratic_Stability_6d/
+SDP_Quadratic_Stability_6d/
 ├── README.md           This file
 ├── parameters.txt      Solver parameters (rho, tau, confidence)
 ├── generate.py         Generate scenarios and constraint matrices
 ├── run.py              Solve the SDP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json         One-shot program definition (JSON)
-│   ├── program_symbolic.json          One-shot program definition (MATLAB)
-│   ├── F_0.csv ... F_6.csv   Scenario-dependent LMI matrices
-│   ├── E_0.csv ... E_6.csv   Hard constraint (P >= 0.01*I) matrices
-│   ├── c.csv                  Linear objective vector (trace)
-│   ├── Q.csv                  Quadratic regularisation matrix
-│   └── scenarios.csv          500 x 2 parameter samples
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
+│   ├── scenarios.csv          500 x 2 parameter samples
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (cost, risk bounds, etc.)
     ├── solution.csv    Raw solution vector
@@ -70,8 +67,9 @@ Quadratic_Stability_6d/
 # Generate scenarios and constraint matrices (optional)
 python generate.py
 
-# Solve the SDP
+# Solve the SDP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -83,32 +81,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **SDP** tab, formulation: **Robust**
-2. Upload matrices using one of these approaches:
-
-   **Option A — One-shot LMI upload:**
-   - Click **Edit F(delta)** -> upload `data/program_symbolic.json` (the F_d section) as a JSON file, or enter the F_d dict
-   - Click **Edit E** -> upload the E matrices similarly
-
-   **Option B — Individual matrix entry:**
-   - Click **Edit F(delta)** -> set n = 6 -> click each F_i button and upload `data/F_0.csv` through `data/F_6.csv`
-   - Click **Edit E** -> set n = 6 -> click each E_i button and upload `data/E_0.csv` through `data/E_6.csv`
-
-3. Upload or enter:
-   - **c**: `data/c.csv`
-   - **Q**: `data/Q.csv`
+2. Enter the matrices with their **Edit** buttons, using the matching fields of `data/program_symbolic.json`:
+   - **F(delta)**: `F_d` (matrices F_0 ... F_6)
+   - **E**: `E` (matrices E_0 ... E_6)
+3. Enter:
+   - **c**: `c`
+   - **Q**: `Q`
 4. Set parameters: rho = 0.0, tau = 0, confidence (beta) = 1e-06
 5. Upload `data/scenarios.csv` in the Scenarios box
 6. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 0.032858958578525506
+- Optimal cost: 0.03285895857852664
 - Complexity k: 1
-- Risk bounds: [0.0, 0.04000231437711046]
+- Risk bounds: [0.0, 0.04027646044222639]

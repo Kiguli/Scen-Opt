@@ -6,12 +6,13 @@ Finds a 3x3 symmetric Lyapunov matrix P certifying stability of a coupled
 oscillator LPV system with 2D parameter uncertainty.
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -66,6 +67,11 @@ def load_vector(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 60)
     print("BENCHMARK: Quadratic_Stability_6d (SDP)")
     print("6D Quadratic Stability with 2D Parameter Uncertainty")
@@ -101,17 +107,17 @@ def main():
     print()
 
     # Solve
-    print("Solving SDP with MOSEK...")
+    print(f"Solving SDP with {args.solver}...")
 
     try:
         x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(
             deltas=scenarios, F_d=F_d, E=E_mats, c=c, Q=Q,
             tau=0.0, x_ref=np.zeros(n_vars), rho=0.0,
-            norm_type=2, solver='MOSEK'
+            norm_type=2, solver=args.solver
         )
-        print(f"Solved with MOSEK")
+        print(f"Solved with {args.solver}")
     except Exception as e:
-        print(f"MOSEK failed: {e}")
+        print(f"{args.solver} failed: {e}")
         print("Attempting with SCS solver...")
         try:
             x, zeta, cost, N_out, k, constraints, degeneracy = solve_sdp(

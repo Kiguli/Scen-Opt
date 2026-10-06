@@ -24,7 +24,7 @@ This is a Quadratic Program with 118 decision variables: 80 states (position and
 
 ![QP Robot Navigation](results/cbf_navigation.png)
 
-The QP solves with N = 500 scenarios. The optimal trajectory has path length 9.79 m over 8.0 s, arcing smoothly above the wall with a minimum clearance of 0.19 m from the safety boundary. The complexity is k = 1 (one support constraint). With beta = 10^{-6}, the risk bounds are eps_lower = 0 and eps_upper = 0.0400.
+The QP solves with N = 500 scenarios. The optimal trajectory has path length 9.79 m over 8.0 s, arcing smoothly above the wall with a minimum clearance of 0.19 m from the safety boundary. The complexity is k = 1 (one support constraint). With beta = 10^{-6}, the risk bounds are eps_lower = 0 and eps_upper = 0.0403.
 
 ## Files
 
@@ -35,21 +35,18 @@ QP_cbf_robot_navigation_118d/
 ├── generate.py         Generate benchmark data (scenarios + QP matrices)
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
+├── animate.py          Generate the trajectory animation GIF
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Scenario-dependent constraint matrix (3 x 118)
-│   ├── b_d.csv         Scenario-dependent RHS (3 expressions with delta)
-│   ├── c.csv           Linear objective vector (118 x 1)
-│   ├── Q.csv           Quadratic objective matrix (118 x 118)
-│   ├── G.csv           Hard constraint matrix (320 x 118)
-│   ├── h.csv           Hard constraint RHS (320 x 1)
-│   └── scenarios.csv   500 samples (1D wall face perturbations)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
+│   ├── scenarios.csv   500 samples (1D wall face perturbations)
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (trajectory, clearances, risk bounds)
     ├── solution.csv    Raw solution vector (118 x 1)
     ├── cbf_navigation.png   Paper figure (300 dpi)
-    └── cbf_navigation.pdf   Paper figure (vector)
+    ├── cbf_navigation.pdf   Paper figure (vector)
+    └── trajectory_animation.gif  Trajectory animation
 ```
 
 ## Usage
@@ -58,8 +55,9 @@ QP_cbf_robot_navigation_118d/
 # Generate benchmark data (optional, data already provided)
 python generate.py [--n_scenarios 500] [--sigma 0.05]
 
-# Solve the QP
+# Solve the QP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -71,26 +69,26 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **QP** tab, formulation: **Robust**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
-   - **Q**: `data/Q.csv`
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
+   - **Q**: `Q`
 3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: -13777.807262403046
+- Optimal cost: -13777.807262404083
 - Complexity k: 1
-- Risk bounds: [0.0, 0.04000231437711046]
+- Risk bounds: [0.0, 0.04027646044222639]

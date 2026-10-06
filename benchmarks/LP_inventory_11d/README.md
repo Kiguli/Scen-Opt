@@ -26,7 +26,7 @@ Each scenario delta_i in R^15 encodes uncertain yields (delta[0:5]), demands (de
 
 ![Inventory Results](results/inventory.png)
 
-The LP solves in 9.07 seconds with N = 500 scenarios. The full budget of $12,000 is used. The penalty rho = 100 implies a cost per case of lost sales; the expected daily loss from stockouts is only $66.20 (about 0.5% of the ordering budget). The LP had complexity k = 7, no degeneracy, and risk bounds [0.000, 0.066] at 99.9999% confidence (beta = 10^{-6}).
+The LP solves in 9.07 seconds with N = 500 scenarios. The full budget of $12,000 is used. The penalty rho = 100 implies a cost per case of lost sales; the expected daily loss from stockouts is only $66.20 (about 0.5% of the ordering budget). The LP had complexity k = 7, no degeneracy, and risk bounds [0.000, 0.067] at 99.9999% confidence (beta = 10^{-6}).
 
 | Product | Order (cases) | Mean Demand | Service Level (%) |
 |---------|--------------|-------------|-------------------|
@@ -48,14 +48,10 @@ LP_inventory_11d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Augmented scenario constraint matrix (6 x 11)
-│   ├── b_d.csv         Scenario-dependent RHS vector (6 x 1)
-│   ├── c.csv           Augmented cost vector (11 x 1, includes rho)
-│   ├── G.csv           Augmented hard constraint matrix (17 x 11)
-│   ├── h.csv           Hard constraint RHS (17 x 1)
-│   └── scenarios.csv   500 x 15 uncertainty scenarios
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
+│   ├── scenarios.csv          500 x 15 uncertainty scenarios
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (cost, risk bounds, etc.)
     ├── solution.csv    Raw solution vector
@@ -69,8 +65,9 @@ LP_inventory_11d/
 # Regenerate scenarios (optional)
 python generate.py --n_scenarios 500 --seed 42
 
-# Solve the LP
+# Solve the LP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -82,25 +79,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
-1. Select the **LP** tab, formulation: **Robust + Relaxation**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
-3. Set parameters: rho = 100.0, tau = 0, confidence (beta) = 1e-06
+1. Select the **LP** tab, formulation: **Robust** (the penalty rho = 100 is already in c)
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
+3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 45099.672322171755
+- Optimal cost: 45099.672322171806
 - Complexity k: 7
-- Risk bounds: [0.0, 0.06550756473687944]
+- Risk bounds: [0.0, 0.0666183782973094]

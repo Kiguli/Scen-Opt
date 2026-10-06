@@ -3,12 +3,13 @@
 Solve the Smallest Enclosing Interval benchmark using the scenario approach LP solver.
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import numpy as np
 
 # Add project root to path for imports
@@ -52,6 +53,11 @@ def load_vector(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 65)
     print("BENCHMARK: Smallest Enclosing Interval (LP)")
     print("=" * 65)
@@ -89,7 +95,7 @@ def main():
     beta = 1.0 - params.get('confidence', 0.999999)
 
     # Solve LP
-    print("Solving LP with MOSEK...")
+    print(f"Solving LP with {args.solver}...")
     try:
         x, zeta, cost, N, k, constraints, degeneracy = solve_lp(
             deltas=scenarios,
@@ -102,7 +108,7 @@ def main():
             x_ref=np.zeros((n_vars, 1)),
             rho=rho,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         status = "SUCCESS"
         print(f"Solved successfully")

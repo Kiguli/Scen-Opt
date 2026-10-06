@@ -16,7 +16,7 @@ A(δᵢ) = [-δᵢ(1)·δᵢ(3), -δᵢ(2)·δᵢ(3), -δᵢ(3)], b(δᵢ) = 1
 
 ![Iris SVM Classification](results/iris_svm.png)
 
-The QP solves with N = 150 data points achieving 100% training accuracy. The optimal classifier is 3.79 = 1.29x₁ + 0.82x₂ with margin 1.304. The complexity is k = 2 (two support vectors). With β = 10⁻⁶, the risk bounds are ε̲ = 0 and ε̄ = 0.143.
+The QP solves with N = 150 data points achieving 100% training accuracy. The optimal classifier is 3.79 = 1.29x₁ + 0.82x₂ with margin 1.304. The complexity is k = 2 (two support vectors). With β = 10⁻⁶, the risk bounds are ε̲ = 0 and ε̄ = 0.144.
 
 ## Files
 
@@ -26,26 +26,27 @@ QP_Iris_minimal_3d/
 ├── parameters.txt      Solver parameters (rho, tau, confidence)
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
+├── plot_data_only.py   Generate a figure of the data only (no classifier)
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Scenario-dependent constraint (1 × 3 expression)
-│   ├── b_d.csv         Scenario-dependent RHS (constant = 1)
-│   ├── c.csv           Linear objective vector (3 × 1)
-│   ├── Q.csv           Quadratic objective matrix (3 × 3)
-│   └── scenarios.csv   150 samples [petal_length, petal_width, label]
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
+│   ├── scenarios.csv   150 samples [petal_length, petal_width, label]
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (hyperplane, margin, risk bounds)
     ├── solution.csv    Raw solution vector [w1, w2, b]
     ├── iris_svm.png    Paper figure (300 dpi)
-    └── iris_svm.pdf    Paper figure (vector)
+    ├── iris_svm.pdf    Paper figure (vector)
+    ├── iris_data_only.png  Data-only figure (300 dpi)
+    └── iris_data_only.pdf  Data-only figure (vector)
 ```
 
 ## Usage
 
 ```bash
-# Solve the QP
+# Solve the QP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -57,24 +58,24 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **QP** tab, formulation: **Robust**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **Q**: `data/Q.csv`
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **Q**: `Q`
 3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 1.176470626281622
+- Optimal cost: 1.1764706262816014
 - Complexity k: 2
-- Risk bounds: [0.0, 0.14300981911209715]
+- Risk bounds: [0.0, 0.14409952527843412]

@@ -9,12 +9,13 @@ physically realistic.
 Clinical Context: Prostate IMRT under patient setup uncertainty (±5mm in 3D).
 
 Usage:
-    python run.py
+    python run.py [--solver SOLVER]
 """
 
 import sys
 import os
 import json
+import argparse
 import re
 import numpy as np
 import pandas as pd
@@ -157,6 +158,11 @@ def load_anatomy(filepath):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--solver', default='MOSEK',
+                        help='CVXPY solver, e.g. MOSEK or CLARABEL (default: MOSEK)')
+    args = parser.parse_args()
+
     print("=" * 70)
     print("BENCHMARK: Prostate IMRT Radiation Therapy (QP)")
     print("Robust Treatment Under Patient Setup Uncertainty")
@@ -212,7 +218,7 @@ def main():
     print()
 
     # ===== SOLVE USING solve_qp (robust, ρ=0, τ>0) =====
-    print("Solving QP with MOSEK...")
+    print(f"Solving QP with {args.solver}...")
 
     try:
         x, zeta, cost, N_out, k, constraints, degeneracy = solve_qp(
@@ -227,7 +233,7 @@ def main():
             x_ref=np.zeros((n_vars, 1)),
             rho=0.0,
             norm_type=2,
-            solver='MOSEK'
+            solver=args.solver
         )
         status = "SUCCESS"
         print(f"Solved successfully")

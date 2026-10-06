@@ -30,7 +30,7 @@ The optimal plan achieves a tumour D95 = 145.12 Gy (exceeding the 137.75 Gy mini
 
 Panel (a) shows the dose-volume histogram (DVH). The tumour curve drops steeply beyond the prescription dose, confirming adequate target coverage, while the long tail reflects the hot spots inherent to brachytherapy (high doses near dwell positions are physically unavoidable and clinically acceptable). Both OAR curves fall well within their respective dose constraints.
 
-Panel (b) shows the scenario approach risk bounds. The complexity is k = 6 with no degeneracy, yielding risk bounds [0.000, 0.149] at 99.9999% confidence (beta = 10^{-6}). This guarantees that the dose constraints will be satisfied for a new random catheter placement with probability at least 85.1%. The low complexity relative to d = 50 decision variables indicates that only a small number of catheter-shift scenarios are critical to the solution geometry.
+Panel (b) shows the scenario approach risk bounds. The complexity is k = 5 and degeneracy was detected, so no lower bound on risk can be certified; the upper risk bound is 0.141 at 99.9999% confidence (beta = 10^{-6}). This guarantees that the dose constraints will be satisfied for a new random catheter placement with probability at least 85.9%. The low complexity relative to d = 50 decision variables indicates that only a small number of catheter-shift scenarios are critical to the solution geometry.
 
 Panel (c) displays the dwell-position intensity profile. Most channels carry high intensity (~150 Gy.s, the upper bound), with a few positions at low or zero intensity. This reflects the geometry of the prostate target relative to the catheter array: dwell positions near the centre of the PTV deliver maximum intensity, while those far from the target or near OARs are suppressed.
 
@@ -44,17 +44,13 @@ QP_radiation_therapy_50d/
 ├── run.py              Solve the QP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── anatomy.txt     Structure definitions (voxel counts, dose limits)
 │   ├── scenarios.csv   200 x 3 catheter shift scenarios
-│   ├── A_d.csv         Affine constraint coefficients (80 x 50, with delta expressions)
-│   ├── b_d.csv         Constraint RHS values (80 x 1, with delta expressions)
-│   ├── Q.csv           Quadratic objective matrix (50 x 50)
-│   ├── c.csv           Linear objective vector (50 x 1)
-│   ├── G.csv           Hard constraint matrix (100 x 50)
-│   ├── h.csv           Hard constraint RHS (100 x 1)
-│   └── D_nominal.csv   Nominal dose-influence matrix (100 x 50)
+│   ├── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
+│   ├── D_nominal.csv   Nominal dose-influence matrix (100 x 50)
+│   └── Prostate_BT_01.mat  TROTS source data used by generate.py
 └── results/
     ├── metrics.json                              Solver output (cost, risk bounds, doses)
     ├── solution.csv                              Raw solution vector
@@ -68,8 +64,9 @@ QP_radiation_therapy_50d/
 # Generate scenarios and constraint matrices from TROTS data (requires mat73)
 python generate.py
 
-# Solve the QP
+# Solve the QP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -81,26 +78,26 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
-1. Select the **QP** tab, formulation: **Robust + Regularization**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
-   - **Q**: `data/Q.csv`
+1. Select the **QP** tab, formulation: **Regularization**
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
+   - **Q**: `Q`
 3. Set parameters: rho = 0, tau = 0.1, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 4698.836116109508
-- Complexity k: 6
-- Risk bounds: [0.0, 0.14861067387333604]
+- Optimal cost: 4698.836115903002 (objective including tau ||x||_2, as in `results/metrics.json`; the web interface reports the cost without this term, about 4626.85)
+- Complexity k: 5
+- Risk bounds: [0.0, 0.1413759133502026] (degeneracy detected, so the lower bound is not certified)

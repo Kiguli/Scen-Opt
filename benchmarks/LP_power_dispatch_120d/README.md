@@ -22,7 +22,7 @@ Each scenario delta_i in R^48 encodes uncertain hourly wind generation (delta[0:
 
 ![Power Dispatch Results](results/power_dispatch.png)
 
-The LP solves with N = 150 scenarios. Total cost is $831,357 comprising $537,670 in generation cost and $293,687 in power imbalance penalty. Coal (cheapest at $30/MWh) provides baseload at 284-500 MW. Gas 1 ($40/MWh) ramps to cover evening peak, reaching 300 MW at hour 18. Gas 2 ($50/MWh) sits at its 75 MW minimum throughout. The LP had complexity k = 34, no degeneracy, and risk bounds [0.079, 0.443] at 99.9999% confidence (beta = 10^{-6}).
+The LP solves with N = 150 scenarios. Total cost is $831,357 comprising $537,670 in generation cost and $293,687 in power imbalance penalty. Coal (cheapest at $30/MWh) provides baseload at 284-500 MW. Gas 1 ($40/MWh) ramps to cover evening peak, reaching 300 MW at hour 18. Gas 2 ($50/MWh) sits at its 75 MW minimum throughout. The LP had complexity k = 34, no degeneracy, and risk bounds [0.079, 0.450] at 99.9999% confidence (beta = 10^{-6}).
 
 ## Files
 
@@ -34,16 +34,12 @@ LP_power_dispatch_120d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Augmented scenario constraint matrix (48 x 120)
-│   ├── b_d.csv         Scenario-dependent RHS vector (48 x 1)
-│   ├── c.csv           Augmented cost vector (120 x 1, includes rho)
-│   ├── G.csv           Augmented hard constraint matrix (330 x 120)
-│   ├── h.csv           Hard constraint RHS (330 x 1)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── demand.csv      Hourly demand profile (24 rows)
 │   ├── generators.txt  Generator parameters
-│   └── scenarios.csv   150 x 48 renewable generation scenarios
+│   ├── scenarios.csv   150 x 48 renewable generation scenarios
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (cost, dispatch, risk bounds)
     ├── solution.csv    Raw solution vector
@@ -57,8 +53,9 @@ LP_power_dispatch_120d/
 # Regenerate scenarios (optional)
 python generate.py --n_scenarios 150 --seed 42
 
-# Solve the LP
+# Solve the LP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -70,25 +67,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **LP** tab, formulation: **Robust**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
 3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 831357.4274826923
+- Optimal cost: 831357.4274827515
 - Complexity k: 34
-- Risk bounds: [0.07906891773454847, 0.44250483819283526]
+- Risk bounds: [0.0790688063794126, 0.44961507555718216]
