@@ -170,7 +170,6 @@ Each benchmark follows a standardized layout:
 │   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── scenarios.csv   Sampled uncertainty realizations
 │   ├── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
-│   ├── c.csv           Objective vector
 │   └── ...             Additional problem-specific data
 └── results/
     ├── metrics.json    Solver output (cost, risk bounds, complexity)
@@ -183,13 +182,13 @@ Each benchmark follows a standardized layout:
 ```bash
 cd benchmarks/<benchmark_name>
 
-# Regenerate scenarios (optional, data already provided)
+# Regenerate scenarios (optional, data already provided; some generators need extra packages, listed at the top of the script)
 python generate.py
 
-# Solve the program
+# Solve the program (MOSEK by default; e.g. --solver CLARABEL without a MOSEK licence)
 python run.py
 
-# Generate the paper figure
+# Generate the paper figure (needs matplotlib: pip install matplotlib)
 python plot.py
 ```
 

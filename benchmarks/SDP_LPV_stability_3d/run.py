@@ -143,9 +143,9 @@ def main():
     print(f"Optimal Cost: {cost:.6f}")
     print(f"Complexity (k): {k}")
     if degeneracy:
-        print(f"Risk Bounds (99%): [unreliable, {eps_upper:.4f}]")
+        print(f"Risk Bounds ({(1 - beta) * 100:g}%): [unreliable, {eps_upper:.4f}]")
     else:
-        print(f"Risk Bounds (99%): [{eps_lower:.4f}, {eps_upper:.4f}]")
+        print(f"Risk Bounds ({(1 - beta) * 100:g}%): [{eps_lower:.4f}, {eps_upper:.4f}]")
     print("-" * 60)
 
     print()

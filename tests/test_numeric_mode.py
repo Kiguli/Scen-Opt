@@ -387,9 +387,9 @@ def test_detect_program_sdp(client):
 def test_detect_program_sdp_numeric(client):
     """Detect Program with numeric SDP benchmark loads and matches symbolic results."""
     # Load numeric benchmark
-    with open("benchmarks/SDP_LPV_stability_3d_numeric/data/program_symbolic.json") as f:
+    with open("benchmarks/SDP_LPV_stability_3d/data/program_numeric.json") as f:
         num_bm = json.load(f)
-    num_scenarios = np.loadtxt("benchmarks/SDP_LPV_stability_3d_numeric/data/scenarios.csv",
+    num_scenarios = np.loadtxt("benchmarks/SDP_LPV_stability_3d/data/scenarios_numeric.csv",
                                 delimiter=",", ndmin=2)
     num_csv = _to_csv_bytes(num_scenarios)
 
