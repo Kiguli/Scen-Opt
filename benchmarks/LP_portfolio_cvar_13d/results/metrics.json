@@ -16,7 +16,7 @@
   "alternatives_allocation": 0.449999855590255,
   "mean_return": 0.0003031247620507457,
   "std_return": 0.005559309001023381,
-  "objective_value": 0.05335645682574842,
+  "objective_value": 0.05133720473689373,
   "N": 1255,
   "k": 3,
   "eps_lower": 0.0,

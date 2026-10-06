@@ -123,7 +123,7 @@ def main():
                 key, val = line.split('=', 1)
                 params[key.strip()] = float(val.split('#')[0].strip())
 
-    rho = params.get('rho', 0.04)
+    rho = params.get('rho', 0.015936)
     tau = params.get('tau', 0.0)
     beta = 1.0 - params.get('confidence', 0.999999)
 

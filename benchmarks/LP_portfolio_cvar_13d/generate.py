@@ -188,7 +188,7 @@ def save_constraint_files(data_dir, mean_returns, n_scenarios):
     With rho = 1/((1-beta)*N), minimizing alpha + rho*sum(zeta) approximates CVaR.
     """
     params = load_parameters()
-    rho = params.get('rho', 0.04)
+    rho = params.get('rho', 0.015936)
 
     n_vars = N_ASSETS + 1  # 8 weights + 1 alpha (VaR threshold)
 

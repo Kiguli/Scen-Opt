@@ -92,6 +92,6 @@ python plot.py
 
 ### Expected Results
 
-- Optimal cost: 0.05335645682574842
+- Optimal cost: 0.05133720473689373
 - Complexity k: 3
 - Risk bounds: [0.0, 0.020289284798068057]
