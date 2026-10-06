@@ -20,10 +20,10 @@ This is a Linear Program with 12 decision variables: 9 entries of the growth mat
 
 The LP solves with N = 3127 sampled trajectories. The optimal growth matrix and bias are:
 
-    M* = [[-1.000, 0.000, 0.005], [0.000, -1.000, 0.009], [0.000, 0.000, -1.000]]
-    b* = [-1.000, -1.000, -1.000]
+    M* = [[1.000, 0.000, 0.005], [0.000, 1.000, 0.009], [0.000, 0.000, 1.000]]
+    b* = [1.000, 1.000, 1.000]
 
-With pre-selected bias γ = 0.067 and β = 10⁻⁶, the support set size is k = 6 and degeneracy was detected, so no lower bound on risk can be certified. The upper bound is ε̄ = 0.0101.
+With pre-selected bias γ = 0.067 and β = 10⁻⁶, the support set size is k = 6 and degeneracy was detected, so no lower bound on risk can be certified. The upper bound is ε̄ = 0.0103.
 
 ## Files
 
@@ -35,15 +35,12 @@ LP_growth_bound_12d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json         One-shot program definition (JSON)
-│   ├── program_symbolic.json          One-shot program definition (MATLAB)
-│   ├── A_d.csv                Scenario-dependent constraint matrix (3 × 12 expressions)
-│   ├── b_d.csv                Scenario-dependent RHS (3 × 1 expressions)
-│   ├── c.csv                  Objective vector (12 × 1)
-│   ├── G.csv                  Hard constraint matrix (6 × 12)
-│   ├── h.csv                  Hard constraint RHS (6 × 1)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── growth_bound.csv       Full dataset (3127 × 6)
-│   └── growth_bound_mini.csv  Mini dataset (99 × 6)
+│   ├── growth_bound_mini.csv  Mini dataset (99 × 6)
+│   ├── scenarios.csv          Full dataset for the web interface (same as growth_bound.csv)
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (growth matrix, bias, risk bounds)
     ├── solution.csv    Raw solution vector
@@ -57,9 +54,10 @@ LP_growth_bound_12d/
 # Regenerate trajectory data
 python generate.py
 
-# Solve the LP (use --mini for faster testing)
+# Solve the LP (use --mini for faster testing; MOSEK by default, use --solver to pick another, e.g. CLARABEL)
 python run.py
 python run.py --mini
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -71,25 +69,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **LP** tab, formulation: **Robust**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
 3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: -2.9862583119393014
+- Optimal cost: 3.0137485232272665
 - Complexity k: 6
-- Risk bounds: [0.0, 0.010092109023134854]
+- Risk bounds: [0.0, 0.010266487573906823] (degeneracy detected, so the lower bound is not certified)

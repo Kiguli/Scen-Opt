@@ -16,7 +16,7 @@ No regularisation (τ = 0) or slack penalty (ρ = 0).
 
 ![Smallest Enclosing Interval](results/half_width.png)
 
-The LP solves with N = 100 data points. The optimal interval is [0.002, 0.999] with center 0.501 and half-width 0.498. The complexity is k = 2 (the two extreme data points define the interval). With β = 10⁻⁶, the risk bounds are ε̲ = 0 and ε̄ = 0.207.
+The LP solves with N = 100 data points. The optimal interval is [0.002, 0.999] with center 0.501 and half-width 0.498. The complexity is k = 2 (the two extreme data points define the interval). With β = 10⁻⁶, the risk bounds are ε̲ = 0 and ε̄ = 0.209.
 
 ## Files
 
@@ -27,12 +27,10 @@ LP_half_width_2d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Scenario-dependent constraint matrix (2 × 2)
-│   ├── b_d.csv         Scenario-dependent RHS (2 × 1)
-│   ├── c.csv           Objective vector (2 × 1)
-│   └── scenarios.csv   100 data points sampled from [0, 1]
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
+│   ├── scenarios.csv          100 data points sampled from [0, 1]
+│   └── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 └── results/
     ├── metrics.json    Solver output (center, half-width, risk bounds)
     ├── solution.csv    Raw solution vector
@@ -43,8 +41,9 @@ LP_half_width_2d/
 ## Usage
 
 ```bash
-# Solve the LP
+# Solve the LP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -56,17 +55,17 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **LP** tab, formulation: **Robust**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
 3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
@@ -75,4 +74,4 @@ python plot.py
 
 - Optimal cost: 0.498309968223239
 - Complexity k: 2
-- Risk bounds: [0.0, 0.20729497825494037]
+- Risk bounds: [0.0, 0.20852406037505716]

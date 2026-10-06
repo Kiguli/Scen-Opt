@@ -27,7 +27,7 @@ Each scenario delta_i in R^12 encodes 8 asset returns (delta[0:8]), a market str
 
 ![CVaR Portfolio Results](results/portfolio_cvar.png)
 
-The LP solves with N = 1,255 market scenarios (one per historical trading day). The optimizer tilts heavily toward alternatives: GLD (23.2%) and VNQ (21.8%) dominate, while equities sit at the 30% regulatory minimum and fixed income at 25%. This defensive posture minimizes tail risk — the CVaR(95%) is only 1.21% daily loss. The LP had complexity k = 3, no degeneracy, and risk bounds [0.0000, 0.0200].
+The LP solves with N = 1,255 market scenarios (one per historical trading day). The optimizer tilts heavily toward alternatives: GLD (23.9%) and VNQ (21.1%) dominate, while equities sit at the 30% regulatory minimum and fixed income at 25%. This defensive posture minimizes tail risk — the CVaR(95%) is only 1.20% daily loss. The LP had complexity k = 3, no degeneracy, and risk bounds [0.0000, 0.0203].
 
 ## Files
 
@@ -39,14 +39,10 @@ LP_portfolio_cvar_13d/
 ├── run.py              Solve the LP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json  One-shot program definition (JSON)
-│   ├── program_symbolic.json   One-shot program definition (MATLAB)
-│   ├── A_d.csv         Augmented scenario constraint matrix (4 x 13)
-│   ├── b_d.csv         Scenario-dependent RHS vector (4 x 1, all zeros)
-│   ├── c.csv           Augmented objective vector (13 x 1, includes rho)
-│   ├── G.csv           Augmented hard constraint matrix (27 x 13)
-│   ├── h.csv           Hard constraint RHS (27 x 1)
+│   ├── program_symbolic.json  Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json   Upload-Program definition (numeric mode)
 │   ├── scenarios.csv   1255 x 12 uncertainty scenarios
+│   ├── scenarios_numeric.csv  Per-row-flattened matrices for numeric mode
 │   ├── assets.csv      Asset metadata
 │   ├── historical_prices.csv   5-year ETF price history
 │   └── historical_returns.csv  Daily returns
@@ -63,8 +59,9 @@ LP_portfolio_cvar_13d/
 # Regenerate scenarios (requires yfinance and internet)
 python generate.py --seed 42
 
-# Solve the LP
+# Solve the LP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -76,25 +73,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
-1. Select the **LP** tab, formulation: **Robust + Relaxation**
-2. Upload or enter each matrix:
-   - **A(delta)**: `data/A_d.csv`
-   - **b(delta)**: `data/b_d.csv`
-   - **c**: `data/c.csv`
-   - **G**: `data/G.csv`
-   - **h**: `data/h.csv`
-3. Set parameters: rho = 0.015936, tau = 0, confidence (beta) = 1e-06
+1. Select the **LP** tab, formulation: **Robust** (the slack penalty is already in c)
+2. Enter each matrix with its **Edit** button, using the matching field of `data/program_symbolic.json`:
+   - **A(delta)**: `A_d`
+   - **b(delta)**: `b_d`
+   - **c**: `c`
+   - **G**: `G`
+   - **h**: `h`
+3. Set parameters: rho = 0, tau = 0, confidence (beta) = 1e-06
 4. Upload `data/scenarios.csv` in the Scenarios box
 5. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: 0.05133721274593786
+- Optimal cost: 0.05335645682574842
 - Complexity k: 3
-- Risk bounds: [0.0, 0.02002552248652564]
+- Risk bounds: [0.0, 0.020289284798068057]

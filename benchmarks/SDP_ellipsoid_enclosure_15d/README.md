@@ -22,7 +22,7 @@ so that (delta_i - x_bar)' P (delta_i - x_bar) - 1 <= 0. The hard constraint enf
 
 ![Minimum Enclosing Ellipsoid](results/minimum_enclosing_ellipsoid.png)
 
-The optimal P has trace 44.59 and eigenvalues {~0, ~0, ~0, ~0, 44.59}, revealing that the standardized data effectively lies in a 1-dimensional subspace (the first 5 breast cancer features are highly correlated). Since all 569 data points are used as scenarios, the ellipsoid contains all of them (100% containment). The complexity is k = 5 (five boundary data points define the ellipsoid), no degeneracy, and risk bounds [0.000, 0.051] at 99.9999% confidence, guaranteeing that a new random data point will fall inside the ellipsoid with probability at least 94.9%.
+The optimal P has trace 44.59 and eigenvalues {~0, ~0, ~0, ~0, 44.59}, revealing that the standardized data effectively lies in a 1-dimensional subspace (the first 5 breast cancer features are highly correlated). Since all 569 data points are used as scenarios, the ellipsoid contains all of them (100% containment). The complexity is k = 5 (five boundary data points define the ellipsoid), no degeneracy, and risk bounds [0.000, 0.052] at 99.9999% confidence, guaranteeing that a new random data point will fall inside the ellipsoid with probability at least 94.8%.
 
 ## Files
 
@@ -34,16 +34,15 @@ SDP_ellipsoid_enclosure_15d/
 ├── run.py              Solve the SDP and print results
 ├── plot.py             Generate the paper figure
 ├── data/
-│   ├── program_symbolic.json             One-shot program definition (JSON)
-│   ├── program_symbolic.json              One-shot program definition (MATLAB)
+│   ├── program_symbolic.json      Upload-Program definition (symbolic mode)
+│   ├── program_numeric.json       Upload-Program definition (numeric mode)
 │   ├── scenarios.csv              569 x 5 data point scenarios
+│   ├── scenarios_numeric.csv      Per-row-flattened matrices for numeric mode
 │   ├── basis_matrices.npy         15 x 5 x 5 symmetric basis matrices Pi_k
 │   ├── free_entries.csv           Mapping of free entries in symmetric matrix
 │   ├── coeffs.csv                 Precomputed containment coefficients
 │   ├── center.csv                 Data center x_bar
-│   ├── c.csv                      Linear objective vector (-trace)
-│   ├── Q.csv                      Quadratic objective matrix (zero)
-│   ├── E_0.csv ... E_15.csv       Hard constraint matrices (P > 0)
+│   ├── cov_full.csv               Full-sample covariance
 │   ├── data_standardized.csv      Full standardized dataset (569 x 5)
 │   └── feature_names.txt          Feature labels
 └── results/
@@ -60,8 +59,9 @@ SDP_ellipsoid_enclosure_15d/
 # Generate scenarios from Breast Cancer dataset (optional)
 python generate.py
 
-# Solve the SDP
+# Solve the SDP (MOSEK by default; use --solver to pick another, e.g. CLARABEL)
 python run.py
+python run.py --solver CLARABEL
 
 # Generate paper figure
 python plot.py
@@ -73,32 +73,25 @@ python plot.py
 
 1. Start the web server: `python3 app.py`
 2. Click **"Upload Program"** button (next to LP/QP/SDP tabs)
-3. Upload `data/program_symbolic.json` or `data/program_symbolic.json`
-4. Upload `data/scenarios.csv` in the Scenarios box
+3. Upload `data/program_symbolic.json` (or `data/program_numeric.json` for numeric mode)
+4. Upload `data/scenarios.csv` (or `data/scenarios_numeric.csv` with `program_numeric.json`) in the Scenarios box
 5. Set solver to **MOSEK** and press **Solve**
 
 ### Manual Method
 
 1. Select the **SDP** tab, formulation: **Robust**
-2. Upload matrices using one of these approaches:
-
-   **Option A — One-shot LMI upload:**
-   - Click **Edit F(delta)** -> upload `data/program_symbolic.json` (the F_d section) as a JSON file, or enter the F_d dict
-   - Click **Edit E** -> upload the E matrices similarly
-
-   **Option B — Individual matrix entry:**
-   - Click **Edit F(delta)** -> set n = 15 -> click each F_i button and upload `data/F_0.csv` through `data/F_15.csv`
-   - Click **Edit E** -> set n = 15 -> click each E_i button and upload `data/E_0.csv` through `data/E_15.csv`
-
-3. Upload or enter:
-   - **c**: `data/c.csv`
-   - **Q**: `data/Q.csv`
+2. Enter the matrices with their **Edit** buttons, using the matching fields of `data/program_symbolic.json`:
+   - **F(delta)**: `F_d` (matrices F_0 ... F_15)
+   - **E**: `E` (matrices E_0 ... E_15)
+3. Enter:
+   - **c**: `c`
+   - **Q**: `Q`
 4. Set parameters: rho = 0.0, tau = 0.0, confidence (beta) = 1e-06
 5. Upload `data/scenarios.csv` in the Scenarios box
 6. Press **Solve**
 
 ### Expected Results
 
-- Optimal cost: -44.59438886598514
+- Optimal cost: -44.594388865949526
 - Complexity k: 5
-- Risk bounds: [0.0, 0.05102523978920701]
+- Risk bounds: [0.0, 0.05181163547131739]
