@@ -202,3 +202,11 @@ def test_download_mat_with_a_failed_run(client):
     resp = client.post("/download-mat", json={"optimal_cost": [0.5, None], "risk": [[0.0, 0.2], []]})
     assert resp.status_code == 200
     assert resp.data[:6] == b"MATLAB"
+
+
+@pytest.mark.parametrize("c", ['[["0"], ["1"]', '[["exp(1000)"], ["1"]]', '[["1/0"], ["1"]]'])
+def test_solve_reports_unreadable_matrices(client, c):
+    """A malformed or unevaluable matrix gives a readable 400 error, not a 500."""
+    resp = client.post("/solve", data=_interval_form(c=c), content_type="multipart/form-data")
+    assert resp.status_code == 400
+    assert resp.get_json()["error"]

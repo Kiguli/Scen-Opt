@@ -93,3 +93,16 @@ def test_disallowed_names_are_rejected():
     for bad in ["__import__('os')", "open('x')", "eval('1')", "sin"]:
         with pytest.raises(ValueError):
             safe_eval(bad, np.array([1.0]))
+
+
+def test_unreadable_entries_give_value_errors():
+    """Malformed matrices, overflow, division by zero and non-numeric entries raise ValueError."""
+    import pytest
+    from src.parsing import safe_eval
+    with pytest.raises(ValueError, match="could not read the matrix"):
+        generate_matrix('[["1", "2"')
+    for bad in ["exp(1000)", "1/0", "1 +"]:
+        with pytest.raises(ValueError):
+            safe_eval(bad, np.array([1.0]))
+    with pytest.raises(ValueError):
+        safe_eval(True)

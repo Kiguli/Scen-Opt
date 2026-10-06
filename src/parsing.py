@@ -96,20 +96,33 @@ def safe_eval(expr, delta=None):
 
     if isinstance(expr, (int, float, np.integer, np.floating)) and not isinstance(expr, bool):
         return float(expr)
+    if not isinstance(expr, str):
+        raise ValueError(f"matrix entries must be numbers or expressions, not {expr!r}")
     # ^ means power, as in SymPy. It is replaced before parsing so that it gets
     # the precedence of ** (Python's ^ is XOR, which binds more loosely than +).
     try:
         value = ev(ast.parse(expr.replace("^", "**"), mode="eval"))
-    except TypeError as error:  # e.g. a function applied to the wrong arguments
-        raise ValueError(f"invalid expression {expr!r}: {error}")
+    except SyntaxError:
+        raise ValueError(f"invalid expression {expr!r}")
+    except (TypeError, ZeroDivisionError, OverflowError) as error:
+        # e.g. a function applied to the wrong arguments, 1/0, or exp(1000)
+        raise ValueError(f"cannot evaluate {expr!r}: {error}")
     if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
         raise ValueError(f"expression {expr!r} does not evaluate to a number")
     return value
 
 
+def _read_literal(text):
+    """Read a matrix (list of rows) or a dict of matrices from its JSON/Python text."""
+    try:
+        return ast.literal_eval(text)
+    except (ValueError, SyntaxError, TypeError):
+        raise ValueError(f"could not read the matrix {text[:60]!r}: check the brackets and commas")
+
+
 def generate_matrix_function(expr_matrix_str):
     """Create a function that evaluates a matrix expression for a given delta vector."""
-    expr_matrix = ast.literal_eval(expr_matrix_str)
+    expr_matrix = _read_literal(expr_matrix_str)
 
     def matrix_function(delta):
         return np.array([
@@ -122,7 +135,7 @@ def generate_matrix_function(expr_matrix_str):
 
 def generate_matrix(expr_matrix_str):
     """Evaluate a matrix expression string (no delta dependency) into a numpy array."""
-    expr_matrix = ast.literal_eval(expr_matrix_str)
+    expr_matrix = _read_literal(expr_matrix_str)
     return np.array([
         [safe_eval(expr) for expr in row]
         for row in expr_matrix
@@ -131,7 +144,7 @@ def generate_matrix(expr_matrix_str):
 
 def generate_tensor_function(expr_matrix_str):
     """Create a function that evaluates a dict of matrix expressions for a given delta vector."""
-    expr_dict = ast.literal_eval(expr_matrix_str)
+    expr_dict = _read_literal(expr_matrix_str)
 
     def tensor_function(delta):
         return {
@@ -147,7 +160,7 @@ def generate_tensor_function(expr_matrix_str):
 
 def generate_tensor(expr_matrix_str):
     """Evaluate a dict of matrix expression strings (no delta dependency) into numpy arrays."""
-    expr_dict = ast.literal_eval(expr_matrix_str)
+    expr_dict = _read_literal(expr_matrix_str)
     return {
         key: np.array([[safe_eval(cell) for cell in row] for row in expr_dict[key]])
         for key in expr_dict

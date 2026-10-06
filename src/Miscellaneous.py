@@ -66,13 +66,18 @@ def check_psd(Q, tol=1e-9):
 
     Both checks allow a small relative tolerance, so rank-deficient matrices
     such as D.T @ D, whose zero eigenvalues come out as about -1e-16, pass.
+    Those tiny negative eigenvalues are then rounded up to zero, so the
+    returned matrix is exactly positive semidefinite.
     """
     Q = np.asarray(Q, dtype=float)
     scale = max(1.0, float(np.abs(Q).max()))
     assert np.allclose(Q, Q.T, rtol=0, atol=tol * scale), "Q must be symmetric"
     Q = (Q + Q.T) / 2
-    eigvals = np.linalg.eigvalsh(Q)
+    eigvals, eigvecs = np.linalg.eigh(Q)
     assert eigvals.min() >= -tol * scale, f"Q must be positive semi-definite (eigenvalues: {eigvals})"
+    if eigvals.min() < 0:
+        Q = (eigvecs * np.maximum(eigvals, 0)) @ eigvecs.T
+        Q = (Q + Q.T) / 2
     return Q
 
 

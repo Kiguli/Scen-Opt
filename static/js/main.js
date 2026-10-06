@@ -2489,6 +2489,7 @@ const SOLVER_CONE_SUPPORT = {
     'DAQP':       ['LP', 'QP'],
     'HIGHS':      ['LP', 'QP'],
     'CBC':        ['LP'],
+    'SCIPY':      ['LP'],
     'GLPK':       ['LP'],
     'GLPK_MI':    ['LP'],
     'PDLP':       ['LP']
@@ -2511,7 +2512,11 @@ function requiredCones() {
     if (tabId === 'qp-tab') cones.add('QP');   // 1/2 x^T Q x in the objective
     if (tabId === 'sdp-tab') {
         cones.add('SDP');
-        cones.add('QP');   // SDP tab includes a 1/2 x^T Q x term too
+        // The 1/2 x^T Q x term is only added to an SDP when Q has a nonzero entry.
+        let Q = [];
+        try { Q = JSON.parse((document.getElementById('sdp-Q') || {}).value || '[]'); } catch (e) { Q = [[1]]; }
+        const nonzero = v => Array.isArray(v) ? v.some(nonzero) : Number(v) !== 0;
+        if (nonzero(Q)) cones.add('QP');
     }
     const option = (document.getElementById(tab + '-options') || {}).value || 'robust';
     if (option === 'regularization' || option === 'regularization-relaxation') {
@@ -2561,9 +2566,10 @@ function filterSolvers() {
         // supported list. Unknown solvers (not in the map) pass through — we
         // prefer false-positive visibility over hiding a valid choice.
         const caps = SOLVER_CONE_SUPPORT[option.value];
+        // A quadratic cost can also be handled with second-order cones.
         const coneOK = caps === undefined
             ? true
-            : Array.from(needed).every(c => caps.includes(c));
+            : Array.from(needed).every(c => caps.includes(c) || (c === 'QP' && caps.includes('SOCP')));
 
         if (typeOK && coneOK) {
             option.hidden = false;

@@ -34,3 +34,12 @@ def test_unlisted_solvers_use_cvxpy_metadata():
     assert _cvxpy_capabilities("CUOPT") == ["LP"]
     assert _cvxpy_capabilities("COPT") == ["LP", "QP", "SDP"]
     assert _cvxpy_capabilities("NOT_A_SOLVER") == []
+
+
+def test_check_psd_rounds_tiny_negative_eigenvalues():
+    """A Q accepted within the tolerance is returned exactly positive semidefinite."""
+    import numpy as np
+    from src.Miscellaneous import check_psd
+    Q = check_psd(np.diag([1.0, -1e-12]))
+    assert np.linalg.eigvalsh(Q).min() >= 0
+    np.testing.assert_allclose(Q, np.diag([1.0, 0.0]), atol=1e-12)

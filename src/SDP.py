@@ -143,8 +143,11 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
             f"(broadcast across all coordinates) or a length-{n} vector."
         )
 
-    # Objective Function
-    objective = cp.Minimize((1 / 2) * cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + regularization_term(tau, x, x_ref, norm_type) + rho * cp.sum(zeta))
+    # Objective Function. The quadratic term is left out when Q = 0: CVXPY
+    # would still add a cone for it, which solvers without second-order cones
+    # (e.g. SDPA) cannot handle.
+    quadratic = (1 / 2) * cp.quad_form(x, cp.psd_wrap(Q)) if np.any(Q) else 0
+    objective = cp.Minimize(quadratic + c.T @ x + regularization_term(tau, x, x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints + non_risk_constraints)
