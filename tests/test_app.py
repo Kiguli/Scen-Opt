@@ -141,3 +141,64 @@ def test_download_mat_route(client):
 
     assert resp.status_code == 200
     assert "matlab" in resp.content_type or "octet-stream" in resp.content_type
+
+
+def _interval_form(**overrides):
+    """Form fields for the smallest-enclosing-interval LP, as the browser sends them."""
+    csv_bytes = "\n".join(str(v) for v in [0.1, 0.4, 0.9]).encode()
+    data = {
+        "active_tab": "lp-tab",
+        "A_d": '[["-1", "-1"], ["1", "-1"]]',
+        "b_d": '[["delta[0]"], ["-delta[0]"]]',
+        "c": '[["0"], ["1"]]',
+        "rho": "0",
+        "tau": "0",
+        "option": "robust",
+        "solver": "CLARABEL",
+        "confidence": "1e-06",
+        "file": (io.BytesIO(csv_bytes), "scenarios.csv"),
+    }
+    data.update(overrides)
+    return data
+
+
+def test_solve_accepts_plain_numbers(client):
+    """Matrices with plain numbers (not strings) solve like their string form."""
+    resp = client.post("/solve", data=_interval_form(c="[[0], [1]]", A_d='[[-1, -1], [1, -1]]'),
+                       content_type="multipart/form-data")
+    assert resp.status_code == 200
+    np.testing.assert_allclose(np.ravel(resp.get_json()["optimal_x"][0]), [0.5, 0.4], atol=1e-6)
+
+
+@pytest.mark.parametrize("beta", ["", "0", "1", "abc"])
+def test_solve_rejects_invalid_beta(client, beta):
+    """A missing or out-of-range β is reported as an error, not treated as 0."""
+    resp = client.post("/solve", data=_interval_form(confidence=beta), content_type="multipart/form-data")
+    assert resp.status_code == 400
+    assert "confidence parameter" in resp.get_json()["error"]
+
+
+def test_solve_robust_ignores_hidden_parameters(client):
+    """With the robust option, hidden τ and ρ fields are neither applied nor swept."""
+    resp = client.post("/solve", data=_interval_form(tau="5", rho="0.1, 1"), content_type="multipart/form-data")
+    data = resp.get_json()
+    assert data["n_attempts"] == 1 and data["tau_"] == [0.0] and data["rho_"] == [0.0]
+    np.testing.assert_allclose(np.ravel(data["optimal_x"][0]), [0.5, 0.4], atol=1e-6)
+
+
+def test_solve_sweep_confidence_and_total_constraints(client):
+    """A sweep reports 1 − β·n_runs; Total Constraints counts the hard constraints too."""
+    resp = client.post("/solve", data=_interval_form(option="relaxation", rho="0.5, 1", confidence="0.01",
+                                                     G='[["0", "-1"]]', h='[["0"]]'),
+                       content_type="multipart/form-data")
+    data = resp.get_json()
+    assert data["n_attempts"] == 2
+    assert abs(data["conf"] - 0.98) < 1e-12
+    assert data["tot_con"] == [4, 4]  # 3 scenario constraints + 1 row of G
+
+
+def test_download_mat_with_a_failed_run(client):
+    """A run without results (None) no longer breaks the .MAT download."""
+    resp = client.post("/download-mat", json={"optimal_cost": [0.5, None], "risk": [[0.0, 0.2], []]})
+    assert resp.status_code == 200
+    assert resp.data[:6] == b"MATLAB"
