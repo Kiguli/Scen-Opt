@@ -5,7 +5,8 @@ import numpy as np
 
 # Untrusted matrix/tensor cells arrive from the public web form, so they are
 # evaluated by a restricted AST walker instead of eval(): only numeric
-# literals, + - * / // % **, unary +/-, the name `delta` (indexed), and
+# literals, + - * / // % ** (and ^ as a power, as in SymPy), unary +/-, the
+# name `delta` (indexed), the functions and constants below, and
 # `math.<fn>(...)` are permitted. Anything else raises ValueError, which
 # closes the remote-code-execution path that eval() with an open namespace
 # would otherwise expose.
@@ -16,18 +17,32 @@ _BINOPS = {
 }
 _UNARYOPS = {ast.UAdd: operator.pos, ast.USub: operator.neg}
 
+# SymPy-style names, so cells can say sin(delta[0]) instead of math.sin(delta[0]).
+_FUNCTIONS = {
+    'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+    'asin': math.asin, 'acos': math.acos, 'atan': math.atan, 'atan2': math.atan2,
+    'sinh': math.sinh, 'cosh': math.cosh, 'tanh': math.tanh,
+    'exp': math.exp, 'log': math.log, 'ln': math.log, 'log10': math.log10, 'log2': math.log2,
+    'sqrt': math.sqrt, 'abs': abs, 'Abs': abs,
+    'floor': math.floor, 'ceiling': math.ceil, 'ceil': math.ceil,
+    'min': min, 'Min': min, 'max': max, 'Max': max,
+}
+_CONSTANTS = {'pi': math.pi, 'e': math.e, 'E': math.e}
+
 
 def safe_eval(expr, delta=None):
     """Safely evaluate a scalar arithmetic expression over `delta` and `math`.
 
     Parameters
     ----------
-    expr : str
+    expr : str or number
         Expression such as ``"delta[0]"``, ``"-delta[3]"``, ``"0.5"``,
-        or ``"math.sin(delta[1])"``.
-    delta : sequence or None
-        The uncertainty vector referenced by ``delta[i]``; ``None`` for
-        constant expressions.
+        ``"sin(delta[1])"``, ``"delta[0]^2"`` or ``"math.sin(delta[1])"``.
+        A plain number (e.g. from a JSON or MAT file) is returned as a float.
+    delta : sequence, scalar or None
+        The uncertainty vector referenced by ``delta[i]`` (a scalar is
+        treated as a vector with one component); ``None`` for constant
+        expressions.
 
     Returns
     -------
@@ -54,9 +69,19 @@ def safe_eval(expr, delta=None):
                 if delta is None:
                     raise ValueError("delta is not available in this expression")
                 return delta
+            if node.id in _CONSTANTS:
+                return _CONSTANTS[node.id]
+            if node.id in _FUNCTIONS:
+                return _FUNCTIONS[node.id]
             raise ValueError(f"disallowed name: {node.id}")
         if isinstance(node, ast.Subscript):
-            return ev(node.value)[int(ev(node.slice))]
+            base, index = ev(node.value), int(ev(node.slice))
+            if np.ndim(base) == 0:  # a scalar scenario has one component
+                base = [base]
+            try:
+                return base[index]
+            except IndexError:
+                raise ValueError(f"delta[{index}] does not exist: the scenario has {len(base)} component(s)")
         if isinstance(node, ast.Attribute):
             if isinstance(node.value, ast.Name) and node.value.id == "math" \
                     and not node.attr.startswith("_"):
@@ -69,7 +94,17 @@ def safe_eval(expr, delta=None):
             return func(*[ev(a) for a in node.args])
         raise ValueError(f"disallowed expression element: {type(node).__name__}")
 
-    return ev(ast.parse(expr, mode="eval"))
+    if isinstance(expr, (int, float, np.integer, np.floating)) and not isinstance(expr, bool):
+        return float(expr)
+    # ^ means power, as in SymPy. It is replaced before parsing so that it gets
+    # the precedence of ** (Python's ^ is XOR, which binds more loosely than +).
+    try:
+        value = ev(ast.parse(expr.replace("^", "**"), mode="eval"))
+    except TypeError as error:  # e.g. a function applied to the wrong arguments
+        raise ValueError(f"invalid expression {expr!r}: {error}")
+    if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
+        raise ValueError(f"expression {expr!r} does not evaluate to a number")
+    return value
 
 
 def generate_matrix_function(expr_matrix_str):
@@ -114,7 +149,7 @@ def generate_tensor(expr_matrix_str):
     """Evaluate a dict of matrix expression strings (no delta dependency) into numpy arrays."""
     expr_dict = ast.literal_eval(expr_matrix_str)
     return {
-        key: np.array([[float(cell) for cell in row] for row in expr_dict[key]])
+        key: np.array([[safe_eval(cell) for cell in row] for row in expr_dict[key]])
         for key in expr_dict
     }
 
