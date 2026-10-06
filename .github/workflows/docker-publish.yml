@@ -22,6 +22,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # QEMU emulates arm64 so the image can also be built for it.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       # Buildx is needed for multi-arch builds and layer caching.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,7 +58,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Publish for x86_64 Linux hosts. Add ,linux/arm64 here if you
-          # also want ARM (e.g. M-series Mac / Pi 4+) — it roughly doubles
-          # build time because there's no native arm64 runner on public GH.
-          platforms: linux/amd64
+          # x86_64 hosts and ARM hosts (e.g. Apple silicon Macs). The arm64
+          # build runs under QEMU, which roughly doubles the build time.
+          platforms: linux/amd64,linux/arm64

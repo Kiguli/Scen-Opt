@@ -14,6 +14,8 @@ Run the pre-built image from the GitHub Container Registry (use a release tag su
 docker run -p 5000:5000 ghcr.io/kiguli/scen-opt:latest
 ```
 
+The image is built for both x86_64 and ARM (e.g. Apple silicon) machines.
+
 Or build the image yourself:
 
 ```bash

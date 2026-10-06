@@ -30,4 +30,7 @@ USER appuser
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "7200", "app:app"]
+# Default worker count. Override with -e GUNICORN_CMD_ARGS="--workers 4".
+ENV GUNICORN_CMD_ARGS="--workers 2"
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "7200", "app:app"]
