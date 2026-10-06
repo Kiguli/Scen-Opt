@@ -311,7 +311,7 @@
       "0"
     ]
   ],
-  "rho": "100.0",
+  "rho": "0",
   "tau": "0",
   "confidence": "1e-06",
   "mode": "numeric",
