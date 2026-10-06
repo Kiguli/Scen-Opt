@@ -2,10 +2,18 @@
   <img src="docs/_static/logo.svg" alt="Scen-Opt" width="400">
 </p>
 
-<h1 align="center">A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
+<h1 align="center">Scen-Opt: A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
+
+<p align="center">Ben Wooding, Simone Garatti, Marco C. Campi and Abolfazl Lavaei</p>
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.23177689"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23177689.svg" alt="DOI"></a>
+  <a href="https://github.com/Kiguli/Scen-Opt/actions/workflows/test.yml"><img src="https://github.com/Kiguli/Scen-Opt/actions/workflows/test.yml/badge.svg?branch=master" alt="Tests"></a>
+  <a href="https://github.com/Kiguli/Scen-Opt/pkgs/container/scen-opt"><img src="https://github.com/Kiguli/Scen-Opt/actions/workflows/docker-publish.yml/badge.svg?branch=master" alt="Docker image"></a>
+  <a href="https://kiguli.github.io/Scen-Opt/"><img src="https://github.com/Kiguli/Scen-Opt/actions/workflows/docs.yml/badge.svg?branch=master" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Kiguli/Scen-Opt" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
+  <a href="https://scen-opt.woodingben.com"><img src="https://img.shields.io/badge/web%20app-scen--opt.woodingben.com-orange" alt="Web app"></a>
 </p>
 
 Scen-Opt is an open-source software tool for data-driven convex optimization using the scenario approach of Campi and Garatti. It solves **Linear Programs (LP)**, **Quadratic Programs (QP)**, and **Semidefinite Programs (SDP)** using only sampled uncertainty realizations, providing rigorous probabilistic guarantees on out-of-sample performance without requiring knowledge of the underlying probability distribution.
