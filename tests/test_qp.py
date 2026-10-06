@@ -102,3 +102,13 @@ def test_qp_non_symmetric_q():
             c=C_VEC, Q=Q_bad,
             tau=0.0, x_ref=np.array([0, 0]), rho=0.0, norm_type=2, solver="SCS",
         )
+
+
+def test_qp_rank_deficient_q_is_accepted():
+    """A PSD Q whose zero eigenvalues come out as about -1e-16 is accepted."""
+    D = np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 6.0]])
+    Q = D.T @ D  # rank 1: two eigenvalues are zero up to rounding
+    scenarios = np.array([[0.0], [0.5]])
+    x, *_ = solve_qp(scenarios, lambda d: np.array([[-1.0, 0.0, 0.0]]), lambda d: np.array([[d[0]]]),
+                     np.array([]), np.array([]), np.zeros((3, 1)), Q, solver="CLARABEL")
+    assert x is not None

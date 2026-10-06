@@ -1,6 +1,6 @@
 import cvxpy as cp
 import numpy as np
-from src.Miscellaneous import get_support
+from src.Miscellaneous import get_support, check_scenarios, check_psd, regularization_term
 
 def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
     r"""Solve a quadratic program with scenario constraints via the scenario approach.
@@ -46,10 +46,14 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     rho : float, optional
         Penalty on slack variables. When ``0.0`` the scenario constraints are
         hard. Default is ``0.0``.
-    norm_type : int, optional
-        Norm type for the regularization term (1, 2, etc.). Default is ``2``.
+    norm_type : int, float or str, optional
+        Order p of the vector norm in the regularization term: any number
+        ``p >= 1``, ``'inf'`` or ``'fro'`` (Euclidean). Default is ``2``.
     solver : str or None, optional
         CVXPY solver name. ``None`` for automatic selection.
+    include_slack : bool or None, optional
+        Whether to add the slack variables ζ_i (the relaxation formulation).
+        ``None`` adds them only when ``rho != 0``.
 
     Returns
     -------
@@ -75,16 +79,11 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
     AssertionError
         If *Q* is not positive semidefinite or not symmetric.
     """
-    # Check Q is positive semi-definite and symmetric.
-    eigvals = np.linalg.eigvals(Q)
-    assert np.all(eigvals >= 0), f"Q must be positive semi-definite (eigenvalues: {eigvals})"
-    assert (Q == Q.T).all(), "Q must be symmetric"
+    # Check Q is symmetric positive semi-definite (up to a small tolerance).
+    Q = check_psd(Q)
+    N = check_scenarios(deltas)  # Number of scenarios
     n = A_d(deltas[0]).shape[1]  # Number of variables
     m_scenario = A_d(deltas[0]).shape[0]  # Number of scenario constraints
-    try:
-        N = deltas.shape[0]  # Number of scenarios
-    except IndexError:
-        raise ValueError("The input `deltas` must have at least one row.")
 
     # Variables
     x = cp.Variable((n, 1))
@@ -99,12 +98,14 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
         zeta = np.zeros(N)
     constraints = []
     for i in range(N):
-        constraints.append(A_d(deltas[i]) @ x + b_d(deltas[i]) <= zeta[i])  # Per-scenario slack
+        # b(δ) as a column: a 1-D (m,) array would otherwise be broadcast to (m, m).
+        b_i = np.asarray(b_d(deltas[i]), dtype=float).reshape(-1, 1)
+        constraints.append(A_d(deltas[i]) @ x + b_i <= zeta[i])  # Per-scenario slack
 
     # Hard constraints are kept separate from the scenario constraints: they
     # are always enforced but never candidates for the support list.
     if not (G.size == 0 or h.size == 0):
-        non_risk_constraints = [G @ x + h <= 0]
+        non_risk_constraints = [np.atleast_2d(G) @ x + np.asarray(h, dtype=float).reshape(-1, 1) <= 0]
     else:
         non_risk_constraints = []
 
@@ -122,7 +123,7 @@ def solve_qp(deltas, A_d, b_d, G, h, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0
         )
 
     # Objective Function
-    objective = cp.Minimize((1/2)*cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
+    objective = cp.Minimize((1/2)*cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + regularization_term(tau, x, x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints + non_risk_constraints)

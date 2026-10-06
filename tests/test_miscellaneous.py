@@ -1,4 +1,4 @@
-from src.Miscellaneous import get_solvers, get_norm_types
+from src.Miscellaneous import get_solvers, get_norm_types, SOLVER_CAPABILITIES, _cvxpy_capabilities
 
 
 def test_get_solvers():
@@ -20,4 +20,17 @@ def test_get_solvers_capabilities():
 def test_get_norm_types():
     """get_norm_types returns the expected list of norms."""
     norms = get_norm_types()
-    assert norms == [1, 2, "inf", "fro", "nuc"]
+    assert norms == [1, 2, "inf", "fro"]
+
+
+def test_solver_capabilities_match_cvxpy():
+    """Table entries never claim a program type CVXPY says the solver cannot handle."""
+    for name, types in SOLVER_CAPABILITIES.items():
+        assert set(types) <= set(_cvxpy_capabilities(name)), name
+
+
+def test_unlisted_solvers_use_cvxpy_metadata():
+    """A solver missing from the table gets its types from CVXPY, not all three."""
+    assert _cvxpy_capabilities("CUOPT") == ["LP"]
+    assert _cvxpy_capabilities("COPT") == ["LP", "QP", "SDP"]
+    assert _cvxpy_capabilities("NOT_A_SOLVER") == []

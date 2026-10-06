@@ -131,3 +131,52 @@ def test_lp_infeasible():
             c=np.array([[-5], [-3]]),
             tau=0.0, x_ref=np.array([0, 0]), rho=0.0, norm_type=2, solver="SCS",
         )
+
+
+# ── Interval LP (smallest enclosing interval) used by the regression tests below ──
+_INTERVAL = np.array([0.1, 0.4, 0.9])
+
+
+def _interval_A(delta):
+    return np.array([[-1.0, -1.0], [1.0, -1.0]])
+
+
+def test_lp_empty_deltas_raises_value_error():
+    """No scenarios gives a clear ValueError (not an IndexError)."""
+    with pytest.raises(ValueError, match="at least one row"):
+        solve_lp(np.empty((0, 1)), _interval_A, lambda d: np.array([[d[0]], [-d[0]]]),
+                 np.array([]), np.array([]), np.array([[0.0], [1.0]]), solver="CLARABEL")
+
+
+def test_lp_one_dimensional_b_is_not_broadcast():
+    """A 1-D b(δ) of shape (m,) gives the same solution as a (m, 1) column."""
+    deltas = _INTERVAL.reshape(-1, 1)
+    c = np.array([[0.0], [1.0]])
+    x_col, *_ = solve_lp(deltas, _interval_A, lambda d: np.array([[d[0]], [-d[0]]]),
+                         np.array([]), np.array([]), c, solver="CLARABEL")
+    x_1d, *_ = solve_lp(deltas, _interval_A, lambda d: np.array([d[0], -d[0]]),
+                        np.array([]), np.array([]), c, solver="CLARABEL")
+    np.testing.assert_allclose(x_1d, x_col, atol=1e-6)
+    np.testing.assert_allclose(x_col.ravel(), [0.5, 0.4], atol=1e-6)
+
+
+def test_lp_without_regularization_is_a_pure_lp():
+    """With τ = 0 no norm term is added, so an LP-only solver can solve it."""
+    import cvxpy as cp
+    if "SCIPY" not in cp.installed_solvers():
+        pytest.skip("SCIPY not installed")
+    x, zeta, cost, N, k, cons, degenerate = solve_lp(
+        _INTERVAL.reshape(-1, 1), _interval_A, lambda d: np.array([[d[0]], [-d[0]]]),
+        np.array([]), np.array([]), np.array([[0.0], [1.0]]), solver="SCIPY")
+    np.testing.assert_allclose(x.ravel(), [0.5, 0.4], atol=1e-6)
+    assert k == 2 and not degenerate
+
+
+@pytest.mark.parametrize("p", [1, 1.5, 2, 3, "inf", "fro"])
+def test_lp_regularization_accepts_any_vector_norm(p):
+    """The regularization term is a vector norm, so any p >= 1, inf and fro work."""
+    x, *_ = solve_lp(_INTERVAL.reshape(-1, 1), _interval_A, lambda d: np.array([[d[0]], [-d[0]]]),
+                     np.array([]), np.array([]), np.array([[0.0], [1.0]]),
+                     tau=0.01, x_ref=np.array([0.5, 0.4]), norm_type=float("inf") if p == "inf" else p,
+                     solver="CLARABEL")
+    np.testing.assert_allclose(x.ravel(), [0.5, 0.4], atol=1e-5)

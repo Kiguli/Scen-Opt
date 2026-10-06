@@ -1,6 +1,6 @@
 import cvxpy as cp
 import numpy as np
-from src.Miscellaneous import get_support
+from src.Miscellaneous import get_support, check_scenarios, check_psd, regularization_term
 
 
 def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, norm_type=2, solver=None, include_slack=None):
@@ -27,14 +27,16 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
         Function mapping a scenario to a dict of symmetric matrices keyed by
         variable index (``'0'`` for the constant term, ``'1'`` for
         :math:`x_1`, etc.):  ``F_d(delta) -> {'0': F0, '1': F1, ...}``.
+        Integer keys (``0, 1, ...``) work too.
     E : dict or None
         Dict of symmetric matrices for the hard LMI constraint, same key
         format as *F_d* output. Pass ``None`` if there are no hard constraints.
     c : numpy.ndarray
         Linear objective coefficient vector with shape ``(n,)``.
-    Q : numpy.ndarray
+    Q : numpy.ndarray or None
         Quadratic cost matrix with shape ``(n, n)``. Must be positive
-        semidefinite and symmetric.
+        semidefinite and symmetric. ``None`` or an empty array means no
+        quadratic term.
     tau : float, optional
         Regularization strength toward *x_ref*. Default is ``0.0``.
     x_ref : numpy.ndarray, optional
@@ -42,10 +44,14 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
     rho : float, optional
         Penalty on slack variables. When ``0.0`` the scenario constraints are
         hard. Default is ``0.0``.
-    norm_type : int, optional
-        Norm type for the regularization term (1, 2, etc.). Default is ``2``.
+    norm_type : int, float or str, optional
+        Order p of the vector norm in the regularization term: any number
+        ``p >= 1``, ``'inf'`` or ``'fro'`` (Euclidean). Default is ``2``.
     solver : str or None, optional
         CVXPY solver name. ``None`` for automatic selection.
+    include_slack : bool or None, optional
+        Whether to add the slack variables ζ_i (the relaxation formulation).
+        ``None`` adds them only when ``rho != 0``.
 
     Returns
     -------
@@ -72,17 +78,12 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
         If *Q* or any :math:`F_j(\delta)` matrix is not symmetric.
     """
 
-    # Check Q is positive semi-definite and symmetric.
-    eigvals = np.linalg.eigvals(Q)
-    assert np.all(eigvals >= 0), f"Q must be positive semi-definite (eigenvalues: {eigvals})"
-    assert (Q == Q.T).all(), "Q must be symmetric"
-    n = Q.shape[1]
+    n = np.asarray(c).reshape(-1).size  # Number of variables
+    # Check Q is symmetric positive semi-definite (up to a small tolerance);
+    # an empty Q means there is no quadratic term.
+    Q = np.zeros((n, n)) if Q is None or np.size(Q) == 0 else check_psd(Q)
+    N = check_scenarios(deltas)  # Number of scenarios
     m = list(F_d(deltas[0]).values())[0].shape[0]
-
-    try:
-        N = deltas.shape[0]  # Number of scenarios
-    except IndexError:
-        raise ValueError("The input `deltas` must have at least one row.")
 
     # Variables
     x = cp.Variable(n)
@@ -103,7 +104,7 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
         for k, Fk in F_dict.items():
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j(\\delta)\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j(\\delta)\\) need to be symmetric"
-            if k == '0':
+            if int(k) == 0:  # keys may be '0', '1', ... or 0, 1, ...
                 term = Fk
             else:
                 xk = x[int(k)-1]
@@ -116,7 +117,7 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
         for k, Fk in E.items():
             #assert np.all(np.linalg.eigvals(Fk) >= 0), "\\(F_j\\) need to be positive semi-definite and symmetric"
             assert (Fk == Fk.T).all(), "\\(F_j\\) needs to be symmetric"
-            if k == '0':
+            if int(k) == 0:  # keys may be '0', '1', ... or 0, 1, ...
                 term = Fk
             else:
                 xk = x[int(k) - 1]
@@ -129,8 +130,21 @@ def solve_sdp(deltas, F_d, E, c, Q, tau=0.0, x_ref=np.array([0.0]), rho=0.0, nor
     else:
         non_risk_constraints = []
 
+    # x is a vector here, so x_ref must be a scalar or a length-n vector: a
+    # (n, 1) column would be broadcast against x into an (n, n) matrix.
+    _xr = np.asarray(x_ref, dtype=float).reshape(-1)
+    if _xr.size == 1:
+        x_ref = float(_xr[0])
+    elif _xr.size == n:
+        x_ref = _xr
+    else:
+        raise ValueError(
+            f"x̄ has {_xr.size} entries but d = {n}. Provide either a scalar "
+            f"(broadcast across all coordinates) or a length-{n} vector."
+        )
+
     # Objective Function
-    objective = cp.Minimize((1 / 2) * cp.quad_form(x, Q) + c.T @ x + tau * cp.norm(x - x_ref, norm_type) + rho * cp.sum(zeta))
+    objective = cp.Minimize((1 / 2) * cp.quad_form(x, cp.psd_wrap(Q)) + c.T @ x + regularization_term(tau, x, x_ref, norm_type) + rho * cp.sum(zeta))
 
     # Solve the problem
     prob = cp.Problem(objective, constraints + non_risk_constraints)

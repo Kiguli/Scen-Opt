@@ -4,19 +4,37 @@ import pandas as pd
 
 SOLVER_CAPABILITIES = {
     'CLARABEL': ['LP', 'QP', 'SDP'], 'SCS': ['LP', 'QP', 'SDP'],
-    # OSQP and SCIPY are removed from the LP list — both technically claim
-    # LP support but fail on the scenario LPs we build (slack reformulation
-    # produces degenerate QPs OSQP can't handle; SCIPY's wrapper hits
-    # NotImplemented paths for our equality reductions).
-    'OSQP': ['QP'], 'ECOS': ['LP', 'QP', 'SDP'],
+    # OSQP is kept off the LP list: it fails on the scenario LPs we build
+    # (the slack reformulation produces degenerate QPs OSQP can't handle).
+    'OSQP': ['QP'], 'ECOS': ['LP', 'QP'],
     'CVXOPT': ['LP', 'QP', 'SDP'], 'GLOP': ['LP'], 'GLPK': ['LP'],
-    'GLPK_MI': ['LP'], 'SCIPY': ['QP'], 'HIGHS': ['LP', 'QP'],
-    'SCIP': ['LP', 'QP', 'SDP'], 'CBC': ['LP', 'QP'],
+    'GLPK_MI': ['LP'], 'SCIPY': ['LP'], 'HIGHS': ['LP', 'QP'],
+    'SCIP': ['LP', 'QP'], 'CBC': ['LP'],
     'DAQP': ['LP', 'QP'], 'PIQP': ['LP', 'QP'],
-    'PROXQP': ['LP', 'QP'], 'QPALM': ['LP', 'QP'],
-    'MOSEK': ['LP', 'QP', 'SDP'], 'GUROBI': ['LP', 'QP', 'SDP'],
-    'CPLEX': ['LP', 'QP', 'SDP'], 'SDPA': ['SDP'],
+    'PROXQP': ['LP', 'QP'],
+    'MOSEK': ['LP', 'QP', 'SDP'], 'GUROBI': ['LP', 'QP'],
+    'CPLEX': ['LP', 'QP'], 'SDPA': ['SDP'],
 }
+
+
+def _cvxpy_capabilities(name):
+    """Program types a solver missing from SOLVER_CAPABILITIES can handle, from CVXPY's own metadata.
+
+    LP needs any conic or QP interface, QP needs a QP interface or second-order
+    cones, and SDP needs positive semidefinite cones.
+    """
+    from cvxpy.constraints import PSD, SOC
+    from cvxpy.reductions.solvers.defines import SOLVER_MAP_CONIC, SOLVER_MAP_QP
+    conic, qp = SOLVER_MAP_CONIC.get(name), SOLVER_MAP_QP.get(name)
+    supported = conic.SUPPORTED_CONSTRAINTS if conic else []
+    types = []
+    if conic or qp:
+        types.append('LP')
+    if qp or SOC in supported:
+        types.append('QP')
+    if PSD in supported:
+        types.append('SDP')
+    return types
 
 def get_solvers():
     """Retrieve installed CVXPY solvers and their supported problem types.
@@ -32,8 +50,47 @@ def get_solvers():
     `CVXPY solver list <https://www.cvxpy.org/tutorial/solvers/index.html#choosing-a-solver>`_
     """
     installed = cp.installed_solvers()
-    solver_dict = {s: SOLVER_CAPABILITIES.get(s, ['LP', 'QP', 'SDP']) for s in installed}
-    return solver_dict
+    solver_dict = {s: SOLVER_CAPABILITIES[s] if s in SOLVER_CAPABILITIES else _cvxpy_capabilities(s)
+                   for s in installed}
+    return {s: types for s, types in solver_dict.items() if types}
+
+def check_scenarios(deltas):
+    """Return the number of scenarios N, raising ValueError when there are none."""
+    if deltas is None or np.size(deltas) == 0:
+        raise ValueError("The input `deltas` must have at least one row.")
+    return len(deltas)
+
+
+def check_psd(Q, tol=1e-9):
+    """Return Q symmetrised, after checking it is symmetric positive semidefinite.
+
+    Both checks allow a small relative tolerance, so rank-deficient matrices
+    such as D.T @ D, whose zero eigenvalues come out as about -1e-16, pass.
+    """
+    Q = np.asarray(Q, dtype=float)
+    scale = max(1.0, float(np.abs(Q).max()))
+    assert np.allclose(Q, Q.T, rtol=0, atol=tol * scale), "Q must be symmetric"
+    Q = (Q + Q.T) / 2
+    eigvals = np.linalg.eigvalsh(Q)
+    assert eigvals.min() >= -tol * scale, f"Q must be positive semi-definite (eigenvalues: {eigvals})"
+    return Q
+
+
+def regularization_term(tau, x, x_ref, norm_type):
+    """Return tau * ||x - x_ref||_p, or 0 when tau = 0.
+
+    The term is left out when tau = 0, so a robust or relaxed LP stays a pure
+    LP: with the default p = 2 the norm would add a second-order cone, which
+    LP-only solvers cannot handle. The norm is the vector p-norm of
+    x - x_ref, so any p >= 1 works, and ``'fro'`` is the Euclidean norm.
+    """
+    if tau == 0:
+        return 0
+    diff = x - x_ref
+    if len(diff.shape) == 2:
+        diff = diff[:, 0]  # (n, 1) column -> vector
+    return tau * cp.norm(diff, 2 if norm_type == 'fro' else norm_type)
+
 
 def get_norm_types():
     """Retrieve available norm types for the regularization term.
@@ -41,16 +98,19 @@ def get_norm_types():
     Returns
     -------
     list
-        Supported CVXPY norm types: ``1`` (L1), ``2`` (L2), ``'inf'``
-        (L-infinity), ``'fro'`` (Frobenius), ``'nuc'`` (nuclear).
+        Common norm types: ``1`` (L1), ``2`` (L2), ``'inf'`` (L-infinity)
+        and ``'fro'`` (the same as L2 for the vector ``x - x_ref``). Any
+        other number ``p >= 1`` also works.
     """
-    norm_types = [1, 2, "inf", "fro", "nuc"]
+    norm_types = [1, 2, "inf", "fro"]
     return norm_types
 
 def load_file(file_path):
     """Read a data file and convert it to a NumPy array.
 
-    Supports CSV, TXT, XLSX, and JSON formats.
+    Supports CSV, TXT, XLSX, and JSON formats. A ``.txt`` file may be
+    separated by whitespace or by commas; a ``.json`` file holds a list of
+    rows (one per scenario) or a table in pandas' default JSON format.
 
     Parameters
     ----------
@@ -61,22 +121,21 @@ def load_file(file_path):
     Returns
     -------
     numpy.ndarray or None
-        Array containing the file data, or ``None`` if an error occurred.
-
-    Raises
-    ------
-    ValueError
-        If the file extension is not supported.
+        Array containing the file data, or ``None`` if the file cannot be
+        read or has an unsupported extension (the error is printed).
     """
     try:
         if file_path.endswith('.csv'):
             data = pd.read_csv(file_path,header=None).values  # Read CSV using pandas and convert to NumPy
         elif file_path.endswith('.txt'):
-            data = np.loadtxt(file_path)  # Read TXT using NumPy (default to expect floats)
+            try:
+                data = np.loadtxt(file_path)  # whitespace-separated numbers
+            except ValueError:
+                data = np.loadtxt(file_path, delimiter=',')  # comma-separated numbers
         elif file_path.endswith('.xlsx'):
             data = pd.read_excel(file_path, engine='openpyxl',header=None).values  # Read Excel file and convert to NumPy
         elif file_path.endswith('.json'):
-            data = pd.read_json(file_path, orient='record').values  # Read JSON and convert to NumPy
+            data = pd.read_json(file_path).values  # a list of rows, or pandas' column format
         else:
             raise ValueError("Unsupported file format")
 
