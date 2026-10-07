@@ -1,7 +1,7 @@
 <p align="center">
   <img src="docs/_static/logo.svg" alt="Scen-Opt" width="400">
 </p>
-
+ 
 <h1 align="center">Scen-Opt: A Scenario Optimization Toolbox for Data-Driven Convex Programming</h1>
 
 <p align="center">Ben Wooding, Simone Garatti, Marco C. Campi and Abolfazl Lavaei</p>
