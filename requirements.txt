@@ -25,4 +25,4 @@ scipy==1.15.3
 scs==3.2.8
 six==1.17.0
 tzdata==2025.2
-Werkzeug==3.1.6
+Werkzeug==3.1.9
