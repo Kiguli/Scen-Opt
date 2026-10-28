@@ -42,6 +42,9 @@ assumptions required.
 Getting Started
 ---------------
 
+Try Scen-Opt without installing anything with the hosted web app at
+https://scen-opt.woodingben.com. To run it on your own machine:
+
 .. code-block:: bash
 
    pip install -r requirements.txt
